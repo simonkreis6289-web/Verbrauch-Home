@@ -1046,14 +1046,8 @@
       purchaseList: document.getElementById("purchaseList"),
 
       firebaseForm: document.getElementById("firebaseForm"),
-      fbApiKey: document.getElementById("fbApiKey"),
-      fbAuthDomain: document.getElementById("fbAuthDomain"),
-      fbProjectId: document.getElementById("fbProjectId"),
-      fbStorageBucket: document.getElementById("fbStorageBucket"),
-      fbMessagingSenderId: document.getElementById("fbMessagingSenderId"),
-      fbAppId: document.getElementById("fbAppId"),
-      fbMeasurementId: document.getElementById("fbMeasurementId"),
-      householdId: document.getElementById("householdId"),
+fbProjectId: document.getElementById("fbProjectId"),
+householdId: document.getElementById("householdId"),
       disconnectFirebaseBtn: document.getElementById("disconnectFirebaseBtn"),
 
       dashboardStats: document.getElementById("dashboardStats"),
@@ -1089,18 +1083,12 @@
       }
     }
 
-    function hydrateLocalForms() {
-      const cfg = FIREBASE_CONFIG;
-      els.fbApiKey.value = cfg.apiKey || "";
-      els.fbAuthDomain.value = cfg.authDomain || "";
-      els.fbProjectId.value = cfg.projectId || "";
-      els.fbStorageBucket.value = cfg.storageBucket || "";
-      els.fbMessagingSenderId.value = cfg.messagingSenderId || "";
-      els.fbAppId.value = cfg.appId || "";
-      els.fbMeasurementId.value = cfg.measurementId || "";
-      els.householdId.value = state.householdId || DEFAULT_HOUSEHOLD_ID;
-    }
-
+function hydrateLocalForms() {
+  els.householdId.value = state.householdId || DEFAULT_HOUSEHOLD_ID;
+  if (els.fbProjectId) {
+    els.fbProjectId.value = FIREBASE_CONFIG.projectId || "";
+  }
+}
     function setDefaultDatetimes() {
       const now = toDatetimeLocal(new Date());
       els.readingDatetime.value = now;
