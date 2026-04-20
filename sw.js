@@ -1,11 +1,11 @@
-const CACHE_NAME = "verbrauch-app-v2";
+const CACHE_NAME = "verbrauch-app-v1";
 
 const urlsToCache = [
   "./",
   "./index.html",
-  "./manifest.webmanifest",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  "./manifest.json",
+  "./icon-192.png",
+  "./icon-512.png"
 ];
 
 self.addEventListener("install", (event) => {
