@@ -1432,9 +1432,9 @@ function setDefaultDatetimes() {
     function listenToFirestore() {
       const basePath = householdBasePath();
 
-      const readingsQuery = query(collection(state.db, `${basePath}/readings/items`), orderBy("date", "desc"));
-      const refillsQuery = query(collection(state.db, `${basePath}/refills/items`), orderBy("date", "desc"));
-      const purchasesQuery = query(collection(state.db, `${basePath}/purchases/items`), orderBy("date", "desc"));
+        const readingsQuery = query(collection(state.db, `${basePath}/readings`), orderBy("date", "desc"));
+        const refillsQuery = query(collection(state.db, `${basePath}/refills`), orderBy("date", "desc"));
+        const purchasesQuery = query(collection(state.db, `${basePath}/purchases`), orderBy("date", "desc"));
       const settingsDocRef = doc(state.db, `${basePath}/settings/main`);
 
       state.unsubscribers.push(onSnapshot(readingsQuery, (snapshot) => {
@@ -1483,9 +1483,9 @@ function setDefaultDatetimes() {
     async function saveRecord(kind, payload) {
       if (state.firebaseEnabled) {
         const pathMap = {
-          readings: `${householdBasePath()}/readings/items`,
-          refills: `${householdBasePath()}/refills/items`,
-          purchases: `${householdBasePath()}/purchases/items`
+readings: `${householdBasePath()}/readings`,
+refills: `${householdBasePath()}/refills`,
+purchases: `${householdBasePath()}/purchases`
         };
         await addDoc(collection(state.db, pathMap[kind]), {
           ...payload,
@@ -1502,9 +1502,9 @@ function setDefaultDatetimes() {
     async function deleteRecord(kind, id) {
       if (state.firebaseEnabled) {
         const pathMap = {
-          readings: `${householdBasePath()}/readings/items/${id}`,
-          refills: `${householdBasePath()}/refills/items/${id}`,
-          purchases: `${householdBasePath()}/purchases/items/${id}`
+readings: `${householdBasePath()}/readings/${id}`,
+refills: `${householdBasePath()}/refills/${id}`,
+purchases: `${householdBasePath()}/purchases/${id}`
         };
         await deleteDoc(doc(state.db, pathMap[kind]));
       } else {
