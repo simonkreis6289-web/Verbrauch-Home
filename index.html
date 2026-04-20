@@ -1430,6 +1430,7 @@ function setDefaultDatetimes() {
     }
 
     function listenToFirestore() {
+          console.log("FIRESTORE PATH FIX AKTIV");
       const basePath = householdBasePath();
 
         const readingsQuery = query(collection(state.db, `${basePath}/readings`), orderBy("date", "desc"));
