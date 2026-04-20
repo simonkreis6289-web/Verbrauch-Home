@@ -6,6 +6,10 @@
   <title>Verbrauch Zuhause</title>
   <meta name="theme-color" content="#0f172a" />
   <meta name="description" content="Verbrauch für Strom, Wasser und Pellets erfassen, auswerten und als App nutzen." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+
   <style>
     :root {
       --bg: #081120;
@@ -23,9 +27,6 @@
       --shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
       --radius: 22px;
       --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      --chart-strom: #38bdf8;
-      --chart-wasser: #22c55e;
-      --chart-pellets: #f59e0b;
     }
 
     * {
@@ -476,12 +477,6 @@
       border-color: rgba(239, 68, 68, 0.35);
     }
 
-    .install-hint {
-      margin-top: 12px;
-      color: var(--muted);
-      font-size: 0.88rem;
-    }
-
     @media (max-width: 1080px) {
       .card,
       .card.wide {
@@ -534,18 +529,8 @@
         overflow-x: auto;
       }
     }
-      
-      .hidden {
-  display: none !important;
-}
-      
   </style>
 </head>
-    <link rel="manifest" href="manifest.webmanifest">
-    <link rel="icon" href="icons/icon-192.png">
-    <link rel="apple-touch-icon" href="icons/icon-192.png">
-    <button id="installBtn" class="btn secondary hidden" type="button">App installieren</button>
-    
 <body>
   <div class="app-shell">
     <header class="hero">
@@ -557,6 +542,11 @@
         </p>
       </div>
 
+      <div class="hero-actions">
+        <button id="installBtn" class="btn secondary hidden" type="button">App installieren</button>
+        <button id="saveViewBtn" class="btn secondary" type="button">Ansicht exportieren</button>
+        <button id="exportBtn" class="btn ghost" type="button">Daten exportieren</button>
+      </div>
     </header>
 
     <main class="grid">
@@ -723,8 +713,8 @@
         <div class="entry-note"></div>
       </div>
       <div class="entry-actions">
-        <button class="icon-btn edit-btn" title="Bearbeiten">✏️</button>
-        <button class="icon-btn delete-btn" title="Löschen">🗑️</button>
+        <button class="icon-btn edit-btn" title="Bearbeiten" type="button">✏️</button>
+        <button class="icon-btn delete-btn" title="Löschen" type="button">🗑️</button>
       </div>
     </article>
   </template>
@@ -789,24 +779,9 @@
     const STORAGE_KEY = "verbrauch-zuhause-entries-v2";
 
     const typeConfig = {
-      strom: {
-        label: "Strom",
-        unit: "kWh",
-        color: "#38bdf8",
-        hint: "z. B. 4.8 kWh"
-      },
-      wasser: {
-        label: "Wasser",
-        unit: "m³",
-        color: "#22c55e",
-        hint: "z. B. 1.6 m³"
-      },
-      pellets: {
-        label: "Pellets",
-        unit: "kg",
-        color: "#f59e0b",
-        hint: "Gesamtgewicht in kg oder Säcke unten eingeben"
-      }
+      strom: { label: "Strom", unit: "kWh", color: "#38bdf8", hint: "z. B. 4.8 kWh" },
+      wasser: { label: "Wasser", unit: "m³", color: "#22c55e", hint: "z. B. 1.6 m³" },
+      pellets: { label: "Pellets", unit: "kg", color: "#f59e0b", hint: "Gesamtgewicht in kg oder Säcke unten eingeben" }
     };
 
     const state = {
@@ -814,6 +789,8 @@
       filteredEntries: [],
       activeRangeDays: 7
     };
+
+    let deferredPrompt = null;
 
     const els = {
       entryForm: document.getElementById("entryForm"),
@@ -850,6 +827,7 @@
 
       exportBtn: document.getElementById("exportBtn"),
       saveViewBtn: document.getElementById("saveViewBtn"),
+      installBtn: document.getElementById("installBtn"),
 
       editDialog: document.getElementById("editDialog"),
       editForm: document.getElementById("editForm"),
@@ -873,6 +851,8 @@
       applyFilters();
       renderAll();
       registerEvents();
+      registerInstallHandling();
+      registerServiceWorker();
     }
 
     function registerEvents() {
@@ -916,14 +896,61 @@
         renderCharts();
       });
 
-      els.exportBtn.addEventListener("click", exportData);
-      els.saveViewBtn.addEventListener("click", exportHtmlSnapshot);
+      if (els.exportBtn) els.exportBtn.addEventListener("click", exportData);
+      if (els.saveViewBtn) els.saveViewBtn.addEventListener("click", exportHtmlSnapshot);
 
       els.editType.addEventListener("change", syncEditTypeUI);
       els.editBags.addEventListener("input", updateEditPelletsPreview);
       els.editKgPerBag.addEventListener("input", updateEditPelletsPreview);
       els.editForm.addEventListener("submit", handleSaveEdit);
       els.cancelEditBtn.addEventListener("click", () => els.editDialog.close());
+    }
+
+    function registerInstallHandling() {
+      window.addEventListener("beforeinstallprompt", (event) => {
+        event.preventDefault();
+        deferredPrompt = event;
+        if (els.installBtn) {
+          els.installBtn.classList.remove("hidden");
+        }
+      });
+
+      if (els.installBtn) {
+        els.installBtn.addEventListener("click", async () => {
+          if (!deferredPrompt) {
+            showToast("Installation im Browser-Menü starten.", "error");
+            return;
+          }
+
+          deferredPrompt.prompt();
+          const choiceResult = await deferredPrompt.userChoice;
+
+          deferredPrompt = null;
+          els.installBtn.classList.add("hidden");
+
+          if (choiceResult.outcome === "accepted") {
+            showToast("App-Installation gestartet.", "success");
+          } else {
+            showToast("Installation abgebrochen.", "error");
+          }
+        });
+      }
+
+      window.addEventListener("appinstalled", () => {
+        if (els.installBtn) els.installBtn.classList.add("hidden");
+        deferredPrompt = null;
+        showToast("App wurde installiert.", "success");
+      });
+    }
+
+    function registerServiceWorker() {
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("./sw.js")
+            .then(() => console.log("Service Worker registriert"))
+            .catch((err) => console.error("SW-Fehler:", err));
+        });
+      }
     }
 
     function handleAddEntry(event) {
@@ -979,7 +1006,7 @@
       const entry = state.entries.find((e) => e.id === id);
       if (!entry) return;
 
-      const ok = window.confirm(\`Eintrag "\${typeConfig[entry.type].label}" vom \${formatDateTime(entry.datetime)} löschen?\`);
+      const ok = window.confirm(`Eintrag "${typeConfig[entry.type].label}" vom ${formatDateTime(entry.datetime)} löschen?`);
       if (!ok) return;
 
       state.entries = state.entries.filter((e) => e.id !== id);
@@ -1112,14 +1139,14 @@
       const bags = parseFloat(els.bags.value);
       const kgPerBag = parseFloat(els.kgPerBag.value);
       const total = Number.isFinite(bags) && Number.isFinite(kgPerBag) ? round2(bags * kgPerBag) : 0;
-      els.pelletsTotal.textContent = \`\${formatNumber(total)} kg\`;
+      els.pelletsTotal.textContent = `${formatNumber(total)} kg`;
     }
 
     function updateEditPelletsPreview() {
       const bags = parseFloat(els.editBags.value);
       const kgPerBag = parseFloat(els.editKgPerBag.value);
       const total = Number.isFinite(bags) && Number.isFinite(kgPerBag) ? round2(bags * kgPerBag) : 0;
-      els.editPelletsTotal.textContent = \`\${formatNumber(total)} kg\`;
+      els.editPelletsTotal.textContent = `${formatNumber(total)} kg`;
     }
 
     function clearPelletsInputs() {
@@ -1174,11 +1201,11 @@
 
         const box = document.createElement("div");
         box.className = "stat-box";
-        box.innerHTML = \`
-          <div class="stat-label">\${typeConfig[type].label}</div>
-          <div class="stat-value">\${formatNumber(total)} \${typeConfig[type].unit}</div>
-          <div class="stat-label">\${entries.length} Einträge\${latest ? \` · zuletzt \${formatDateTime(latest.datetime)}\` : ""}</div>
-        \`;
+        box.innerHTML = `
+          <div class="stat-label">${typeConfig[type].label}</div>
+          <div class="stat-value">${formatNumber(total)} ${typeConfig[type].unit}</div>
+          <div class="stat-label">${entries.length} Einträge${latest ? ` · zuletzt ${formatDateTime(latest.datetime)}` : ""}</div>
+        `;
 
         els.stats.appendChild(box);
       });
@@ -1186,14 +1213,14 @@
 
     function renderEntries() {
       els.entriesContainer.innerHTML = "";
-      els.resultCount.textContent = \`\${state.filteredEntries.length} Einträge\`;
+      els.resultCount.textContent = `${state.filteredEntries.length} Einträge`;
 
       if (!state.filteredEntries.length) {
-        els.entriesContainer.innerHTML = \`
+        els.entriesContainer.innerHTML = `
           <div class="empty-state">
-            Keine Einträge gefunden. Dein Filter hat gerade ein stilles Aquarium erwischt.
+            Keine Einträge gefunden.
           </div>
-        \`;
+        `;
         return;
       }
 
@@ -1247,74 +1274,74 @@
         return { x, y, entry };
       });
 
-      const polyline = points.map((p) => \`\${p.x},\${p.y}\`).join(" ");
+      const polyline = points.map((p) => `${p.x},${p.y}`).join(" ");
       const areaPoints = [
-        \`\${points[0].x},\${height - padding}\`,
-        ...points.map((p) => \`\${p.x},\${p.y}\`),
-        \`\${points[points.length - 1].x},\${height - padding}\`
+        `${points[0].x},${height - padding}`,
+        ...points.map((p) => `${p.x},${p.y}`),
+        `${points[points.length - 1].x},${height - padding}`
       ].join(" ");
 
-      const circles = points.map((p) => \`
-        <circle cx="\${p.x}" cy="\${p.y}" r="4.5" fill="\${cfg.color}">
-          <title>\${formatDateShort(p.entry.datetime)}: \${formatNumber(p.entry.value)} \${cfg.unit}</title>
+      const circles = points.map((p) => `
+        <circle cx="${p.x}" cy="${p.y}" r="4.5" fill="${cfg.color}">
+          <title>${formatDateShort(p.entry.datetime)}: ${formatNumber(p.entry.value)} ${cfg.unit}</title>
         </circle>
-      \`).join("");
+      `).join("");
 
       const labels = buildChartLabels(entries, width, height, padding);
 
-      container.innerHTML = \`
-        <svg viewBox="0 0 \${width} \${height}" preserveAspectRatio="none" aria-label="\${cfg.label} Chart">
+      container.innerHTML = `
+        <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-label="${cfg.label} Chart">
           <defs>
-            <linearGradient id="grad-\${type}" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="\${cfg.color}" stop-opacity="0.32"></stop>
-              <stop offset="100%" stop-color="\${cfg.color}" stop-opacity="0.02"></stop>
+            <linearGradient id="grad-${type}" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="${cfg.color}" stop-opacity="0.32"></stop>
+              <stop offset="100%" stop-color="${cfg.color}" stop-opacity="0.02"></stop>
             </linearGradient>
           </defs>
 
-          <polygon points="\${areaPoints}" fill="url(#grad-\${type})"></polygon>
+          <polygon points="${areaPoints}" fill="url(#grad-${type})"></polygon>
           <polyline
-            points="\${polyline}"
+            points="${polyline}"
             fill="none"
-            stroke="\${cfg.color}"
+            stroke="${cfg.color}"
             stroke-width="3"
             stroke-linecap="round"
             stroke-linejoin="round"
           ></polyline>
-          \${circles}
-          \${labels}
+          ${circles}
+          ${labels}
         </svg>
-      \`;
+      `;
     }
 
     function buildChartLabels(entries, width, height, padding) {
       if (!entries.length) return "";
 
       if (entries.length === 1) {
-        return \`
-          <text x="\${width / 2}" y="\${height - 4}" fill="#99a8c7" font-size="11" text-anchor="middle">
-            \${escapeHtml(formatDateShort(entries[0].datetime))}
+        return `
+          <text x="${width / 2}" y="${height - 4}" fill="#99a8c7" font-size="11" text-anchor="middle">
+            ${escapeHtml(formatDateShort(entries[0].datetime))}
           </text>
-        \`;
+        `;
       }
 
       const first = entries[0];
       const last = entries[entries.length - 1];
 
-      return \`
-        <text x="\${padding}" y="\${height - 4}" fill="#99a8c7" font-size="11" text-anchor="start">
-          \${escapeHtml(formatDateShort(first.datetime))}
+      return `
+        <text x="${padding}" y="${height - 4}" fill="#99a8c7" font-size="11" text-anchor="start">
+          ${escapeHtml(formatDateShort(first.datetime))}
         </text>
-        <text x="\${width - padding}" y="\${height - 4}" fill="#99a8c7" font-size="11" text-anchor="end">
-          \${escapeHtml(formatDateShort(last.datetime))}
+        <text x="${width - padding}" y="${height - 4}" fill="#99a8c7" font-size="11" text-anchor="end">
+          ${escapeHtml(formatDateShort(last.datetime))}
         </text>
-      \`;
+      `;
     }
 
     function buildChartMeta(entries, cfg) {
       if (!entries.length) return "Keine Daten im ausgewählten Zeitraum";
       const sum = entries.reduce((acc, e) => acc + e.value, 0);
       const avg = sum / entries.length;
-      return \`\${entries.length} Werte · Summe \${formatNumber(sum)} \${cfg.unit} · Ø \${formatNumber(avg)} \${cfg.unit}\`;
+      return `${entries.length} Werte · Summe ${formatNumber(sum)} ${cfg.unit} · Ø ${formatNumber(avg)} ${cfg.unit}`;
     }
 
     function getEntriesForChart(type) {
@@ -1337,14 +1364,14 @@
       };
 
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-      downloadBlob(blob, \`verbrauch-export-\${dateStamp()}.json\`);
+      downloadBlob(blob, `verbrauch-export-${dateStamp()}.json`);
       showToast("Datenexport erstellt.", "success");
     }
 
     function exportHtmlSnapshot() {
       const content = document.documentElement.outerHTML;
       const blob = new Blob([content], { type: "text/html;charset=utf-8" });
-      downloadBlob(blob, \`verbrauch-ansicht-\${dateStamp()}.html\`);
+      downloadBlob(blob, `verbrauch-ansicht-${dateStamp()}.html`);
       showToast("HTML-Ansicht exportiert.", "success");
     }
 
@@ -1375,12 +1402,6 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state.entries));
     }
 
-    function renderAllAndPersist() {
-      saveEntries();
-      applyFilters();
-      renderAll();
-    }
-
     function setDefaultDatetime() {
       els.datetime.value = toDatetimeLocal(new Date());
     }
@@ -1388,7 +1409,7 @@
     function toDatetimeLocal(dateInput) {
       const date = new Date(dateInput);
       const pad = (n) => String(n).padStart(2, "0");
-      return \`\${date.getFullYear()}-\${pad(date.getMonth() + 1)}-\${pad(date.getDate())}T\${pad(date.getHours())}:\${pad(date.getMinutes())}\`;
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
     }
 
     function formatDateTime(dateInput) {
@@ -1408,9 +1429,9 @@
     function formatEntryValue(entry) {
       const cfg = typeConfig[entry.type];
       if (entry.type === "pellets" && entry.bags && entry.kgPerBag) {
-        return \`\${formatNumber(entry.value)} \${cfg.unit} · \${formatNumber(entry.bags)} Sack/Säcke × \${formatNumber(entry.kgPerBag)} kg\`;
+        return `${formatNumber(entry.value)} ${cfg.unit} · ${formatNumber(entry.bags)} Sack/Säcke × ${formatNumber(entry.kgPerBag)} kg`;
       }
-      return \`\${formatNumber(entry.value)} \${cfg.unit}\`;
+      return `${formatNumber(entry.value)} ${cfg.unit}`;
     }
 
     function formatNumber(value) {
@@ -1426,7 +1447,7 @@
     function dateStamp() {
       const d = new Date();
       const pad = (n) => String(n).padStart(2, "0");
-      return \`\${d.getFullYear()}-\${pad(d.getMonth() + 1)}-\${pad(d.getDate())}_\${pad(d.getHours())}-\${pad(d.getMinutes())}\`;
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}`;
     }
 
     function escapeHtml(text) {
@@ -1448,7 +1469,7 @@
       if (oldToast) oldToast.remove();
 
       const toast = document.createElement("div");
-      toast.className = \`toast \${type}\`;
+      toast.className = `toast ${type}`;
       toast.textContent = message;
       document.body.appendChild(toast);
 
@@ -1456,55 +1477,6 @@
         toast.remove();
       }, 2600);
     }
-
-<script>
-  let deferredPrompt = null;
-  const installBtn = document.getElementById("installBtn");
-
-  window.addEventListener("beforeinstallprompt", (event) => {
-    event.preventDefault();
-    deferredPrompt = event;
-    installBtn.classList.remove("hidden");
-  });
-
-  installBtn.addEventListener("click", async () => {
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt();
-    const choiceResult = await deferredPrompt.userChoice;
-
-    if (choiceResult.outcome === "accepted") {
-      console.log("App installiert");
-    } else {
-      console.log("Installation abgebrochen");
-    }
-
-    deferredPrompt = null;
-    installBtn.classList.add("hidden");
-  });
-
-  window.addEventListener("appinstalled", () => {
-    console.log("PWA wurde installiert");
-    installBtn.classList.add("hidden");
-    deferredPrompt = null;
-  });
-
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("./sw.js")
-        .then(() => console.log("Service Worker registriert"))
-        .catch((err) => console.error("SW-Fehler:", err));
-    });
-  }
-</script>
-    
-    
-    <script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js');
-}
-</script>
-    
-    
+  </script>
 </body>
 </html>
