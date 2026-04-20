@@ -534,8 +534,18 @@
         overflow-x: auto;
       }
     }
+      
+      .hidden {
+  display: none !important;
+}
+      
   </style>
 </head>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <button id="installBtn" class="btn secondary hidden" type="button">App installieren</button>
+    
 <body>
   <div class="app-shell">
     <header class="hero">
@@ -1452,6 +1462,55 @@
         toast.remove();
       }, 2600);
     }
-  </script>
+
+<script>
+  let deferredPrompt = null;
+  const installBtn = document.getElementById("installBtn");
+
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    deferredPrompt = event;
+    installBtn.classList.remove("hidden");
+  });
+
+  installBtn.addEventListener("click", async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+    const choiceResult = await deferredPrompt.userChoice;
+
+    if (choiceResult.outcome === "accepted") {
+      console.log("App installiert");
+    } else {
+      console.log("Installation abgebrochen");
+    }
+
+    deferredPrompt = null;
+    installBtn.classList.add("hidden");
+  });
+
+  window.addEventListener("appinstalled", () => {
+    console.log("PWA wurde installiert");
+    installBtn.classList.add("hidden");
+    deferredPrompt = null;
+  });
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js")
+        .then(() => console.log("Service Worker registriert"))
+        .catch((err) => console.error("SW-Fehler:", err));
+    });
+  }
+</script>
+    
+    
+    <script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+</script>
+    
+    
 </body>
 </html>
