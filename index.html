@@ -560,9 +560,12 @@
       <div>
         <p class="eyebrow">Verbrauch Zuhause</p>
         <h1>Zählerstände, Pellets und Kosten im Blick</h1>
-        <p class="hero-copy">
-          Strom, Wasser und Pellets werden jetzt als Zählerstände erfasst.
-        <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du die Haushalt-ID ändern.</p>
+            <p class="hero-copy">
+              Strom, Wasser und Pellets werden jetzt als Zählerstände erfasst.
+            </p>
+            <p class="hero-status" id="firebaseStatus">
+              Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du die Haushalt-ID ändern.
+            </p>
       </div>
 
       <div class="hero-actions">
@@ -1084,17 +1087,24 @@ householdId: document.getElementById("householdId"),
     }
 
 function hydrateLocalForms() {
-  els.householdId.value = state.householdId || DEFAULT_HOUSEHOLD_ID;
-  if (els.fbProjectId) {
-    els.fbProjectId.value = FIREBASE_CONFIG.projectId || "";
+  const householdInput = document.getElementById("householdId");
+  const projectInput = document.getElementById("fbProjectId");
+
+  if (householdInput) {
+    householdInput.value = state.householdId || DEFAULT_HOUSEHOLD_ID;
+  }
+
+  if (projectInput) {
+    projectInput.value = FIREBASE_CONFIG.projectId || "";
   }
 }
-    function setDefaultDatetimes() {
-      const now = toDatetimeLocal(new Date());
-      els.readingDatetime.value = now;
-      els.refillDatetime.value = now;
-      els.purchaseDatetime.value = now;
-    }
+}
+function setDefaultDatetimes() {
+  const now = toDatetimeLocal(new Date());
+  if (els.readingDatetime) els.readingDatetime.value = now;
+  if (els.refillDatetime) els.refillDatetime.value = now;
+  if (els.purchaseDatetime) els.purchaseDatetime.value = now;
+}
 
     function restoreLocalData() {
       const local = loadJSON(LOCAL_KEYS.localData, null);
@@ -1107,37 +1117,67 @@ function hydrateLocalForms() {
     }
 
     function registerEvents() {
-      els.mainTabs.addEventListener("click", handleTabClick);
-      els.exportBackupBtn.addEventListener("click", exportBackup);
+      if (els.mainTabs) {
+        els.mainTabs.addEventListener("click", handleTabClick);
+      }
 
-      els.readingType.addEventListener("change", syncReadingHint);
-      els.readingForm.addEventListener("submit", handleReadingSubmit);
-      els.readingForm.addEventListener("reset", () => setTimeout(() => {
-        els.readingType.value = "strom";
-        syncReadingHint();
-        els.readingDatetime.value = toDatetimeLocal(new Date());
-      }, 0));
+      if (els.exportBackupBtn) {
+        els.exportBackupBtn.addEventListener("click", exportBackup);
+      }
 
-      els.refillBags.addEventListener("input", syncRefillTotal);
-      els.refillKgPerBag.addEventListener("input", syncRefillTotal);
-      els.refillForm.addEventListener("submit", handleRefillSubmit);
-      els.refillForm.addEventListener("reset", () => setTimeout(() => {
-        els.refillDatetime.value = toDatetimeLocal(new Date());
-        syncRefillTotal();
-      }, 0));
+      if (els.readingType) {
+        els.readingType.addEventListener("change", syncReadingHint);
+      }
 
-      els.purchaseBags.addEventListener("input", syncPurchaseTotals);
-      els.purchaseKgPerBag.addEventListener("input", syncPurchaseTotals);
-      els.purchasePrice.addEventListener("input", syncPurchaseTotals);
-      els.purchaseForm.addEventListener("submit", handlePurchaseSubmit);
-      els.purchaseForm.addEventListener("reset", () => setTimeout(() => {
-        els.purchaseDatetime.value = toDatetimeLocal(new Date());
-        syncPurchaseTotals();
-      }, 0));
+      if (els.readingForm) {
+        els.readingForm.addEventListener("submit", handleReadingSubmit);
+        els.readingForm.addEventListener("reset", () => setTimeout(() => {
+          if (els.readingType) els.readingType.value = "strom";
+          syncReadingHint();
+          if (els.readingDatetime) {
+            els.readingDatetime.value = toDatetimeLocal(new Date());
+          }
+        }, 0));
+      }
 
-      els.settingsForm.addEventListener("submit", handleSettingsSubmit);
-      els.firebaseForm.addEventListener("submit", handleFirebaseSubmit);
-      els.disconnectFirebaseBtn.addEventListener("click", disconnectFirebase);
+      if (els.refillBags) els.refillBags.addEventListener("input", syncRefillTotal);
+      if (els.refillKgPerBag) els.refillKgPerBag.addEventListener("input", syncRefillTotal);
+
+      if (els.refillForm) {
+        els.refillForm.addEventListener("submit", handleRefillSubmit);
+        els.refillForm.addEventListener("reset", () => setTimeout(() => {
+          if (els.refillDatetime) {
+            els.refillDatetime.value = toDatetimeLocal(new Date());
+          }
+          syncRefillTotal();
+        }, 0));
+      }
+
+      if (els.purchaseBags) els.purchaseBags.addEventListener("input", syncPurchaseTotals);
+      if (els.purchaseKgPerBag) els.purchaseKgPerBag.addEventListener("input", syncPurchaseTotals);
+      if (els.purchasePrice) els.purchasePrice.addEventListener("input", syncPurchaseTotals);
+
+      if (els.purchaseForm) {
+        els.purchaseForm.addEventListener("submit", handlePurchaseSubmit);
+        els.purchaseForm.addEventListener("reset", () => setTimeout(() => {
+          if (els.purchaseDatetime) {
+            els.purchaseDatetime.value = toDatetimeLocal(new Date());
+          }
+          syncPurchaseTotals();
+        }, 0));
+      }
+
+      if (els.settingsForm) {
+        els.settingsForm.addEventListener("submit", handleSettingsSubmit);
+      }
+
+      if (els.firebaseForm) {
+        els.firebaseForm.addEventListener("submit", handleFirebaseSubmit);
+      }
+
+      if (els.disconnectFirebaseBtn) {
+        els.disconnectFirebaseBtn.addEventListener("click", disconnectFirebase);
+      }
     }
 
     function registerInstallHandling() {
@@ -1333,7 +1373,11 @@ function hydrateLocalForms() {
     async function handleFirebaseSubmit(event) {
       event.preventDefault();
 
-      const householdId = els.householdId.value.trim() || DEFAULT_HOUSEHOLD_ID;
+      const householdInput = document.getElementById("householdId");
+      const householdId = householdInput && householdInput.value.trim()
+        ? householdInput.value.trim()
+        : DEFAULT_HOUSEHOLD_ID;
+
       localStorage.setItem(LOCAL_KEYS.householdId, householdId);
       state.householdId = householdId;
       await connectFirebase(FIREBASE_CONFIG, householdId, true);
