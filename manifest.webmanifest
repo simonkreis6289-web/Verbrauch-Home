@@ -1,12 +1,10 @@
 {
   "name": "Verbrauch Zuhause",
   "short_name": "Verbrauch",
-  "description": "Strom, Wasser und Pellets erfassen und auswerten.",
-  "start_url": "./",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#07111f",
+  "background_color": "#0f172a",
   "theme_color": "#0f172a",
-  "lang": "de-DE",
   "icons": [
     {
       "src": "icons/icon-192.png",
