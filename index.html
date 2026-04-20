@@ -5,12 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Verbrauch Zuhause</title>
   <meta name="theme-color" content="#0f172a" />
-  <meta name="description" content="Verbrauch für Strom, Wasser und Pellets erfassen, auswerten und als App nutzen." />
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon-192.png">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <meta name="theme-color" content="#0f172a">
-
+  <meta name="description" content="Zählerstände, Pellets-Nachfüllung, Käufe und Preise mit Firebase Firestore." />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon-192.png" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
   <style>
     :root {
       --bg: #081120;
@@ -53,12 +51,17 @@
     button,
     input,
     select,
+    textarea,
     dialog {
       font: inherit;
     }
 
+    .hidden {
+      display: none !important;
+    }
+
     .app-shell {
-      max-width: 1400px;
+      max-width: 1450px;
       margin: 0 auto;
       padding: 24px;
     }
@@ -72,23 +75,23 @@
       border: 1px solid var(--line);
       border-radius: 28px;
       background:
-        linear-gradient(135deg, rgba(15, 23, 42, 0.86), rgba(17, 28, 51, 0.72));
+        linear-gradient(135deg, rgba(15, 23, 42, 0.88), rgba(17, 28, 51, 0.74));
       box-shadow: var(--shadow);
       margin-bottom: 24px;
     }
 
     .hero h1 {
       margin: 8px 0 12px;
-      font-size: clamp(2rem, 4vw, 3.2rem);
+      font-size: clamp(2rem, 4vw, 3.1rem);
       line-height: 1.05;
       letter-spacing: -0.03em;
     }
 
-    .hero-copy {
+    .hero-copy,
+    .hero-status {
       margin: 0;
-      max-width: 760px;
+      max-width: 850px;
       color: var(--muted);
-      font-size: 1rem;
       line-height: 1.6;
     }
 
@@ -105,7 +108,9 @@
     .hero-actions,
     .form-actions,
     .tabs,
-    .entry-actions {
+    .entry-actions,
+    .quick-facts,
+    .inline-stack {
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
@@ -126,13 +131,13 @@
       box-shadow: var(--shadow);
     }
 
+    .card.wide {
+      grid-column: 1 / -1;
+    }
+
     .card.glass {
       background: var(--card);
       backdrop-filter: blur(20px);
-    }
-
-    .card.wide {
-      grid-column: 1 / -1;
     }
 
     .card-head {
@@ -143,9 +148,9 @@
       margin-bottom: 18px;
     }
 
-    .card-head h2 {
+    .card-head h2,
+    .card-head h3 {
       margin: 6px 0 0;
-      font-size: 1.35rem;
       line-height: 1.2;
     }
 
@@ -159,9 +164,60 @@
       white-space: nowrap;
     }
 
+    .badge.ok {
+      background: rgba(34, 197, 94, 0.12);
+      border-color: rgba(34, 197, 94, 0.22);
+      color: #dcfce7;
+    }
+
+    .badge.warn {
+      background: rgba(245, 158, 11, 0.12);
+      border-color: rgba(245, 158, 11, 0.22);
+      color: #fde68a;
+    }
+
+    .tabs {
+      background: rgba(8, 17, 32, 0.65);
+      padding: 6px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      padding: 10px 14px;
+      background: transparent;
+      color: var(--muted);
+      border-radius: 999px;
+      font-weight: 700;
+      border: 0;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .tab.active {
+      background: rgba(56, 189, 248, 0.16);
+      color: var(--text);
+    }
+
+    .tab:hover,
+    .btn:hover,
+    .icon-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .view {
+      display: none;
+    }
+
+    .view.active {
+      display: block;
+    }
+
     .form-grid,
-    .filter-grid,
-    .dialog-form {
+    .settings-grid,
+    .split-grid,
+    .price-grid {
       display: grid;
       gap: 16px;
     }
@@ -170,9 +226,22 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .filter-grid {
+    .settings-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .price-grid {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
+
+    .split-grid {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+    }
+
+    .span-4 { grid-column: span 4; }
+    .span-6 { grid-column: span 6; }
+    .span-8 { grid-column: span 8; }
+    .span-12 { grid-column: 1 / -1; }
 
     label {
       display: grid;
@@ -183,7 +252,8 @@
     }
 
     input,
-    select {
+    select,
+    textarea {
       width: 100%;
       border: 1px solid var(--line);
       background: rgba(8, 17, 32, 0.8);
@@ -194,12 +264,19 @@
       transition: 0.2s ease;
     }
 
-    input::placeholder {
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
       color: #7283a6;
     }
 
     input:focus,
-    select:focus {
+    select:focus,
+    textarea:focus {
       border-color: rgba(56, 189, 248, 0.55);
       box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.13);
     }
@@ -209,25 +286,7 @@
       font-weight: 500;
     }
 
-    .pellets-box {
-      grid-column: 1 / -1;
-      display: grid;
-      gap: 14px;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      padding: 16px;
-      border: 1px solid rgba(245, 158, 11, 0.22);
-      background: rgba(245, 158, 11, 0.08);
-      border-radius: 18px;
-    }
-
-    .pellets-preview {
-      grid-column: 1 / -1;
-      color: #fde68a;
-      font-weight: 600;
-    }
-
     .btn,
-    .tab,
     .icon-btn {
       border: 0;
       cursor: pointer;
@@ -245,11 +304,6 @@
       color: #03111f;
     }
 
-    .btn.primary:hover {
-      transform: translateY(-1px);
-      filter: brightness(1.05);
-    }
-
     .btn.secondary {
       background: rgba(34, 197, 94, 0.18);
       color: #dcfce7;
@@ -262,21 +316,22 @@
       border: 1px solid var(--line);
     }
 
-    .btn:hover,
-    .tab:hover,
-    .icon-btn:hover {
-      transform: translateY(-1px);
+    .btn.danger {
+      background: rgba(239, 68, 68, 0.14);
+      border: 1px solid rgba(239, 68, 68, 0.22);
+      color: #fecaca;
     }
 
-    .hidden {
-      display: none !important;
-    }
-
-    .stats-grid {
-      margin-top: 18px;
+    .stats-grid,
+    .summary-grid,
+    .settings-summary-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 14px;
+    }
+
+    .summary-grid.four {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
     .stat-box {
@@ -293,79 +348,16 @@
     }
 
     .stat-value {
-      font-size: 1.4rem;
+      font-size: 1.35rem;
       font-weight: 800;
       letter-spacing: -0.02em;
     }
 
-    .tabs {
-      background: rgba(8, 17, 32, 0.65);
-      padding: 6px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-    }
-
-    .tab {
-      padding: 10px 14px;
-      background: transparent;
+    .muted {
       color: var(--muted);
-      border-radius: 999px;
-      font-weight: 700;
     }
 
-    .tab.active {
-      background: rgba(56, 189, 248, 0.16);
-      color: var(--text);
-    }
-
-    .charts-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 18px;
-    }
-
-    .chart-card {
-      background: rgba(8, 17, 32, 0.58);
-      border: 1px solid var(--line);
-      border-radius: 20px;
-      padding: 18px;
-    }
-
-    .chart-card h3 {
-      margin: 0 0 12px;
-      font-size: 1rem;
-    }
-
-    .chart-meta {
-      color: var(--muted);
-      font-size: 0.82rem;
-      margin-bottom: 10px;
-    }
-
-    .chart {
-      height: 220px;
-      position: relative;
-      border-radius: 16px;
-      background:
-        linear-gradient(to bottom, rgba(148, 163, 184, 0.04), rgba(148, 163, 184, 0.01)),
-        repeating-linear-gradient(
-          to top,
-          rgba(148, 163, 184, 0.08) 0,
-          rgba(148, 163, 184, 0.08) 1px,
-          transparent 1px,
-          transparent 44px
-        );
-      overflow: hidden;
-      padding: 10px;
-    }
-
-    .chart svg {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-
-    .entries {
+    .list-stack {
       display: grid;
       gap: 14px;
     }
@@ -397,13 +389,12 @@
     }
 
     .entry-type {
-      text-transform: capitalize;
       font-weight: 700;
       color: #ccecff;
     }
 
     .entry-value {
-      font-size: 1.15rem;
+      font-size: 1.12rem;
       font-weight: 800;
       letter-spacing: -0.02em;
       margin-bottom: 6px;
@@ -425,8 +416,34 @@
       font-size: 1rem;
     }
 
-    .icon-btn:hover {
-      background: rgba(148, 163, 184, 0.16);
+    .chart-card {
+      background: rgba(8, 17, 32, 0.58);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 18px;
+    }
+
+    .chart {
+      height: 240px;
+      position: relative;
+      border-radius: 16px;
+      background:
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.04), rgba(148, 163, 184, 0.01)),
+        repeating-linear-gradient(
+          to top,
+          rgba(148, 163, 184, 0.08) 0,
+          rgba(148, 163, 184, 0.08) 1px,
+          transparent 1px,
+          transparent 44px
+        );
+      overflow: hidden;
+      padding: 10px;
+    }
+
+    .chart svg {
+      width: 100%;
+      height: 100%;
+      display: block;
     }
 
     .empty-state {
@@ -439,7 +456,7 @@
     }
 
     dialog {
-      width: min(680px, calc(100vw - 24px));
+      width: min(700px, calc(100vw - 24px));
       border: 1px solid var(--line);
       border-radius: 24px;
       background: #0d172c;
@@ -478,18 +495,24 @@
       border-color: rgba(239, 68, 68, 0.35);
     }
 
-    @media (max-width: 1080px) {
+    @media (max-width: 1100px) {
       .card,
       .card.wide {
         grid-column: 1 / -1;
       }
 
-      .charts-grid {
-        grid-template-columns: 1fr;
+      .price-grid,
+      .stats-grid,
+      .summary-grid,
+      .summary-grid.four,
+      .settings-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
-      .filter-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+      .span-4,
+      .span-6,
+      .span-8 {
+        grid-column: span 12;
       }
     }
 
@@ -506,9 +529,12 @@
       }
 
       .form-grid,
-      .filter-grid,
-      .pellets-box,
-      .stats-grid {
+      .settings-grid,
+      .price-grid,
+      .stats-grid,
+      .summary-grid,
+      .summary-grid.four,
+      .settings-summary-grid {
         grid-template-columns: 1fr;
       }
 
@@ -519,10 +545,6 @@
       .entry-actions {
         width: 100%;
         justify-content: flex-end;
-      }
-
-      .card {
-        padding: 18px;
       }
 
       .tabs {
@@ -537,170 +559,392 @@
     <header class="hero">
       <div>
         <p class="eyebrow">Verbrauch Zuhause</p>
-        <h1>Strom, Wasser und Pellets an einem Ort</h1>
+        <h1>Zählerstände, Pellets und Kosten im Blick</h1>
         <p class="hero-copy">
-          Einträge mit Datum und Uhrzeit erfassen, nachschlagen, bearbeiten, exportieren und den Verlauf sauber im Blick behalten.
+          Strom, Wasser und Pellets werden jetzt als Zählerstände erfasst. Die App berechnet automatisch die Differenz zum vorherigen Eintrag. Pellets-Nachfüllungen und Käufe laufen separat, damit Lager und Verbrauch nicht durcheinandergeraten.
         </p>
+        <p class="hero-status" id="firebaseStatus">Firebase noch nicht verbunden. Bitte unten deine Konfiguration eintragen.</p>
       </div>
 
       <div class="hero-actions">
         <button id="installBtn" class="btn secondary hidden" type="button">App installieren</button>
-        <button id="saveViewBtn" class="btn secondary" type="button">Ansicht exportieren</button>
-        <button id="exportBtn" class="btn ghost" type="button">Daten exportieren</button>
+        <button id="exportBackupBtn" class="btn ghost" type="button">Backup exportieren</button>
       </div>
     </header>
 
-    <main class="grid">
-      <section class="card glass">
-        <div class="card-head">
-          <div>
-            <p class="section-kicker">Erfassung</p>
-            <h2>Neuen Eintrag hinzufügen</h2>
+    <div class="tabs" id="mainTabs">
+      <button class="tab active" type="button" data-view="dashboardView">Übersicht</button>
+      <button class="tab" type="button" data-view="readingsView">Zählerstände</button>
+      <button class="tab" type="button" data-view="refillsView">Pellets Nachfüllen</button>
+      <button class="tab" type="button" data-view="settingsView">Einstellungen</button>
+    </div>
+
+    <section id="dashboardView" class="view active">
+      <div class="grid">
+        <section class="card wide glass">
+          <div class="card-head">
+            <div>
+              <p class="section-kicker">Momentaufnahme</p>
+              <h2>Aktuelle Stände und Kosten</h2>
+            </div>
+            <span id="syncBadge" class="badge warn">lokal / Firestore noch aus</span>
           </div>
-          <span class="badge">lokal gespeichert</span>
-        </div>
 
-        <form id="entryForm" class="form-grid">
-          <label>
-            Verbrauchsart
-            <select id="type" required>
-              <option value="strom">Strom</option>
-              <option value="wasser">Wasser</option>
-              <option value="pellets">Pellets</option>
-            </select>
-          </label>
+          <div id="dashboardStats" class="summary-grid four"></div>
+        </section>
 
-          <label>
-            Datum & Uhrzeit
-            <input id="datetime" type="datetime-local" required />
-          </label>
-
-          <label>
-            Wert
-            <input id="value" type="number" step="0.01" min="0" required />
-            <small id="valueHint">z. B. 4.8 kWh</small>
-          </label>
-
-          <div id="pelletsFields" class="pellets-box hidden">
-            <label>
-              Anzahl Säcke
-              <input id="bags" type="number" step="1" min="1" />
-            </label>
-            <label>
-              Kilogramm pro Sack
-              <input id="kgPerBag" type="number" step="0.1" min="0.1" />
-            </label>
-            <div class="pellets-preview">
-              Gesamtgewicht: <strong id="pelletsTotal">0 kg</strong>
+        <section class="card wide">
+          <div class="card-head">
+            <div>
+              <p class="section-kicker">Verbrauch</p>
+              <h2>Differenzen aus den letzten Zählerständen</h2>
             </div>
           </div>
 
-          <label>
-            Notiz
-            <input id="note" type="text" maxlength="120" placeholder="optional" />
-          </label>
-
-          <div class="form-actions">
-            <button type="submit" class="btn primary">Speichern</button>
-            <button type="reset" class="btn ghost">Leeren</button>
+          <div class="split-grid">
+            <article class="chart-card span-4">
+              <h3>Strom</h3>
+              <div class="muted" id="chartMetaStrom"></div>
+              <div id="chart-strom" class="chart"></div>
+            </article>
+            <article class="chart-card span-4">
+              <h3>Wasser</h3>
+              <div class="muted" id="chartMetaWasser"></div>
+              <div id="chart-wasser" class="chart"></div>
+            </article>
+            <article class="chart-card span-4">
+              <h3>Pellets Verbrauch</h3>
+              <div class="muted" id="chartMetaPellets"></div>
+              <div id="chart-pellets" class="chart"></div>
+            </article>
           </div>
-        </form>
-      </section>
+        </section>
 
-      <section class="card">
-        <div class="card-head">
-          <div>
-            <p class="section-kicker">Nachschlagen</p>
-            <h2>Daten suchen</h2>
+        <section class="card span-6">
+          <div class="card-head">
+            <div>
+              <p class="section-kicker">Letzte Differenzen</p>
+              <h2>Was seit dem vorherigen Stand verbraucht wurde</h2>
+            </div>
           </div>
-        </div>
+          <div id="consumptionHistory" class="list-stack"></div>
+        </section>
 
-        <form id="filterForm" class="filter-grid">
-          <label>
-            Art
-            <select id="filterType">
-              <option value="alle">Alle</option>
-              <option value="strom">Strom</option>
-              <option value="wasser">Wasser</option>
-              <option value="pellets">Pellets</option>
-            </select>
-          </label>
-
-          <label>
-            Von
-            <input id="fromDate" type="datetime-local" />
-          </label>
-
-          <label>
-            Bis
-            <input id="toDate" type="datetime-local" />
-          </label>
-
-          <label>
-            Mindestwert
-            <input id="minValue" type="number" step="0.01" min="0" placeholder="optional" />
-          </label>
-
-          <label>
-            Höchstwert
-            <input id="maxValue" type="number" step="0.01" min="0" placeholder="optional" />
-          </label>
-
-          <div class="form-actions">
-            <button type="submit" class="btn primary">Suchen</button>
-            <button type="button" id="resetFilterBtn" class="btn ghost">Zurücksetzen</button>
+        <section class="card span-6">
+          <div class="card-head">
+            <div>
+              <p class="section-kicker">Pellets Lager</p>
+              <h2>Nachfüllungen und Käufe</h2>
+            </div>
           </div>
-        </form>
+          <div id="pelletSummary" class="settings-summary-grid"></div>
+          <div id="pelletActivity" class="list-stack" style="margin-top: 14px;"></div>
+        </section>
+      </div>
+    </section>
 
-        <div id="stats" class="stats-grid"></div>
-      </section>
-
-      <section class="card wide">
-        <div class="card-head">
-          <div>
-            <p class="section-kicker">Verlauf</p>
-            <h2>Grafische Darstellung</h2>
+    <section id="readingsView" class="view">
+      <div class="grid">
+        <section class="card glass">
+          <div class="card-head">
+            <div>
+              <p class="section-kicker">Erfassung</p>
+              <h2>Neuen Zählerstand speichern</h2>
+            </div>
+            <span class="badge">Differenz wird berechnet</span>
           </div>
 
-          <div class="tabs" id="chartTabs">
-            <button type="button" class="tab active" data-range="7">7 Tage</button>
-            <button type="button" class="tab" data-range="30">30 Tage</button>
-            <button type="button" class="tab" data-range="365">12 Monate</button>
-            <button type="button" class="tab" data-range="0">Alles</button>
+          <form id="readingForm" class="form-grid">
+            <label>
+              Bereich
+              <select id="readingType" required>
+                <option value="strom">Strom</option>
+                <option value="wasser">Wasser</option>
+                <option value="pellets">Pellets Verbrauch</option>
+              </select>
+            </label>
+
+            <label>
+              Datum & Uhrzeit
+              <input id="readingDatetime" type="datetime-local" required />
+            </label>
+
+            <label>
+              Aktueller Zählerstand
+              <input id="readingValue" type="number" step="0.01" min="0" required />
+              <small id="readingHint">Bei Strom zum Beispiel aktueller kWh-Stand des Zählers.</small>
+            </label>
+
+            <label>
+              Notiz
+              <input id="readingNote" type="text" maxlength="160" placeholder="optional" />
+            </label>
+
+            <div class="form-actions span-12">
+              <button type="submit" class="btn primary">Zählerstand speichern</button>
+              <button type="reset" class="btn ghost">Leeren</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <div>
+              <p class="section-kicker">Hinweis</p>
+              <h2>So wird gerechnet</h2>
+            </div>
           </div>
-        </div>
-
-        <div class="charts-grid">
-          <article class="chart-card">
-            <h3>Strom</h3>
-            <div class="chart-meta" id="meta-strom"></div>
-            <div id="chart-strom" class="chart"></div>
-          </article>
-          <article class="chart-card">
-            <h3>Wasser</h3>
-            <div class="chart-meta" id="meta-wasser"></div>
-            <div id="chart-wasser" class="chart"></div>
-          </article>
-          <article class="chart-card">
-            <h3>Pellets</h3>
-            <div class="chart-meta" id="meta-pellets"></div>
-            <div id="chart-pellets" class="chart"></div>
-          </article>
-        </div>
-      </section>
-
-      <section class="card wide">
-        <div class="card-head">
-          <div>
-            <p class="section-kicker">Einträge</p>
-            <h2>Gespeicherte Werte</h2>
+          <div class="list-stack">
+            <div class="stat-box">
+              <div class="stat-label">Beispiel Strom</div>
+              <div class="stat-value">100 → 200 = 100 kWh</div>
+              <div class="muted">Die App nimmt immer den vorherigen Stand derselben Kategorie.</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Wichtig</div>
+              <div class="stat-value">Zählerstände steigen</div>
+              <div class="muted">Wenn ein neuer Stand kleiner ist als der vorherige, markiert die App das als ungewöhnlich.</div>
+            </div>
           </div>
-          <span id="resultCount" class="badge">0 Einträge</span>
-        </div>
+        </section>
 
-        <div id="entriesContainer" class="entries"></div>
-      </section>
-    </main>
+        <section class="card wide">
+          <div class="card-head">
+            <div>
+              <p class="section-kicker">Historie</p>
+              <h2>Zählerstände und berechnete Differenzen</h2>
+            </div>
+          </div>
+          <div id="readingsList" class="list-stack"></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="refillsView" class="view">
+      <div class="grid">
+        <section class="card glass">
+          <div class="card-head">
+            <div>
+              <p class="section-kicker">Pellets Nachfüllung</p>
+              <h2>Lager separat auffüllen</h2>
+            </div>
+            <span class="badge ok">unabhängig vom Verbrauch</span>
+          </div>
+
+          <form id="refillForm" class="form-grid">
+            <label>
+              Datum & Uhrzeit
+              <input id="refillDatetime" type="datetime-local" required />
+            </label>
+
+            <label>
+              Anzahl Säcke
+              <input id="refillBags" type="number" step="1" min="1" required />
+            </label>
+
+            <label>
+              Kilogramm pro Sack
+              <input id="refillKgPerBag" type="number" step="0.1" min="0.1" required />
+            </label>
+
+            <label>
+              Gesamtgewicht
+              <input id="refillTotalKg" type="number" step="0.01" min="0" readonly />
+              <small>Wird automatisch berechnet.</small>
+            </label>
+
+            <label class="span-12">
+              Notiz
+              <input id="refillNote" type="text" maxlength="160" placeholder="optional" />
+            </label>
+
+            <div class="form-actions span-12">
+              <button type="submit" class="btn primary">Nachfüllung speichern</button>
+              <button type="reset" class="btn ghost">Leeren</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <div>
+              <p class="section-kicker">Lagerblick</p>
+              <h2>Pellets Übersicht</h2>
+            </div>
+          </div>
+          <div id="pelletInventoryStats" class="stats-grid"></div>
+        </section>
+
+        <section class="card wide">
+          <div class="card-head">
+            <div>
+              <p class="section-kicker">Historie</p>
+              <h2>Nachfüllungen</h2>
+            </div>
+          </div>
+          <div id="refillsList" class="list-stack"></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="settingsView" class="view">
+      <div class="grid">
+        <section class="card glass wide">
+          <div class="card-head">
+            <div>
+              <p class="section-kicker">Firebase</p>
+              <h2>Firestore verbinden</h2>
+            </div>
+            <span class="badge warn">einmalig pro Haushalt</span>
+          </div>
+
+          <form id="firebaseForm" class="settings-grid">
+            <label>
+              API Key
+              <input id="fbApiKey" type="text" placeholder="AIza..." />
+            </label>
+            <label>
+              Auth Domain
+              <input id="fbAuthDomain" type="text" placeholder="dein-projekt.firebaseapp.com" />
+            </label>
+            <label>
+              Project ID
+              <input id="fbProjectId" type="text" placeholder="dein-projekt" />
+            </label>
+            <label>
+              Storage Bucket
+              <input id="fbStorageBucket" type="text" placeholder="dein-projekt.appspot.com" />
+            </label>
+            <label>
+              Messaging Sender ID
+              <input id="fbMessagingSenderId" type="text" placeholder="123456789" />
+            </label>
+            <label>
+              App ID
+              <input id="fbAppId" type="text" placeholder="1:123456789:web:abcdef" />
+            </label>
+            <label>
+              Haushalt / Datenraum
+              <input id="householdId" type="text" placeholder="z. B. zuhause-haupt" />
+              <small>Alle Geräte mit derselben ID sehen dieselben Daten.</small>
+            </label>
+            <label>
+              Optional: Measurement ID
+              <input id="fbMeasurementId" type="text" placeholder="G-XXXXXXX" />
+            </label>
+            <div class="form-actions span-12">
+              <button type="submit" class="btn primary">Firebase speichern & verbinden</button>
+              <button type="button" class="btn ghost" id="disconnectFirebaseBtn">Nur lokale Daten nutzen</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card wide">
+          <div class="card-head">
+            <div>
+              <p class="section-kicker">Preise & Grundpreise</p>
+              <h2>Kostenbasis hinterlegen</h2>
+            </div>
+          </div>
+
+          <form id="settingsForm" class="price-grid">
+            <label>
+              Strom Grundpreis pro Monat (€)
+              <input id="priceStromBase" type="number" step="0.01" min="0" />
+            </label>
+            <label>
+              Strom Preis pro kWh (€)
+              <input id="priceStromUnit" type="number" step="0.0001" min="0" />
+            </label>
+            <label>
+              Wasser Grundpreis pro Monat (€)
+              <input id="priceWasserBase" type="number" step="0.01" min="0" />
+            </label>
+            <label>
+              Wasser Preis pro m³ (€)
+              <input id="priceWasserUnit" type="number" step="0.0001" min="0" />
+            </label>
+            <label>
+              Pellets Grundpreis pro Monat (€)
+              <input id="pricePelletsBase" type="number" step="0.01" min="0" />
+            </label>
+            <label>
+              Pellets Preis pro kg (€)
+              <input id="pricePelletsUnit" type="number" step="0.0001" min="0" />
+            </label>
+            <div class="form-actions span-12">
+              <button type="submit" class="btn primary">Preise speichern</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card glass">
+          <div class="card-head">
+            <div>
+              <p class="section-kicker">Pellets Einkauf</p>
+              <h2>Kauf erfassen</h2>
+            </div>
+          </div>
+
+          <form id="purchaseForm" class="form-grid">
+            <label>
+              Kaufdatum
+              <input id="purchaseDatetime" type="datetime-local" required />
+            </label>
+
+            <label>
+              Anzahl Säcke
+              <input id="purchaseBags" type="number" step="1" min="1" required />
+            </label>
+
+            <label>
+              Kilogramm pro Sack
+              <input id="purchaseKgPerBag" type="number" step="0.1" min="0.1" required />
+            </label>
+
+            <label>
+              Gesamtpreis (€)
+              <input id="purchasePrice" type="number" step="0.01" min="0" required />
+            </label>
+
+            <label>
+              Gesamtgewicht
+              <input id="purchaseTotalKg" type="number" step="0.01" min="0" readonly />
+            </label>
+
+            <label>
+              Preis pro kg
+              <input id="purchasePricePerKg" type="number" step="0.0001" min="0" readonly />
+            </label>
+
+            <div class="form-actions span-12">
+              <button type="submit" class="btn primary">Kauf speichern</button>
+              <button type="reset" class="btn ghost">Leeren</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <div>
+              <p class="section-kicker">Preisspiegel</p>
+              <h2>Gespeicherte Basiswerte</h2>
+            </div>
+          </div>
+          <div id="settingsSummary" class="settings-summary-grid"></div>
+        </section>
+
+        <section class="card wide">
+          <div class="card-head">
+            <div>
+              <p class="section-kicker">Pellets Käufe</p>
+              <h2>Einkaufshistorie</h2>
+            </div>
+          </div>
+          <div id="purchaseList" class="list-stack"></div>
+        </section>
+      </div>
+    </section>
   </div>
 
   <template id="entryTemplate">
@@ -714,231 +958,239 @@
         <div class="entry-note"></div>
       </div>
       <div class="entry-actions">
-        <button class="icon-btn edit-btn" title="Bearbeiten" type="button">✏️</button>
         <button class="icon-btn delete-btn" title="Löschen" type="button">🗑️</button>
       </div>
     </article>
   </template>
 
-  <dialog id="editDialog">
-    <form method="dialog" id="editForm" class="dialog-form">
-      <div class="card-head">
-        <div>
-          <p class="section-kicker">Bearbeiten</p>
-          <h2>Eintrag anpassen</h2>
-        </div>
-      </div>
+  <script type="module">
+    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import {
+      getFirestore,
+      doc,
+      setDoc,
+      getDoc,
+      collection,
+      addDoc,
+      deleteDoc,
+      onSnapshot,
+      orderBy,
+      query,
+      serverTimestamp,
+      Timestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-      <input type="hidden" id="editId" />
+    const LOCAL_KEYS = {
+      firebaseConfig: "verbrauch-firebase-config-v1",
+      householdId: "verbrauch-household-id-v1",
+      localData: "verbrauch-local-data-v3"
+    };
 
-      <label>
-        Verbrauchsart
-        <select id="editType" required>
-          <option value="strom">Strom</option>
-          <option value="wasser">Wasser</option>
-          <option value="pellets">Pellets</option>
-        </select>
-      </label>
-
-      <label>
-        Datum & Uhrzeit
-        <input id="editDatetime" type="datetime-local" required />
-      </label>
-
-      <label>
-        Wert
-        <input id="editValue" type="number" step="0.01" min="0" required />
-      </label>
-
-      <div id="editPelletsFields" class="pellets-box hidden">
-        <label>
-          Anzahl Säcke
-          <input id="editBags" type="number" step="1" min="1" />
-        </label>
-        <label>
-          Kilogramm pro Sack
-          <input id="editKgPerBag" type="number" step="0.1" min="0.1" />
-        </label>
-        <div class="pellets-preview">
-          Gesamtgewicht: <strong id="editPelletsTotal">0 kg</strong>
-        </div>
-      </div>
-
-      <label>
-        Notiz
-        <input id="editNote" type="text" maxlength="120" />
-      </label>
-
-      <div class="form-actions">
-        <button value="cancel" class="btn ghost" type="button" id="cancelEditBtn">Abbrechen</button>
-        <button value="default" class="btn primary" type="submit">Speichern</button>
-      </div>
-    </form>
-  </dialog>
-
-  <script>
-    const STORAGE_KEY = "verbrauch-zuhause-entries-v2";
+    const defaultSettings = {
+      strom: { basePrice: 0, unitPrice: 0 },
+      wasser: { basePrice: 0, unitPrice: 0 },
+      pellets: { basePrice: 0, unitPrice: 0 }
+    };
 
     const typeConfig = {
-      strom: { label: "Strom", unit: "kWh", color: "#38bdf8", hint: "z. B. 4.8 kWh" },
-      wasser: { label: "Wasser", unit: "m³", color: "#22c55e", hint: "z. B. 1.6 m³" },
-      pellets: { label: "Pellets", unit: "kg", color: "#f59e0b", hint: "Gesamtgewicht in kg oder Säcke unten eingeben" }
+      strom: { label: "Strom", unit: "kWh", color: "#38bdf8", inputHint: "Aktueller Stromzählerstand in kWh" },
+      wasser: { label: "Wasser", unit: "m³", color: "#22c55e", inputHint: "Aktueller Wasserzählerstand in m³" },
+      pellets: { label: "Pellets Verbrauch", unit: "kg", color: "#f59e0b", inputHint: "Aktueller Pellets-Verbrauchszählerstand in kg" }
     };
 
     const state = {
-      entries: loadEntries(),
-      filteredEntries: [],
-      activeRangeDays: 7
+      readings: [],
+      refills: [],
+      purchases: [],
+      settings: structuredClone(defaultSettings),
+      firebaseConfig: loadJSON(LOCAL_KEYS.firebaseConfig, null),
+      householdId: localStorage.getItem(LOCAL_KEYS.householdId) || "",
+      firebaseEnabled: false,
+      app: null,
+      db: null,
+      unsubscribers: []
     };
 
     let deferredPrompt = null;
 
     const els = {
-      entryForm: document.getElementById("entryForm"),
-      type: document.getElementById("type"),
-      datetime: document.getElementById("datetime"),
-      value: document.getElementById("value"),
-      valueHint: document.getElementById("valueHint"),
-      note: document.getElementById("note"),
-      bags: document.getElementById("bags"),
-      kgPerBag: document.getElementById("kgPerBag"),
-      pelletsFields: document.getElementById("pelletsFields"),
-      pelletsTotal: document.getElementById("pelletsTotal"),
+      mainTabs: document.getElementById("mainTabs"),
+      views: document.querySelectorAll(".view"),
 
-      filterForm: document.getElementById("filterForm"),
-      filterType: document.getElementById("filterType"),
-      fromDate: document.getElementById("fromDate"),
-      toDate: document.getElementById("toDate"),
-      minValue: document.getElementById("minValue"),
-      maxValue: document.getElementById("maxValue"),
-      resetFilterBtn: document.getElementById("resetFilterBtn"),
-      stats: document.getElementById("stats"),
+      installBtn: document.getElementById("installBtn"),
+      exportBackupBtn: document.getElementById("exportBackupBtn"),
+      firebaseStatus: document.getElementById("firebaseStatus"),
+      syncBadge: document.getElementById("syncBadge"),
 
-      entriesContainer: document.getElementById("entriesContainer"),
-      resultCount: document.getElementById("resultCount"),
-      entryTemplate: document.getElementById("entryTemplate"),
+      readingForm: document.getElementById("readingForm"),
+      readingType: document.getElementById("readingType"),
+      readingDatetime: document.getElementById("readingDatetime"),
+      readingValue: document.getElementById("readingValue"),
+      readingHint: document.getElementById("readingHint"),
+      readingNote: document.getElementById("readingNote"),
+      readingsList: document.getElementById("readingsList"),
 
-      chartTabs: document.getElementById("chartTabs"),
+      refillForm: document.getElementById("refillForm"),
+      refillDatetime: document.getElementById("refillDatetime"),
+      refillBags: document.getElementById("refillBags"),
+      refillKgPerBag: document.getElementById("refillKgPerBag"),
+      refillTotalKg: document.getElementById("refillTotalKg"),
+      refillNote: document.getElementById("refillNote"),
+      refillsList: document.getElementById("refillsList"),
+      pelletInventoryStats: document.getElementById("pelletInventoryStats"),
+
+      settingsForm: document.getElementById("settingsForm"),
+      priceStromBase: document.getElementById("priceStromBase"),
+      priceStromUnit: document.getElementById("priceStromUnit"),
+      priceWasserBase: document.getElementById("priceWasserBase"),
+      priceWasserUnit: document.getElementById("priceWasserUnit"),
+      pricePelletsBase: document.getElementById("pricePelletsBase"),
+      pricePelletsUnit: document.getElementById("pricePelletsUnit"),
+      settingsSummary: document.getElementById("settingsSummary"),
+
+      purchaseForm: document.getElementById("purchaseForm"),
+      purchaseDatetime: document.getElementById("purchaseDatetime"),
+      purchaseBags: document.getElementById("purchaseBags"),
+      purchaseKgPerBag: document.getElementById("purchaseKgPerBag"),
+      purchasePrice: document.getElementById("purchasePrice"),
+      purchaseTotalKg: document.getElementById("purchaseTotalKg"),
+      purchasePricePerKg: document.getElementById("purchasePricePerKg"),
+      purchaseList: document.getElementById("purchaseList"),
+
+      firebaseForm: document.getElementById("firebaseForm"),
+      fbApiKey: document.getElementById("fbApiKey"),
+      fbAuthDomain: document.getElementById("fbAuthDomain"),
+      fbProjectId: document.getElementById("fbProjectId"),
+      fbStorageBucket: document.getElementById("fbStorageBucket"),
+      fbMessagingSenderId: document.getElementById("fbMessagingSenderId"),
+      fbAppId: document.getElementById("fbAppId"),
+      fbMeasurementId: document.getElementById("fbMeasurementId"),
+      householdId: document.getElementById("householdId"),
+      disconnectFirebaseBtn: document.getElementById("disconnectFirebaseBtn"),
+
+      dashboardStats: document.getElementById("dashboardStats"),
+      consumptionHistory: document.getElementById("consumptionHistory"),
+      pelletSummary: document.getElementById("pelletSummary"),
+      pelletActivity: document.getElementById("pelletActivity"),
       chartStrom: document.getElementById("chart-strom"),
       chartWasser: document.getElementById("chart-wasser"),
       chartPellets: document.getElementById("chart-pellets"),
-      metaStrom: document.getElementById("meta-strom"),
-      metaWasser: document.getElementById("meta-wasser"),
-      metaPellets: document.getElementById("meta-pellets"),
+      chartMetaStrom: document.getElementById("chartMetaStrom"),
+      chartMetaWasser: document.getElementById("chartMetaWasser"),
+      chartMetaPellets: document.getElementById("chartMetaPellets"),
 
-      exportBtn: document.getElementById("exportBtn"),
-      saveViewBtn: document.getElementById("saveViewBtn"),
-      installBtn: document.getElementById("installBtn"),
-
-      editDialog: document.getElementById("editDialog"),
-      editForm: document.getElementById("editForm"),
-      editId: document.getElementById("editId"),
-      editType: document.getElementById("editType"),
-      editDatetime: document.getElementById("editDatetime"),
-      editValue: document.getElementById("editValue"),
-      editNote: document.getElementById("editNote"),
-      editBags: document.getElementById("editBags"),
-      editKgPerBag: document.getElementById("editKgPerBag"),
-      editPelletsFields: document.getElementById("editPelletsFields"),
-      editPelletsTotal: document.getElementById("editPelletsTotal"),
-      cancelEditBtn: document.getElementById("cancelEditBtn")
+      entryTemplate: document.getElementById("entryTemplate")
     };
 
     init();
 
-    function init() {
-      setDefaultDatetime();
-      syncTypeUI();
-      applyFilters();
-      renderAll();
+    async function init() {
+      hydrateLocalForms();
+      setDefaultDatetimes();
+      syncReadingHint();
+      restoreLocalData();
       registerEvents();
       registerInstallHandling();
       registerServiceWorker();
+      renderAll();
+
+      if (state.firebaseConfig && state.householdId) {
+        await connectFirebase(state.firebaseConfig, state.householdId, false);
+      } else {
+        updateFirebaseStatus();
+      }
+    }
+
+    function hydrateLocalForms() {
+      const cfg = state.firebaseConfig || {};
+      els.fbApiKey.value = cfg.apiKey || "";
+      els.fbAuthDomain.value = cfg.authDomain || "";
+      els.fbProjectId.value = cfg.projectId || "";
+      els.fbStorageBucket.value = cfg.storageBucket || "";
+      els.fbMessagingSenderId.value = cfg.messagingSenderId || "";
+      els.fbAppId.value = cfg.appId || "";
+      els.fbMeasurementId.value = cfg.measurementId || "";
+      els.householdId.value = state.householdId || "";
+    }
+
+    function setDefaultDatetimes() {
+      const now = toDatetimeLocal(new Date());
+      els.readingDatetime.value = now;
+      els.refillDatetime.value = now;
+      els.purchaseDatetime.value = now;
+    }
+
+    function restoreLocalData() {
+      const local = loadJSON(LOCAL_KEYS.localData, null);
+      if (!local) return;
+      state.readings = normalizeDateArray(local.readings || []);
+      state.refills = normalizeDateArray(local.refills || []);
+      state.purchases = normalizeDateArray(local.purchases || []);
+      state.settings = mergeSettings(local.settings || defaultSettings);
+      fillSettingsForm();
     }
 
     function registerEvents() {
-      els.type.addEventListener("change", syncTypeUI);
-      els.bags.addEventListener("input", updatePelletsPreview);
-      els.kgPerBag.addEventListener("input", updatePelletsPreview);
+      els.mainTabs.addEventListener("click", handleTabClick);
+      els.exportBackupBtn.addEventListener("click", exportBackup);
 
-      els.entryForm.addEventListener("submit", handleAddEntry);
-      els.entryForm.addEventListener("reset", () => {
-        setTimeout(() => {
-          setDefaultDatetime();
-          clearPelletsInputs();
-          syncTypeUI();
-          updatePelletsPreview();
-        }, 0);
-      });
+      els.readingType.addEventListener("change", syncReadingHint);
+      els.readingForm.addEventListener("submit", handleReadingSubmit);
+      els.readingForm.addEventListener("reset", () => setTimeout(() => {
+        els.readingType.value = "strom";
+        syncReadingHint();
+        els.readingDatetime.value = toDatetimeLocal(new Date());
+      }, 0));
 
-      els.filterForm.addEventListener("submit", (event) => {
-        event.preventDefault();
-        applyFilters();
-        renderFilteredSection();
-      });
+      els.refillBags.addEventListener("input", syncRefillTotal);
+      els.refillKgPerBag.addEventListener("input", syncRefillTotal);
+      els.refillForm.addEventListener("submit", handleRefillSubmit);
+      els.refillForm.addEventListener("reset", () => setTimeout(() => {
+        els.refillDatetime.value = toDatetimeLocal(new Date());
+        syncRefillTotal();
+      }, 0));
 
-      els.resetFilterBtn.addEventListener("click", () => {
-        els.filterForm.reset();
-        applyFilters();
-        renderFilteredSection();
-      });
+      els.purchaseBags.addEventListener("input", syncPurchaseTotals);
+      els.purchaseKgPerBag.addEventListener("input", syncPurchaseTotals);
+      els.purchasePrice.addEventListener("input", syncPurchaseTotals);
+      els.purchaseForm.addEventListener("submit", handlePurchaseSubmit);
+      els.purchaseForm.addEventListener("reset", () => setTimeout(() => {
+        els.purchaseDatetime.value = toDatetimeLocal(new Date());
+        syncPurchaseTotals();
+      }, 0));
 
-      els.entriesContainer.addEventListener("click", handleEntryActions);
-
-      els.chartTabs.addEventListener("click", (event) => {
-        const button = event.target.closest(".tab");
-        if (!button) return;
-
-        state.activeRangeDays = Number(button.dataset.range);
-        [...els.chartTabs.querySelectorAll(".tab")].forEach((tab) => {
-          tab.classList.toggle("active", tab === button);
-        });
-
-        renderCharts();
-      });
-
-      if (els.exportBtn) els.exportBtn.addEventListener("click", exportData);
-      if (els.saveViewBtn) els.saveViewBtn.addEventListener("click", exportHtmlSnapshot);
-
-      els.editType.addEventListener("change", syncEditTypeUI);
-      els.editBags.addEventListener("input", updateEditPelletsPreview);
-      els.editKgPerBag.addEventListener("input", updateEditPelletsPreview);
-      els.editForm.addEventListener("submit", handleSaveEdit);
-      els.cancelEditBtn.addEventListener("click", () => els.editDialog.close());
+      els.settingsForm.addEventListener("submit", handleSettingsSubmit);
+      els.firebaseForm.addEventListener("submit", handleFirebaseSubmit);
+      els.disconnectFirebaseBtn.addEventListener("click", disconnectFirebase);
     }
 
     function registerInstallHandling() {
       window.addEventListener("beforeinstallprompt", (event) => {
         event.preventDefault();
         deferredPrompt = event;
-        if (els.installBtn) {
-          els.installBtn.classList.remove("hidden");
+        els.installBtn.classList.remove("hidden");
+      });
+
+      els.installBtn.addEventListener("click", async () => {
+        if (!deferredPrompt) {
+          showToast("Im Browser-Menü installieren oder zum Startbildschirm hinzufügen.", "error");
+          return;
+        }
+
+        deferredPrompt.prompt();
+        const choiceResult = await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        els.installBtn.classList.add("hidden");
+
+        if (choiceResult.outcome === "accepted") {
+          showToast("App-Installation gestartet.", "success");
+        } else {
+          showToast("Installation abgebrochen.", "error");
         }
       });
 
-      if (els.installBtn) {
-        els.installBtn.addEventListener("click", async () => {
-          if (!deferredPrompt) {
-            showToast("Installation im Browser-Menü starten.", "error");
-            return;
-          }
-
-          deferredPrompt.prompt();
-          const choiceResult = await deferredPrompt.userChoice;
-
-          deferredPrompt = null;
-          els.installBtn.classList.add("hidden");
-
-          if (choiceResult.outcome === "accepted") {
-            showToast("App-Installation gestartet.", "success");
-          } else {
-            showToast("Installation abgebrochen.", "error");
-          }
-        });
-      }
-
       window.addEventListener("appinstalled", () => {
-        if (els.installBtn) els.installBtn.classList.add("hidden");
+        els.installBtn.classList.add("hidden");
         deferredPrompt = null;
         showToast("App wurde installiert.", "success");
       });
@@ -954,306 +1206,614 @@
       }
     }
 
-    function handleAddEntry(event) {
-      event.preventDefault();
-
-      const entry = buildEntryFromForm({
-        type: els.type.value,
-        datetime: els.datetime.value,
-        value: els.value.value,
-        note: els.note.value.trim(),
-        bags: els.bags.value,
-        kgPerBag: els.kgPerBag.value
-      });
-
-      if (!entry) return;
-
-      state.entries.unshift(entry);
-      saveEntries();
-      applyFilters();
-      renderAll();
-
-      els.entryForm.reset();
-      setDefaultDatetime();
-      clearPelletsInputs();
-      syncTypeUI();
-      updatePelletsPreview();
-
-      showToast("Eintrag gespeichert.", "success");
-    }
-
-    function handleEntryActions(event) {
-      const button = event.target.closest("button");
+    function handleTabClick(event) {
+      const button = event.target.closest(".tab");
       if (!button) return;
+      const targetView = button.dataset.view;
 
-      const item = event.target.closest(".entry-item");
-      if (!item) return;
-
-      const id = item.dataset.id;
-      const entry = state.entries.find((e) => e.id === id);
-      if (!entry) return;
-
-      if (button.classList.contains("delete-btn")) {
-        deleteEntry(id);
-        return;
-      }
-
-      if (button.classList.contains("edit-btn")) {
-        openEditDialog(entry);
-      }
+      document.querySelectorAll(".tab").forEach((tab) => tab.classList.toggle("active", tab === button));
+      els.views.forEach((view) => view.classList.toggle("active", view.id === targetView));
     }
 
-    function deleteEntry(id) {
-      const entry = state.entries.find((e) => e.id === id);
-      if (!entry) return;
-
-      const ok = window.confirm(`Eintrag "${typeConfig[entry.type].label}" vom ${formatDateTime(entry.datetime)} löschen?`);
-      if (!ok) return;
-
-      state.entries = state.entries.filter((e) => e.id !== id);
-      saveEntries();
-      applyFilters();
-      renderAll();
-      showToast("Eintrag gelöscht.", "success");
+    function syncReadingHint() {
+      const type = els.readingType.value;
+      els.readingHint.textContent = typeConfig[type].inputHint;
     }
 
-    function openEditDialog(entry) {
-      els.editId.value = entry.id;
-      els.editType.value = entry.type;
-      els.editDatetime.value = toDatetimeLocal(entry.datetime);
-      els.editValue.value = entry.value;
-      els.editNote.value = entry.note || "";
-      els.editBags.value = entry.bags ?? "";
-      els.editKgPerBag.value = entry.kgPerBag ?? "";
-
-      syncEditTypeUI();
-      updateEditPelletsPreview();
-      els.editDialog.showModal();
+    function syncRefillTotal() {
+      const bags = toNumber(els.refillBags.value);
+      const kgPerBag = toNumber(els.refillKgPerBag.value);
+      const total = round2((bags || 0) * (kgPerBag || 0));
+      els.refillTotalKg.value = total || "";
     }
 
-    function handleSaveEdit(event) {
+    function syncPurchaseTotals() {
+      const bags = toNumber(els.purchaseBags.value);
+      const kgPerBag = toNumber(els.purchaseKgPerBag.value);
+      const totalPrice = toNumber(els.purchasePrice.value);
+      const totalKg = round2((bags || 0) * (kgPerBag || 0));
+      const pricePerKg = totalKg > 0 ? round4(totalPrice / totalKg) : 0;
+      els.purchaseTotalKg.value = totalKg || "";
+      els.purchasePricePerKg.value = pricePerKg || "";
+    }
+
+    async function handleReadingSubmit(event) {
       event.preventDefault();
 
-      const id = els.editId.value;
-      const index = state.entries.findIndex((e) => e.id === id);
-      if (index === -1) {
-        showToast("Eintrag nicht gefunden.", "error");
+      const payload = {
+        type: els.readingType.value,
+        value: toNumber(els.readingValue.value),
+        note: els.readingNote.value.trim(),
+        date: new Date(els.readingDatetime.value).toISOString(),
+        createdAt: new Date().toISOString()
+      };
+
+      if (!payload.date || !Number.isFinite(payload.value) || payload.value < 0) {
+        showToast("Bitte einen gültigen Zählerstand eingeben.", "error");
         return;
       }
 
-      const updated = buildEntryFromForm({
-        type: els.editType.value,
-        datetime: els.editDatetime.value,
-        value: els.editValue.value,
-        note: els.editNote.value.trim(),
-        bags: els.editBags.value,
-        kgPerBag: els.editKgPerBag.value
-      });
+      const previous = getPreviousReading(payload.type, payload.date);
+      if (previous && payload.value < previous.value) {
+        const proceed = confirm("Der neue Zählerstand ist kleiner als der vorherige. Trotzdem speichern?");
+        if (!proceed) return;
+      }
 
-      if (!updated) return;
-
-      updated.id = id;
-      updated.createdAt = state.entries[index].createdAt || new Date().toISOString();
-      state.entries[index] = updated;
-
-      saveEntries();
-      applyFilters();
-      renderAll();
-      els.editDialog.close();
-      showToast("Eintrag aktualisiert.", "success");
+      await saveRecord("readings", payload);
+      els.readingForm.reset();
+      els.readingType.value = "strom";
+      syncReadingHint();
+      els.readingDatetime.value = toDatetimeLocal(new Date());
+      showToast("Zählerstand gespeichert.", "success");
     }
 
-    function buildEntryFromForm({ type, datetime, value, note, bags, kgPerBag }) {
-      const timestamp = new Date(datetime);
+    async function handleRefillSubmit(event) {
+      event.preventDefault();
 
-      if (!datetime || Number.isNaN(timestamp.getTime())) {
-        showToast("Bitte ein gültiges Datum eingeben.", "error");
-        return null;
+      const bags = toNumber(els.refillBags.value);
+      const kgPerBag = toNumber(els.refillKgPerBag.value);
+      const totalKg = round2(bags * kgPerBag);
+
+      if (!Number.isFinite(bags) || !Number.isFinite(kgPerBag) || bags <= 0 || kgPerBag <= 0) {
+        showToast("Bitte Säcke und kg pro Sack korrekt eingeben.", "error");
+        return;
       }
 
-      let numericValue = parseFloat(value);
-      let numericBags = bags ? parseFloat(bags) : null;
-      let numericKgPerBag = kgPerBag ? parseFloat(kgPerBag) : null;
-
-      if (type === "pellets" && Number.isFinite(numericBags) && Number.isFinite(numericKgPerBag)) {
-        numericValue = round2(numericBags * numericKgPerBag);
-      }
-
-      if (!Number.isFinite(numericValue) || numericValue < 0) {
-        showToast("Bitte einen gültigen Wert eingeben.", "error");
-        return null;
-      }
-
-      if (type === "pellets") {
-        const onlyOnePelletFieldFilled =
-          (Number.isFinite(numericBags) && !Number.isFinite(numericKgPerBag)) ||
-          (!Number.isFinite(numericBags) && Number.isFinite(numericKgPerBag));
-
-        if (onlyOnePelletFieldFilled) {
-          showToast("Bei Pellets bitte entweder nur den Wert eingeben oder Säcke und kg pro Sack vollständig ausfüllen.", "error");
-          return null;
-        }
-      } else {
-        numericBags = null;
-        numericKgPerBag = null;
-      }
-
-      return {
-        id: generateId(),
-        type,
-        datetime: timestamp.toISOString(),
-        value: round2(numericValue),
-        note: note || "",
-        bags: numericBags,
-        kgPerBag: numericKgPerBag,
+      const payload = {
+        bags,
+        kgPerBag,
+        totalKg,
+        note: els.refillNote.value.trim(),
+        date: new Date(els.refillDatetime.value).toISOString(),
         createdAt: new Date().toISOString()
+      };
+
+      await saveRecord("refills", payload);
+      els.refillForm.reset();
+      els.refillDatetime.value = toDatetimeLocal(new Date());
+      syncRefillTotal();
+      showToast("Pellets-Nachfüllung gespeichert.", "success");
+    }
+
+    async function handlePurchaseSubmit(event) {
+      event.preventDefault();
+
+      const bags = toNumber(els.purchaseBags.value);
+      const kgPerBag = toNumber(els.purchaseKgPerBag.value);
+      const totalPrice = toNumber(els.purchasePrice.value);
+      const totalKg = round2(bags * kgPerBag);
+
+      if (!Number.isFinite(bags) || !Number.isFinite(kgPerBag) || !Number.isFinite(totalPrice) || bags <= 0 || kgPerBag <= 0 || totalPrice < 0) {
+        showToast("Bitte Kaufdaten korrekt eingeben.", "error");
+        return;
+      }
+
+      const payload = {
+        bags,
+        kgPerBag,
+        totalKg,
+        totalPrice: round2(totalPrice),
+        pricePerKg: totalKg > 0 ? round4(totalPrice / totalKg) : 0,
+        date: new Date(els.purchaseDatetime.value).toISOString(),
+        createdAt: new Date().toISOString()
+      };
+
+      await saveRecord("purchases", payload);
+      els.purchaseForm.reset();
+      els.purchaseDatetime.value = toDatetimeLocal(new Date());
+      syncPurchaseTotals();
+      showToast("Pellets-Kauf gespeichert.", "success");
+    }
+
+    async function handleSettingsSubmit(event) {
+      event.preventDefault();
+
+      const newSettings = {
+        strom: {
+          basePrice: toNumber(els.priceStromBase.value) || 0,
+          unitPrice: toNumber(els.priceStromUnit.value) || 0
+        },
+        wasser: {
+          basePrice: toNumber(els.priceWasserBase.value) || 0,
+          unitPrice: toNumber(els.priceWasserUnit.value) || 0
+        },
+        pellets: {
+          basePrice: toNumber(els.pricePelletsBase.value) || 0,
+          unitPrice: toNumber(els.pricePelletsUnit.value) || 0
+        }
+      };
+
+      state.settings = mergeSettings(newSettings);
+      persistLocalSnapshot();
+      renderAll();
+
+      if (state.firebaseEnabled) {
+        await saveSettingsToFirestore();
+      }
+
+      showToast("Einstellungen gespeichert.", "success");
+    }
+
+    async function handleFirebaseSubmit(event) {
+      event.preventDefault();
+
+      const config = {
+        apiKey: els.fbApiKey.value.trim(),
+        authDomain: els.fbAuthDomain.value.trim(),
+        projectId: els.fbProjectId.value.trim(),
+        storageBucket: els.fbStorageBucket.value.trim(),
+        messagingSenderId: els.fbMessagingSenderId.value.trim(),
+        appId: els.fbAppId.value.trim(),
+        measurementId: els.fbMeasurementId.value.trim() || undefined
+      };
+
+      const householdId = els.householdId.value.trim();
+
+      if (!config.apiKey || !config.authDomain || !config.projectId || !config.appId || !householdId) {
+        showToast("Bitte Firebase-Daten und Haushalt-ID vollständig eintragen.", "error");
+        return;
+      }
+
+      await connectFirebase(config, householdId, true);
+    }
+
+    async function connectFirebase(config, householdId, showSuccess) {
+      try {
+        cleanupListeners();
+
+        state.firebaseConfig = config;
+        state.householdId = householdId;
+        localStorage.setItem(LOCAL_KEYS.firebaseConfig, JSON.stringify(config));
+        localStorage.setItem(LOCAL_KEYS.householdId, householdId);
+
+        const app = getApps().length ? getApps()[0] : initializeApp(config);
+        const db = getFirestore(app);
+
+        state.app = app;
+        state.db = db;
+        state.firebaseEnabled = true;
+
+        listenToFirestore();
+        await ensureInitialSettingsDoc();
+        updateFirebaseStatus();
+
+        if (showSuccess) {
+          showToast("Firebase verbunden.", "success");
+        }
+      } catch (error) {
+        console.error(error);
+        state.firebaseEnabled = false;
+        updateFirebaseStatus(error);
+        showToast("Firebase-Verbindung fehlgeschlagen.", "error");
+      }
+    }
+
+    function disconnectFirebase() {
+      cleanupListeners();
+      state.firebaseEnabled = false;
+      state.db = null;
+      state.app = null;
+      updateFirebaseStatus();
+      renderAll();
+      showToast("Nur lokale Daten aktiv.", "success");
+    }
+
+    function cleanupListeners() {
+      state.unsubscribers.forEach((unsubscribe) => unsubscribe());
+      state.unsubscribers = [];
+    }
+
+    function listenToFirestore() {
+      const basePath = householdBasePath();
+
+      const readingsQuery = query(collection(state.db, `${basePath}/readings/items`), orderBy("date", "desc"));
+      const refillsQuery = query(collection(state.db, `${basePath}/refills/items`), orderBy("date", "desc"));
+      const purchasesQuery = query(collection(state.db, `${basePath}/purchases/items`), orderBy("date", "desc"));
+      const settingsDocRef = doc(state.db, `${basePath}/settings/main`);
+
+      state.unsubscribers.push(onSnapshot(readingsQuery, (snapshot) => {
+        state.readings = snapshot.docs.map(mapFirestoreDoc);
+        persistLocalSnapshot();
+        renderAll();
+      }));
+
+      state.unsubscribers.push(onSnapshot(refillsQuery, (snapshot) => {
+        state.refills = snapshot.docs.map(mapFirestoreDoc);
+        persistLocalSnapshot();
+        renderAll();
+      }));
+
+      state.unsubscribers.push(onSnapshot(purchasesQuery, (snapshot) => {
+        state.purchases = snapshot.docs.map(mapFirestoreDoc);
+        persistLocalSnapshot();
+        renderAll();
+      }));
+
+      state.unsubscribers.push(onSnapshot(settingsDocRef, (snapshot) => {
+        if (snapshot.exists()) {
+          state.settings = mergeSettings(snapshot.data());
+          fillSettingsForm();
+          persistLocalSnapshot();
+          renderAll();
+        }
+      }));
+    }
+
+    async function ensureInitialSettingsDoc() {
+      if (!state.firebaseEnabled) return;
+      const ref = doc(state.db, `${householdBasePath()}/settings/main`);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) {
+        await setDoc(ref, state.settings);
+      }
+    }
+
+    async function saveSettingsToFirestore() {
+      if (!state.firebaseEnabled) return;
+      const ref = doc(state.db, `${householdBasePath()}/settings/main`);
+      await setDoc(ref, state.settings, { merge: true });
+    }
+
+    async function saveRecord(kind, payload) {
+      if (state.firebaseEnabled) {
+        const pathMap = {
+          readings: `${householdBasePath()}/readings/items`,
+          refills: `${householdBasePath()}/refills/items`,
+          purchases: `${householdBasePath()}/purchases/items`
+        };
+        await addDoc(collection(state.db, pathMap[kind]), {
+          ...payload,
+          serverCreatedAt: serverTimestamp()
+        });
+      } else {
+        const record = { ...payload, id: generateId() };
+        state[kind].unshift(record);
+        persistLocalSnapshot();
+        renderAll();
+      }
+    }
+
+    async function deleteRecord(kind, id) {
+      if (state.firebaseEnabled) {
+        const pathMap = {
+          readings: `${householdBasePath()}/readings/items/${id}`,
+          refills: `${householdBasePath()}/refills/items/${id}`,
+          purchases: `${householdBasePath()}/purchases/items/${id}`
+        };
+        await deleteDoc(doc(state.db, pathMap[kind]));
+      } else {
+        state[kind] = state[kind].filter((item) => item.id !== id);
+        persistLocalSnapshot();
+        renderAll();
+      }
+    }
+
+    function householdBasePath() {
+      return `households/${state.householdId}`;
+    }
+
+    function updateFirebaseStatus(error = null) {
+      if (state.firebaseEnabled) {
+        els.firebaseStatus.textContent = `Firestore aktiv. Haushalt: ${state.householdId}`;
+        els.syncBadge.textContent = "Firestore live";
+        els.syncBadge.className = "badge ok";
+      } else if (error) {
+        els.firebaseStatus.textContent = `Firebase-Fehler: ${error.message || error}`;
+        els.syncBadge.textContent = "Firestore Fehler";
+        els.syncBadge.className = "badge warn";
+      } else {
+        els.firebaseStatus.textContent = "Firebase noch nicht verbunden. Bitte unten deine Konfiguration eintragen.";
+        els.syncBadge.textContent = "lokal / Firestore noch aus";
+        els.syncBadge.className = "badge warn";
+      }
+    }
+
+    function fillSettingsForm() {
+      els.priceStromBase.value = state.settings.strom.basePrice ?? 0;
+      els.priceStromUnit.value = state.settings.strom.unitPrice ?? 0;
+      els.priceWasserBase.value = state.settings.wasser.basePrice ?? 0;
+      els.priceWasserUnit.value = state.settings.wasser.unitPrice ?? 0;
+      els.pricePelletsBase.value = state.settings.pellets.basePrice ?? 0;
+      els.pricePelletsUnit.value = state.settings.pellets.unitPrice ?? 0;
+    }
+
+    function mergeSettings(incoming) {
+      return {
+        strom: {
+          basePrice: toNumber(incoming?.strom?.basePrice) || 0,
+          unitPrice: toNumber(incoming?.strom?.unitPrice) || 0
+        },
+        wasser: {
+          basePrice: toNumber(incoming?.wasser?.basePrice) || 0,
+          unitPrice: toNumber(incoming?.wasser?.unitPrice) || 0
+        },
+        pellets: {
+          basePrice: toNumber(incoming?.pellets?.basePrice) || 0,
+          unitPrice: toNumber(incoming?.pellets?.unitPrice) || 0
+        }
       };
     }
 
-    function syncTypeUI() {
-      const type = els.type.value;
-      const cfg = typeConfig[type];
-
-      els.valueHint.textContent = cfg.hint;
-      els.pelletsFields.classList.toggle("hidden", type !== "pellets");
-
-      if (type !== "pellets") {
-        clearPelletsInputs();
-      }
-
-      updatePelletsPreview();
-    }
-
-    function syncEditTypeUI() {
-      const type = els.editType.value;
-      els.editPelletsFields.classList.toggle("hidden", type !== "pellets");
-
-      if (type !== "pellets") {
-        els.editBags.value = "";
-        els.editKgPerBag.value = "";
-      }
-
-      updateEditPelletsPreview();
-    }
-
-    function updatePelletsPreview() {
-      const bags = parseFloat(els.bags.value);
-      const kgPerBag = parseFloat(els.kgPerBag.value);
-      const total = Number.isFinite(bags) && Number.isFinite(kgPerBag) ? round2(bags * kgPerBag) : 0;
-      els.pelletsTotal.textContent = `${formatNumber(total)} kg`;
-    }
-
-    function updateEditPelletsPreview() {
-      const bags = parseFloat(els.editBags.value);
-      const kgPerBag = parseFloat(els.editKgPerBag.value);
-      const total = Number.isFinite(bags) && Number.isFinite(kgPerBag) ? round2(bags * kgPerBag) : 0;
-      els.editPelletsTotal.textContent = `${formatNumber(total)} kg`;
-    }
-
-    function clearPelletsInputs() {
-      els.bags.value = "";
-      els.kgPerBag.value = "";
-    }
-
-    function applyFilters() {
-      const filterType = els.filterType.value;
-      const from = els.fromDate.value ? new Date(els.fromDate.value).getTime() : null;
-      const to = els.toDate.value ? new Date(els.toDate.value).getTime() : null;
-      const minValue = els.minValue.value ? parseFloat(els.minValue.value) : null;
-      const maxValue = els.maxValue.value ? parseFloat(els.maxValue.value) : null;
-
-      state.filteredEntries = [...state.entries]
-        .filter((entry) => {
-          const time = new Date(entry.datetime).getTime();
-
-          if (filterType !== "alle" && entry.type !== filterType) return false;
-          if (from !== null && time < from) return false;
-          if (to !== null && time > to) return false;
-          if (minValue !== null && entry.value < minValue) return false;
-          if (maxValue !== null && entry.value > maxValue) return false;
-
-          return true;
-        })
-        .sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+    function persistLocalSnapshot() {
+      const payload = {
+        readings: state.readings,
+        refills: state.refills,
+        purchases: state.purchases,
+        settings: state.settings
+      };
+      localStorage.setItem(LOCAL_KEYS.localData, JSON.stringify(payload));
     }
 
     function renderAll() {
-      renderFilteredSection();
-      renderCharts();
+      fillSettingsForm();
+      renderReadings();
+      renderRefills();
+      renderPurchases();
+      renderDashboard();
+      renderSettingsSummary();
+      renderPelletInventoryStats();
     }
 
-    function renderFilteredSection() {
-      renderStats();
-      renderEntries();
-    }
+    function renderReadings() {
+      const computed = buildComputedReadings();
+      els.readingsList.innerHTML = "";
 
-    function renderStats() {
-      const grouped = {
-        strom: state.filteredEntries.filter((e) => e.type === "strom"),
-        wasser: state.filteredEntries.filter((e) => e.type === "wasser"),
-        pellets: state.filteredEntries.filter((e) => e.type === "pellets")
-      };
-
-      els.stats.innerHTML = "";
-
-      Object.entries(grouped).forEach(([type, entries]) => {
-        const total = entries.reduce((sum, entry) => sum + entry.value, 0);
-        const latest = entries[0];
-
-        const box = document.createElement("div");
-        box.className = "stat-box";
-        box.innerHTML = `
-          <div class="stat-label">${typeConfig[type].label}</div>
-          <div class="stat-value">${formatNumber(total)} ${typeConfig[type].unit}</div>
-          <div class="stat-label">${entries.length} Einträge${latest ? ` · zuletzt ${formatDateTime(latest.datetime)}` : ""}</div>
-        `;
-
-        els.stats.appendChild(box);
-      });
-    }
-
-    function renderEntries() {
-      els.entriesContainer.innerHTML = "";
-      els.resultCount.textContent = `${state.filteredEntries.length} Einträge`;
-
-      if (!state.filteredEntries.length) {
-        els.entriesContainer.innerHTML = `
-          <div class="empty-state">
-            Keine Einträge gefunden.
-          </div>
-        `;
+      if (!computed.length) {
+        els.readingsList.innerHTML = '<div class="empty-state">Noch keine Zählerstände gespeichert.</div>';
         return;
       }
 
-      const fragment = document.createDocumentFragment();
-
-      state.filteredEntries.forEach((entry) => {
-        const node = els.entryTemplate.content.cloneNode(true);
-        const article = node.querySelector(".entry-item");
-        article.dataset.id = entry.id;
-
-        node.querySelector(".entry-type").textContent = typeConfig[entry.type].label;
-        node.querySelector(".entry-datetime").textContent = formatDateTime(entry.datetime);
-        node.querySelector(".entry-value").textContent = formatEntryValue(entry);
-        node.querySelector(".entry-note").textContent = entry.note || "Keine Notiz";
-
-        fragment.appendChild(node);
+      computed.forEach((entry) => {
+        const node = createEntryNode({
+          id: entry.id,
+          kind: "readings",
+          typeLabel: typeConfig[entry.type].label,
+          datetime: formatDateTime(entry.date),
+          valueHtml: `${formatNumber(entry.value)} ${typeConfig[entry.type].unit}<br><small class="muted">Δ ${formatSigned(entry.delta)} ${typeConfig[entry.type].unit}${entry.cost !== null ? ` · ${formatCurrency(entry.cost)}` : ""}</small>`,
+          note: entry.note || (entry.previousDate ? `Vorheriger Stand: ${formatNumber(entry.previousValue)} am ${formatDateTime(entry.previousDate)}` : "Erster gespeicherter Stand")
+        });
+        els.readingsList.appendChild(node);
       });
+    }
 
-      els.entriesContainer.appendChild(fragment);
+    function renderRefills() {
+      els.refillsList.innerHTML = "";
+      if (!state.refills.length) {
+        els.refillsList.innerHTML = '<div class="empty-state">Noch keine Nachfüllungen gespeichert.</div>';
+        return;
+      }
+
+      state.refills.forEach((entry) => {
+        const node = createEntryNode({
+          id: entry.id,
+          kind: "refills",
+          typeLabel: "Pellets Nachfüllung",
+          datetime: formatDateTime(entry.date),
+          valueHtml: `${formatNumber(entry.totalKg)} kg<br><small class="muted">${formatNumber(entry.bags)} Sack/Säcke × ${formatNumber(entry.kgPerBag)} kg</small>`,
+          note: entry.note || "Keine Notiz"
+        });
+        els.refillsList.appendChild(node);
+      });
+    }
+
+    function renderPurchases() {
+      els.purchaseList.innerHTML = "";
+      if (!state.purchases.length) {
+        els.purchaseList.innerHTML = '<div class="empty-state">Noch keine Pellets-Käufe gespeichert.</div>';
+        return;
+      }
+
+      state.purchases.forEach((entry) => {
+        const node = createEntryNode({
+          id: entry.id,
+          kind: "purchases",
+          typeLabel: "Pellets Kauf",
+          datetime: formatDateTime(entry.date),
+          valueHtml: `${formatNumber(entry.totalKg)} kg · ${formatCurrency(entry.totalPrice)}<br><small class="muted">${formatNumber(entry.bags)} Sack/Säcke × ${formatNumber(entry.kgPerBag)} kg · ${formatCurrency(entry.pricePerKg)}/kg</small>`,
+          note: `Preis pro Sack: ${formatCurrency(entry.totalPrice / entry.bags)}`
+        });
+        els.purchaseList.appendChild(node);
+      });
+    }
+
+    function renderDashboard() {
+      renderDashboardStats();
+      renderConsumptionHistory();
+      renderPelletSummary();
+      renderPelletActivity();
+      renderCharts();
+    }
+
+    function renderDashboardStats() {
+      const latest = {
+        strom: latestReadingOfType("strom"),
+        wasser: latestReadingOfType("wasser"),
+        pellets: latestReadingOfType("pellets")
+      };
+
+      const lastDiffs = {
+        strom: latestConsumptionOfType("strom"),
+        wasser: latestConsumptionOfType("wasser"),
+        pellets: latestConsumptionOfType("pellets")
+      };
+
+      const cards = [
+        {
+          label: "Strom aktuell",
+          value: latest.strom ? `${formatNumber(latest.strom.value)} kWh` : "–",
+          sub: lastDiffs.strom ? `zuletzt Δ ${formatNumber(lastDiffs.strom.delta)} kWh · ${formatCurrency(lastDiffs.strom.cost || 0)}` : "noch keine Differenz"
+        },
+        {
+          label: "Wasser aktuell",
+          value: latest.wasser ? `${formatNumber(latest.wasser.value)} m³` : "–",
+          sub: lastDiffs.wasser ? `zuletzt Δ ${formatNumber(lastDiffs.wasser.delta)} m³ · ${formatCurrency(lastDiffs.wasser.cost || 0)}` : "noch keine Differenz"
+        },
+        {
+          label: "Pellets Verbrauchszähler",
+          value: latest.pellets ? `${formatNumber(latest.pellets.value)} kg` : "–",
+          sub: lastDiffs.pellets ? `zuletzt Δ ${formatNumber(lastDiffs.pellets.delta)} kg · ${formatCurrency(lastDiffs.pellets.cost || 0)}` : "noch keine Differenz"
+        },
+        {
+          label: "Pellets Lager grob",
+          value: `${formatNumber(getPelletInventoryKg())} kg`,
+          sub: `${formatNumber(totalRefillKg())} kg nachgefüllt · ${formatNumber(totalPurchasedKg())} kg gekauft`
+        }
+      ];
+
+      els.dashboardStats.innerHTML = cards.map((card) => `
+        <div class="stat-box">
+          <div class="stat-label">${card.label}</div>
+          <div class="stat-value">${card.value}</div>
+          <div class="stat-label">${card.sub}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderConsumptionHistory() {
+      const computed = buildComputedReadings().filter((entry) => entry.previousValue !== null).slice(0, 10);
+      els.consumptionHistory.innerHTML = "";
+
+      if (!computed.length) {
+        els.consumptionHistory.innerHTML = '<div class="empty-state">Sobald zwei Stände je Kategorie vorliegen, erscheinen hier die Differenzen.</div>';
+        return;
+      }
+
+      computed.forEach((entry) => {
+        const node = createEntryNode({
+          id: entry.id,
+          kind: "readings",
+          typeLabel: `${typeConfig[entry.type].label}`,
+          datetime: `${formatDateTime(entry.previousDate)} → ${formatDateTime(entry.date)}`,
+          valueHtml: `${formatNumber(entry.delta)} ${typeConfig[entry.type].unit}${entry.cost !== null ? ` · ${formatCurrency(entry.cost)}` : ""}`,
+          note: `von ${formatNumber(entry.previousValue)} auf ${formatNumber(entry.value)}`,
+          allowDelete: false
+        });
+        els.consumptionHistory.appendChild(node);
+      });
+    }
+
+    function renderPelletSummary() {
+      const totalBought = totalPurchasedKg();
+      const totalRefilled = totalRefillKg();
+      const consumed = totalConsumptionOfType("pellets");
+      const estimated = getPelletInventoryKg();
+      const avgPrice = averagePelletPricePerKg();
+
+      const cards = [
+        { label: "Gekauft", value: `${formatNumber(totalBought)} kg` },
+        { label: "Nachgefüllt", value: `${formatNumber(totalRefilled)} kg` },
+        { label: "Verbrauch laut Zähler", value: `${formatNumber(consumed)} kg` },
+        { label: "Geschätzter Bestand", value: `${formatNumber(estimated)} kg` },
+        { label: "Ø Einkaufspreis", value: avgPrice ? `${formatCurrency(avgPrice)}/kg` : "–" },
+        { label: "Käufe", value: `${state.purchases.length} Stück` }
+      ];
+
+      els.pelletSummary.innerHTML = cards.map((card) => `
+        <div class="stat-box">
+          <div class="stat-label">${card.label}</div>
+          <div class="stat-value">${card.value}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderPelletActivity() {
+      const merged = [
+        ...state.refills.map((item) => ({ ...item, activityType: "Nachfüllung" })),
+        ...state.purchases.map((item) => ({ ...item, activityType: "Kauf" }))
+      ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 8);
+
+      els.pelletActivity.innerHTML = "";
+      if (!merged.length) {
+        els.pelletActivity.innerHTML = '<div class="empty-state">Noch keine Pellets-Aktivität vorhanden.</div>';
+        return;
+      }
+
+      merged.forEach((entry) => {
+        const detail = entry.activityType === "Kauf"
+          ? `${formatNumber(entry.totalKg)} kg · ${formatCurrency(entry.totalPrice)}`
+          : `${formatNumber(entry.totalKg)} kg`;
+
+        const node = createEntryNode({
+          id: entry.id,
+          kind: entry.activityType === "Kauf" ? "purchases" : "refills",
+          typeLabel: entry.activityType,
+          datetime: formatDateTime(entry.date),
+          valueHtml: detail,
+          note: `${formatNumber(entry.bags)} Sack/Säcke × ${formatNumber(entry.kgPerBag)} kg`,
+          allowDelete: false
+        });
+        els.pelletActivity.appendChild(node);
+      });
+    }
+
+    function renderPelletInventoryStats() {
+      const stats = [
+        { label: "Nachgefüllt gesamt", value: `${formatNumber(totalRefillKg())} kg` },
+        { label: "Verbrauch gesamt", value: `${formatNumber(totalConsumptionOfType("pellets"))} kg` },
+        { label: "Geschätzter Bestand", value: `${formatNumber(getPelletInventoryKg())} kg` }
+      ];
+
+      els.pelletInventoryStats.innerHTML = stats.map((stat) => `
+        <div class="stat-box">
+          <div class="stat-label">${stat.label}</div>
+          <div class="stat-value">${stat.value}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderSettingsSummary() {
+      const rows = [
+        { label: "Strom", value: `${formatCurrency(state.settings.strom.basePrice)} Grundpreis · ${formatCurrency(state.settings.strom.unitPrice)}/kWh` },
+        { label: "Wasser", value: `${formatCurrency(state.settings.wasser.basePrice)} Grundpreis · ${formatCurrency(state.settings.wasser.unitPrice)}/m³` },
+        { label: "Pellets", value: `${formatCurrency(state.settings.pellets.basePrice)} Grundpreis · ${formatCurrency(state.settings.pellets.unitPrice)}/kg` }
+      ];
+
+      els.settingsSummary.innerHTML = rows.map((row) => `
+        <div class="stat-box">
+          <div class="stat-label">${row.label}</div>
+          <div class="stat-value">${row.value}</div>
+        </div>
+      `).join("");
     }
 
     function renderCharts() {
-      renderTypeChart("strom", els.chartStrom, els.metaStrom);
-      renderTypeChart("wasser", els.chartWasser, els.metaWasser);
-      renderTypeChart("pellets", els.chartPellets, els.metaPellets);
+      renderConsumptionChart("strom", els.chartStrom, els.chartMetaStrom);
+      renderConsumptionChart("wasser", els.chartWasser, els.chartMetaWasser);
+      renderConsumptionChart("pellets", els.chartPellets, els.chartMetaPellets);
     }
 
-    function renderTypeChart(type, container, metaContainer) {
-      const entries = getEntriesForChart(type);
-      const cfg = typeConfig[type];
+    function renderConsumptionChart(type, container, metaContainer) {
+      const entries = buildComputedReadings()
+        .filter((entry) => entry.type === type && entry.previousValue !== null)
+        .slice()
+        .reverse();
 
-      metaContainer.textContent = buildChartMeta(entries, cfg);
+      const cfg = typeConfig[type];
+      const total = entries.reduce((sum, entry) => sum + Math.max(entry.delta || 0, 0), 0);
+      const avg = entries.length ? total / entries.length : 0;
+      metaContainer.textContent = entries.length
+        ? `${entries.length} Intervalle · Summe ${formatNumber(total)} ${cfg.unit} · Ø ${formatNumber(avg)} ${cfg.unit}`
+        : "Noch keine Differenzen vorhanden";
 
       if (!entries.length) {
         container.innerHTML = '<div class="empty-state" style="height:100%;display:grid;place-items:center;">Noch keine Daten</div>';
@@ -1261,17 +1821,17 @@
       }
 
       const width = 500;
-      const height = 190;
+      const height = 200;
       const padding = 18;
-      const maxValue = Math.max(...entries.map((e) => e.value), 1);
-      const minValue = Math.min(...entries.map((e) => e.value), 0);
+      const maxValue = Math.max(...entries.map((e) => e.delta), 1);
+      const minValue = 0;
       const range = Math.max(maxValue - minValue, 1);
       const usableWidth = width - padding * 2;
       const usableHeight = height - padding * 2;
 
       const points = entries.map((entry, index) => {
         const x = padding + (entries.length === 1 ? usableWidth / 2 : (index / (entries.length - 1)) * usableWidth);
-        const y = padding + usableHeight - ((entry.value - minValue) / range) * usableHeight;
+        const y = padding + usableHeight - ((entry.delta - minValue) / range) * usableHeight;
         return { x, y, entry };
       });
 
@@ -1284,7 +1844,7 @@
 
       const circles = points.map((p) => `
         <circle cx="${p.x}" cy="${p.y}" r="4.5" fill="${cfg.color}">
-          <title>${formatDateShort(p.entry.datetime)}: ${formatNumber(p.entry.value)} ${cfg.unit}</title>
+          <title>${formatDateShort(p.entry.date)}: ${formatNumber(p.entry.delta)} ${cfg.unit}</title>
         </circle>
       `).join("");
 
@@ -1298,16 +1858,8 @@
               <stop offset="100%" stop-color="${cfg.color}" stop-opacity="0.02"></stop>
             </linearGradient>
           </defs>
-
           <polygon points="${areaPoints}" fill="url(#grad-${type})"></polygon>
-          <polyline
-            points="${polyline}"
-            fill="none"
-            stroke="${cfg.color}"
-            stroke-width="3"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          ></polyline>
+          <polyline points="${polyline}" fill="none" stroke="${cfg.color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
           ${circles}
           ${labels}
         </svg>
@@ -1316,95 +1868,158 @@
 
     function buildChartLabels(entries, width, height, padding) {
       if (!entries.length) return "";
-
       if (entries.length === 1) {
-        return `
-          <text x="${width / 2}" y="${height - 4}" fill="#99a8c7" font-size="11" text-anchor="middle">
-            ${escapeHtml(formatDateShort(entries[0].datetime))}
-          </text>
-        `;
+        return `<text x="${width / 2}" y="${height - 4}" fill="#99a8c7" font-size="11" text-anchor="middle">${escapeHtml(formatDateShort(entries[0].date))}</text>`;
       }
-
-      const first = entries[0];
-      const last = entries[entries.length - 1];
-
       return `
-        <text x="${padding}" y="${height - 4}" fill="#99a8c7" font-size="11" text-anchor="start">
-          ${escapeHtml(formatDateShort(first.datetime))}
-        </text>
-        <text x="${width - padding}" y="${height - 4}" fill="#99a8c7" font-size="11" text-anchor="end">
-          ${escapeHtml(formatDateShort(last.datetime))}
-        </text>
+        <text x="${padding}" y="${height - 4}" fill="#99a8c7" font-size="11" text-anchor="start">${escapeHtml(formatDateShort(entries[0].date))}</text>
+        <text x="${width - padding}" y="${height - 4}" fill="#99a8c7" font-size="11" text-anchor="end">${escapeHtml(formatDateShort(entries[entries.length - 1].date))}</text>
       `;
     }
 
-    function buildChartMeta(entries, cfg) {
-      if (!entries.length) return "Keine Daten im ausgewählten Zeitraum";
-      const sum = entries.reduce((acc, e) => acc + e.value, 0);
-      const avg = sum / entries.length;
-      return `${entries.length} Werte · Summe ${formatNumber(sum)} ${cfg.unit} · Ø ${formatNumber(avg)} ${cfg.unit}`;
-    }
-
-    function getEntriesForChart(type) {
-      const now = new Date();
-      const cutoff = state.activeRangeDays
-        ? new Date(now.getTime() - state.activeRangeDays * 24 * 60 * 60 * 1000)
-        : null;
-
-      return [...state.entries]
-        .filter((entry) => entry.type === type)
-        .filter((entry) => cutoff ? new Date(entry.datetime) >= cutoff : true)
-        .sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
-    }
-
-    function exportData() {
-      const payload = {
-        exportedAt: new Date().toISOString(),
-        count: state.entries.length,
-        entries: state.entries
+    function buildComputedReadings() {
+      const byType = {
+        strom: sortAsc(state.readings.filter((entry) => entry.type === "strom")),
+        wasser: sortAsc(state.readings.filter((entry) => entry.type === "wasser")),
+        pellets: sortAsc(state.readings.filter((entry) => entry.type === "pellets"))
       };
 
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-      downloadBlob(blob, `verbrauch-export-${dateStamp()}.json`);
-      showToast("Datenexport erstellt.", "success");
+      const computed = [];
+
+      Object.entries(byType).forEach(([type, list]) => {
+        list.forEach((entry, index) => {
+          const previous = index > 0 ? list[index - 1] : null;
+          const delta = previous ? round2(entry.value - previous.value) : null;
+          const cost = delta !== null ? round2(delta * state.settings[type].unitPrice) : null;
+          computed.push({
+            ...entry,
+            type,
+            previousValue: previous ? previous.value : null,
+            previousDate: previous ? previous.date : null,
+            delta,
+            cost
+          });
+        });
+      });
+
+      return computed.sort((a, b) => new Date(b.date) - new Date(a.date));
     }
 
-    function exportHtmlSnapshot() {
-      const content = document.documentElement.outerHTML;
-      const blob = new Blob([content], { type: "text/html;charset=utf-8" });
-      downloadBlob(blob, `verbrauch-ansicht-${dateStamp()}.html`);
-      showToast("HTML-Ansicht exportiert.", "success");
+    function latestReadingOfType(type) {
+      return state.readings
+        .filter((entry) => entry.type === type)
+        .sort((a, b) => new Date(b.date) - new Date(a.date))[0] || null;
     }
 
-    function downloadBlob(blob, filename) {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+    function latestConsumptionOfType(type) {
+      return buildComputedReadings().find((entry) => entry.type === type && entry.previousValue !== null) || null;
     }
 
-    function loadEntries() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return [];
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return [];
-        return parsed.sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
-      } catch {
-        return [];
+    function totalConsumptionOfType(type) {
+      return round2(
+        buildComputedReadings()
+          .filter((entry) => entry.type === type && entry.previousValue !== null && entry.delta > 0)
+          .reduce((sum, entry) => sum + entry.delta, 0)
+      );
+    }
+
+    function totalRefillKg() {
+      return round2(state.refills.reduce((sum, entry) => sum + (toNumber(entry.totalKg) || 0), 0));
+    }
+
+    function totalPurchasedKg() {
+      return round2(state.purchases.reduce((sum, entry) => sum + (toNumber(entry.totalKg) || 0), 0));
+    }
+
+    function averagePelletPricePerKg() {
+      const totalKg = totalPurchasedKg();
+      if (!totalKg) return 0;
+      const totalPrice = state.purchases.reduce((sum, entry) => sum + (toNumber(entry.totalPrice) || 0), 0);
+      return round4(totalPrice / totalKg);
+    }
+
+    function getPelletInventoryKg() {
+      return round2(totalPurchasedKg() + totalRefillKg() - totalConsumptionOfType("pellets"));
+    }
+
+    function getPreviousReading(type, isoDate) {
+      return sortAsc(state.readings.filter((entry) => entry.type === type && new Date(entry.date) < new Date(isoDate))).slice(-1)[0] || null;
+    }
+
+    function createEntryNode({ id, kind, typeLabel, datetime, valueHtml, note, allowDelete = true }) {
+      const node = els.entryTemplate.content.cloneNode(true);
+      const article = node.querySelector(".entry-item");
+      article.dataset.id = id;
+      article.dataset.kind = kind;
+
+      node.querySelector(".entry-type").textContent = typeLabel;
+      node.querySelector(".entry-datetime").textContent = datetime;
+      node.querySelector(".entry-value").innerHTML = valueHtml;
+      node.querySelector(".entry-note").textContent = note || "Keine Notiz";
+
+      const deleteBtn = node.querySelector(".delete-btn");
+      if (!allowDelete) {
+        deleteBtn.remove();
+      } else {
+        deleteBtn.addEventListener("click", async () => {
+          const ok = confirm(`${typeLabel} löschen?`);
+          if (!ok) return;
+          await deleteRecord(kind, id);
+          showToast("Eintrag gelöscht.", "success");
+        });
       }
+
+      return node;
     }
 
-    function saveEntries() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.entries));
+    function exportBackup() {
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        firebaseEnabled: state.firebaseEnabled,
+        householdId: state.householdId || null,
+        readings: state.readings,
+        refills: state.refills,
+        purchases: state.purchases,
+        settings: state.settings
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      downloadBlob(blob, `verbrauch-backup-${dateStamp()}.json`);
+      showToast("Backup exportiert.", "success");
     }
 
-    function setDefaultDatetime() {
-      els.datetime.value = toDatetimeLocal(new Date());
+    function mapFirestoreDoc(docSnap) {
+      const data = docSnap.data();
+      return {
+        id: docSnap.id,
+        ...convertFirestoreTimestamps(data)
+      };
+    }
+
+    function convertFirestoreTimestamps(value) {
+      if (value instanceof Timestamp) {
+        return value.toDate().toISOString();
+      }
+      if (Array.isArray(value)) {
+        return value.map(convertFirestoreTimestamps);
+      }
+      if (value && typeof value === "object") {
+        const output = {};
+        Object.entries(value).forEach(([key, val]) => {
+          output[key] = convertFirestoreTimestamps(val);
+        });
+        return output;
+      }
+      return value;
+    }
+
+    function normalizeDateArray(list) {
+      return list
+        .map((item) => ({ ...item, date: new Date(item.date).toISOString() }))
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+    }
+
+    function sortAsc(list) {
+      return [...list].sort((a, b) => new Date(a.date) - new Date(b.date));
     }
 
     function toDatetimeLocal(dateInput) {
@@ -1413,36 +2028,45 @@
       return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
     }
 
+    function toNumber(value) {
+      if (value === "" || value === null || value === undefined) return null;
+      const num = Number(value);
+      return Number.isFinite(num) ? num : null;
+    }
+
     function formatDateTime(dateInput) {
-      return new Intl.DateTimeFormat("de-DE", {
-        dateStyle: "medium",
-        timeStyle: "short"
-      }).format(new Date(dateInput));
+      return new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "short" }).format(new Date(dateInput));
     }
 
     function formatDateShort(dateInput) {
-      return new Intl.DateTimeFormat("de-DE", {
-        day: "2-digit",
-        month: "2-digit"
-      }).format(new Date(dateInput));
-    }
-
-    function formatEntryValue(entry) {
-      const cfg = typeConfig[entry.type];
-      if (entry.type === "pellets" && entry.bags && entry.kgPerBag) {
-        return `${formatNumber(entry.value)} ${cfg.unit} · ${formatNumber(entry.bags)} Sack/Säcke × ${formatNumber(entry.kgPerBag)} kg`;
-      }
-      return `${formatNumber(entry.value)} ${cfg.unit}`;
+      return new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit" }).format(new Date(dateInput));
     }
 
     function formatNumber(value) {
-      return new Intl.NumberFormat("de-DE", {
-        maximumFractionDigits: 2
-      }).format(value);
+      return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 }).format(value ?? 0);
+    }
+
+    function formatCurrency(value) {
+      return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(value ?? 0);
+    }
+
+    function formatSigned(value) {
+      if (value === null || value === undefined) return "–";
+      const num = Number(value);
+      return `${num > 0 ? "+" : ""}${formatNumber(num)}`;
     }
 
     function round2(value) {
-      return Math.round(value * 100) / 100;
+      return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+    }
+
+    function round4(value) {
+      return Math.round((Number(value) + Number.EPSILON) * 10000) / 10000;
+    }
+
+    function generateId() {
+      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+      return `id-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     }
 
     function dateStamp() {
@@ -1460,9 +2084,24 @@
         .replaceAll("'", "&#039;");
     }
 
-    function generateId() {
-      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
-      return "id-" + Date.now() + "-" + Math.random().toString(36).slice(2, 9);
+    function loadJSON(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch {
+        return fallback;
+      }
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
     }
 
     function showToast(message, type = "success") {
@@ -1474,21 +2113,8 @@
       toast.textContent = message;
       document.body.appendChild(toast);
 
-      setTimeout(() => {
-        toast.remove();
-      }, 2600);
+      setTimeout(() => toast.remove(), 2600);
     }
   </script>
-
-<script>
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("./sw.js")
-        .then(() => console.log("Service Worker registriert"))
-        .catch((err) => console.error("SW-Fehler:", err));
-    });
-  }
-</script>
-  
 </body>
 </html>
