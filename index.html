@@ -563,7 +563,7 @@
         <p class="hero-copy">
           Strom, Wasser und Pellets werden jetzt als Zählerstände erfasst. Die App berechnet automatisch die Differenz zum vorherigen Eintrag. Pellets-Nachfüllungen und Käufe laufen separat, damit Lager und Verbrauch nicht durcheinandergeraten.
         </p>
-        <p class="hero-status" id="firebaseStatus">Firebase noch nicht verbunden. Bitte unten deine Konfiguration eintragen.</p>
+        <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du die Haushalt-ID ändern.</p>
       </div>
 
       <div class="hero-actions">
@@ -793,47 +793,24 @@
           <div class="card-head">
             <div>
               <p class="section-kicker">Firebase</p>
-              <h2>Firestore verbinden</h2>
+              <h2>Firestore ist bereits eingebaut</h2>
             </div>
-            <span class="badge warn">einmalig pro Haushalt</span>
+            <span class="badge ok">Projekt fest eingebaut</span>
           </div>
 
           <form id="firebaseForm" class="settings-grid">
-            <label>
-              API Key
-              <input id="fbApiKey" type="text" placeholder="AIza..." />
-            </label>
-            <label>
-              Auth Domain
-              <input id="fbAuthDomain" type="text" placeholder="dein-projekt.firebaseapp.com" />
-            </label>
-            <label>
-              Project ID
-              <input id="fbProjectId" type="text" placeholder="dein-projekt" />
-            </label>
-            <label>
-              Storage Bucket
-              <input id="fbStorageBucket" type="text" placeholder="dein-projekt.appspot.com" />
-            </label>
-            <label>
-              Messaging Sender ID
-              <input id="fbMessagingSenderId" type="text" placeholder="123456789" />
-            </label>
-            <label>
-              App ID
-              <input id="fbAppId" type="text" placeholder="1:123456789:web:abcdef" />
-            </label>
             <label>
               Haushalt / Datenraum
               <input id="householdId" type="text" placeholder="z. B. zuhause-haupt" />
               <small>Alle Geräte mit derselben ID sehen dieselben Daten.</small>
             </label>
             <label>
-              Optional: Measurement ID
-              <input id="fbMeasurementId" type="text" placeholder="G-XXXXXXX" />
+              Firebase Projekt
+              <input id="fbProjectId" type="text" value="verbrauch-zuhause" disabled />
+              <small>Die restliche Firebase-Konfiguration ist bereits fest im Code hinterlegt.</small>
             </label>
             <div class="form-actions span-12">
-              <button type="submit" class="btn primary">Firebase speichern & verbinden</button>
+              <button type="submit" class="btn primary">Haushalt-ID speichern & verbinden</button>
               <button type="button" class="btn ghost" id="disconnectFirebaseBtn">Nur lokale Daten nutzen</button>
             </div>
           </form>
@@ -980,6 +957,18 @@
       Timestamp
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyBrKjajSNPgmFUwjMghkox1kM8NjbCWZ_Y",
+      authDomain: "verbrauch-zuhause.firebaseapp.com",
+      projectId: "verbrauch-zuhause",
+      storageBucket: "verbrauch-zuhause.firebasestorage.app",
+      messagingSenderId: "546121139332",
+      appId: "1:546121139332:web:b07b58184fb0388565aed1",
+      measurementId: "G-L0GQQ8V785"
+    };
+
+    const DEFAULT_HOUSEHOLD_ID = "zuhause-haupt";
+
     const LOCAL_KEYS = {
       firebaseConfig: "verbrauch-firebase-config-v1",
       householdId: "verbrauch-household-id-v1",
@@ -1003,8 +992,8 @@
       refills: [],
       purchases: [],
       settings: structuredClone(defaultSettings),
-      firebaseConfig: loadJSON(LOCAL_KEYS.firebaseConfig, null),
-      householdId: localStorage.getItem(LOCAL_KEYS.householdId) || "",
+      firebaseConfig: FIREBASE_CONFIG,
+      householdId: localStorage.getItem(LOCAL_KEYS.householdId) || DEFAULT_HOUSEHOLD_ID,
       firebaseEnabled: false,
       app: null,
       db: null,
@@ -1094,15 +1083,15 @@
       registerServiceWorker();
       renderAll();
 
-      if (state.firebaseConfig && state.householdId) {
-        await connectFirebase(state.firebaseConfig, state.householdId, false);
+      if (state.householdId) {
+        await connectFirebase(FIREBASE_CONFIG, state.householdId, false);
       } else {
         updateFirebaseStatus();
       }
     }
 
     function hydrateLocalForms() {
-      const cfg = state.firebaseConfig || {};
+      const cfg = FIREBASE_CONFIG;
       els.fbApiKey.value = cfg.apiKey || "";
       els.fbAuthDomain.value = cfg.authDomain || "";
       els.fbProjectId.value = cfg.projectId || "";
@@ -1110,7 +1099,7 @@
       els.fbMessagingSenderId.value = cfg.messagingSenderId || "";
       els.fbAppId.value = cfg.appId || "";
       els.fbMeasurementId.value = cfg.measurementId || "";
-      els.householdId.value = state.householdId || "";
+      els.householdId.value = state.householdId || DEFAULT_HOUSEHOLD_ID;
     }
 
     function setDefaultDatetimes() {
@@ -1357,24 +1346,10 @@
     async function handleFirebaseSubmit(event) {
       event.preventDefault();
 
-      const config = {
-        apiKey: els.fbApiKey.value.trim(),
-        authDomain: els.fbAuthDomain.value.trim(),
-        projectId: els.fbProjectId.value.trim(),
-        storageBucket: els.fbStorageBucket.value.trim(),
-        messagingSenderId: els.fbMessagingSenderId.value.trim(),
-        appId: els.fbAppId.value.trim(),
-        measurementId: els.fbMeasurementId.value.trim() || undefined
-      };
-
-      const householdId = els.householdId.value.trim();
-
-      if (!config.apiKey || !config.authDomain || !config.projectId || !config.appId || !householdId) {
-        showToast("Bitte Firebase-Daten und Haushalt-ID vollständig eintragen.", "error");
-        return;
-      }
-
-      await connectFirebase(config, householdId, true);
+      const householdId = els.householdId.value.trim() || DEFAULT_HOUSEHOLD_ID;
+      localStorage.setItem(LOCAL_KEYS.householdId, householdId);
+      state.householdId = householdId;
+      await connectFirebase(FIREBASE_CONFIG, householdId, true);
     }
 
     async function connectFirebase(config, householdId, showSuccess) {
