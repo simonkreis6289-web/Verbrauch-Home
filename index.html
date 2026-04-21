@@ -1324,10 +1324,20 @@
       if (!entries.length) return showToast("Bitte mindestens einen Wert eintragen.", "error");
 
       for (const item of entries) {
+        const duplicate = findDuplicateReading(item.type, datetime, item.value);
+        if (duplicate) {
+          showToast(`${typeConfig[item.type].label}: Dieser Zählerstand ist zu diesem Zeitpunkt bereits vorhanden.`, "error");
+          return;
+        }
+        const sameTimestampOtherValue = findSameTimestampReading(item.type, datetime, item.value);
+        if (sameTimestampOtherValue) {
+          showToast(`${typeConfig[item.type].label}: Für diesen Zeitpunkt gibt es schon einen anderen Wert. Bitte alten Eintrag löschen oder Zeitpunkt ändern.`, "error");
+          return;
+        }
         const comparable = getComparableReferenceValue(item.type, datetime);
         if (Number.isFinite(comparable) && item.value < comparable) {
-          const proceed = confirm(`Der neue Zählerstand für ${typeConfig[item.type].label} ist kleiner als der erwartete Vergleichswert. Trotzdem speichern?`);
-          if (!proceed) return;
+          showToast(`${typeConfig[item.type].label}: Neuer Zählerstand darf nicht kleiner als ${formatNumber(comparable)} ${typeConfig[item.type].unit} sein.`, "error");
+          return;
         }
       }
 
@@ -1365,10 +1375,20 @@
 
       if (!Number.isFinite(value) || value < 0) return showToast("Bitte einen gültigen Zählerstand eingeben.", "error");
 
+      if (findDuplicateReading(type, datetime, value)) {
+        showToast("Dieser Zählerstand ist zu diesem Zeitpunkt bereits vorhanden.", "error");
+        return;
+      }
+
+      if (findSameTimestampReading(type, datetime, value)) {
+        showToast("Für diesen Zeitpunkt gibt es schon einen anderen Wert. Bitte alten Eintrag löschen oder Zeitpunkt ändern.", "error");
+        return;
+      }
+
       const comparable = getComparableReferenceValue(type, datetime);
       if (Number.isFinite(comparable) && value < comparable) {
-        const proceed = confirm("Der neue Zählerstand ist kleiner als der erwartete Vergleichswert. Trotzdem speichern?");
-        if (!proceed) return;
+        showToast(`Neuer Zählerstand darf nicht kleiner als ${formatNumber(comparable)} ${typeConfig[type].unit} sein.`, "error");
+        return;
       }
 
       await saveRecord("readings", {
@@ -2156,16 +2176,33 @@
     }
 
     function getComparableReferenceValue(type, isoDate) {
+      const targetTime = new Date(isoDate).getTime();
       const latestReading = getPreviousReading(type, isoDate);
       const latestReadingTime = latestReading ? new Date(latestReading.date).getTime() : -Infinity;
       const relevantReset = state.resets
         .filter((r) => r.type === type)
         .filter((r) => {
           const t = new Date(r.date).getTime();
-          return t > latestReadingTime && t <= new Date(isoDate).getTime();
+          return t > latestReadingTime && t <= targetTime;
         })
         .sort((a, b) => new Date(b.date) - new Date(a.date))[0] || null;
       return relevantReset ? relevantReset.newMeterStartValue : latestReading?.value ?? null;
+    }
+
+    function findDuplicateReading(type, isoDate, value) {
+      return state.readings.find((entry) => (
+        entry.type === type &&
+        entry.date === isoDate &&
+        Number(entry.value) === Number(value)
+      )) || null;
+    }
+
+    function findSameTimestampReading(type, isoDate, value) {
+      return state.readings.find((entry) => (
+        entry.type === type &&
+        entry.date === isoDate &&
+        Number(entry.value) !== Number(value)
+      )) || null;
     }
 
     function buildMonthlyStats() {
