@@ -151,6 +151,14 @@
       .entry-actions { width: 100%; justify-content: flex-end; }
       .tabs { width: 100%; overflow-x: auto; }
     }
+      
+    .inline-toggle {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-height: 48px;
+        }
+      
   </style>
 </head>
 <body>
@@ -237,18 +245,131 @@
       </div>
     </section>
 
-    <section id="readingsView" class="view">
-      <div class="grid">
-        <section class="card glass">
-          <div class="card-head"><div><p class="section-kicker">Erfassung</p><h2>Neuen Zählerstand speichern</h2></div><span class="badge">Differenz wird berechnet</span></div>
-          <form id="readingForm" class="form-grid">
-            <label>Bereich<select id="readingType" required><option value="strom">Strom</option><option value="wasser">Wasser</option><option value="pellets">Pellets Verbrauch</option></select></label>
-            <label>Datum & Uhrzeit<input id="readingDatetime" type="datetime-local" required /></label>
-            <label>Aktueller Zählerstand<input id="readingValue" type="number" step="0.01" min="0" required /><small id="readingHint">Bei Strom zum Beispiel aktueller kWh-Stand des Zählers.</small></label>
-            <label>Notiz<input id="readingNote" type="text" maxlength="160" placeholder="optional" /></label>
-            <div class="form-actions span-12"><button type="submit" class="btn primary">Zählerstand speichern</button><button type="reset" class="btn ghost">Leeren</button></div>
-          </form>
-        </section>
+<section id="readingsView" class="view">
+  <div class="grid">
+    <section class="card glass">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Nachtragen</p>
+          <h2>Einen Zeitpunkt auswählen und alle Zählerstände zusammen eintragen</h2>
+        </div>
+        <span class="badge">ein Datum für Strom, Wasser, Pellets</span>
+      </div>
+
+      <form id="batchReadingForm" class="form-grid">
+        <label>
+          Datum & Uhrzeit
+          <input id="batchReadingDatetime" type="datetime-local" required />
+        </label>
+
+        <label>
+          Notiz
+          <input id="batchReadingNote" type="text" maxlength="160" placeholder="optional" />
+        </label>
+
+        <label>
+          Strom Zählerstand
+          <input id="batchStromValue" type="number" step="0.01" min="0" placeholder="optional" />
+        </label>
+
+        <label>
+          Wasser Zählerstand
+          <input id="batchWasserValue" type="number" step="0.01" min="0" placeholder="optional" />
+        </label>
+
+        <label>
+          Pellets Zählerstand
+          <input id="batchPelletsValue" type="number" step="0.01" min="0" placeholder="optional" />
+        </label>
+
+        <div class="form-actions span-12">
+          <button type="submit" class="btn primary">Zeitpunkt mit Werten speichern</button>
+          <button type="reset" class="btn ghost">Leeren</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Schnellerfassung</p>
+          <h2>Aktuellen Wert pro Kategorie mit JETZT erfassen</h2>
+        </div>
+        <span class="badge ok">schnell auf Handy</span>
+      </div>
+
+      <form id="quickReadingForm" class="form-grid">
+        <label>
+          Bereich
+          <select id="quickReadingType" required>
+            <option value="strom">Strom</option>
+            <option value="wasser">Wasser</option>
+            <option value="pellets">Pellets Verbrauch</option>
+          </select>
+        </label>
+
+        <label>
+          Aktueller Zählerstand
+          <input id="quickReadingValue" type="number" step="0.01" min="0" required />
+        </label>
+
+        <label>
+          JETZT verwenden
+          <div class="inline-toggle">
+            <input id="quickUseNow" type="checkbox" checked />
+            <span class="muted">aktueller Zeitpunkt</span>
+          </div>
+        </label>
+
+        <label id="quickDatetimeWrap" class="hidden">
+          Datum & Uhrzeit
+          <input id="quickReadingDatetime" type="datetime-local" />
+        </label>
+
+        <label class="span-12">
+          Notiz
+          <input id="quickReadingNote" type="text" maxlength="160" placeholder="optional" />
+        </label>
+
+        <div class="form-actions span-12">
+          <button type="submit" class="btn primary">Einzelwert speichern</button>
+          <button type="reset" class="btn ghost">Leeren</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card wide">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Hinweis</p>
+          <h2>So wird erfasst</h2>
+        </div>
+      </div>
+      <div class="list-stack">
+        <div class="stat-box">
+          <div class="stat-label">Nachträge</div>
+          <div class="stat-value">Ein Zeitpunkt, drei Werte</div>
+          <div class="muted">Beim Nachtragen kannst du Strom, Wasser und Pellets gemeinsam für denselben Zeitpunkt speichern.</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">JETZT</div>
+          <div class="stat-value">Schnell erfassen</div>
+          <div class="muted">Ist JETZT aktiv, nimmt die App automatisch den aktuellen Zeitpunkt. Sonst kannst du Datum und Uhrzeit manuell setzen.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card wide">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Historie</p>
+          <h2>Zählerstände und berechnete Differenzen</h2>
+        </div>
+      </div>
+      <div id="readingsList" class="list-stack"></div>
+    </section>
+  </div>
+</section>
 
         <section class="card">
           <div class="card-head"><div><p class="section-kicker">Hinweis</p><h2>So wird gerechnet</h2></div></div>
@@ -402,7 +523,22 @@
       mainTabs: document.getElementById("mainTabs"), views: document.querySelectorAll(".view"),
       installBtn: document.getElementById("installBtn"), exportBackupBtn: document.getElementById("exportBackupBtn"),
       firebaseStatus: document.getElementById("firebaseStatus"), syncBadge: document.getElementById("syncBadge"),
-      readingForm: document.getElementById("readingForm"), readingType: document.getElementById("readingType"), readingDatetime: document.getElementById("readingDatetime"), readingValue: document.getElementById("readingValue"), readingHint: document.getElementById("readingHint"), readingNote: document.getElementById("readingNote"), readingsList: document.getElementById("readingsList"),
+        batchReadingForm: document.getElementById("batchReadingForm"),
+        batchReadingDatetime: document.getElementById("batchReadingDatetime"),
+        batchReadingNote: document.getElementById("batchReadingNote"),
+        batchStromValue: document.getElementById("batchStromValue"),
+        batchWasserValue: document.getElementById("batchWasserValue"),
+        batchPelletsValue: document.getElementById("batchPelletsValue"),
+
+        quickReadingForm: document.getElementById("quickReadingForm"),
+        quickReadingType: document.getElementById("quickReadingType"),
+        quickReadingValue: document.getElementById("quickReadingValue"),
+        quickUseNow: document.getElementById("quickUseNow"),
+        quickReadingDatetime: document.getElementById("quickReadingDatetime"),
+        quickDatetimeWrap: document.getElementById("quickDatetimeWrap"),
+        quickReadingNote: document.getElementById("quickReadingNote"),
+
+        readingsList: document.getElementById("readingsList"),
       refillForm: document.getElementById("refillForm"), refillDatetime: document.getElementById("refillDatetime"), refillBags: document.getElementById("refillBags"), refillKgPerBag: document.getElementById("refillKgPerBag"), refillTotalKg: document.getElementById("refillTotalKg"), refillNote: document.getElementById("refillNote"), refillsList: document.getElementById("refillsList"), pelletInventoryStats: document.getElementById("pelletInventoryStats"),
       settingsForm: document.getElementById("settingsForm"), priceStromBase: document.getElementById("priceStromBase"), priceStromUnit: document.getElementById("priceStromUnit"), priceWasserBase: document.getElementById("priceWasserBase"), priceWasserUnit: document.getElementById("priceWasserUnit"), pricePelletsBase: document.getElementById("pricePelletsBase"), pricePelletsUnit: document.getElementById("pricePelletsUnit"), settingsSummary: document.getElementById("settingsSummary"),
       purchaseForm: document.getElementById("purchaseForm"), purchaseDatetime: document.getElementById("purchaseDatetime"), purchaseBags: document.getElementById("purchaseBags"), purchaseKgPerBag: document.getElementById("purchaseKgPerBag"), purchasePrice: document.getElementById("purchasePrice"), purchaseTotalKg: document.getElementById("purchaseTotalKg"), purchasePricePerKg: document.getElementById("purchasePricePerKg"), purchaseList: document.getElementById("purchaseList"),
@@ -418,6 +554,7 @@
     async function init() {
       hydrateLocalForms();
       setDefaultDatetimes();
+        syncQuickNowUi();
       syncReadingHint();
       restoreLocalData();
       registerEvents();
@@ -433,14 +570,15 @@
       if (els.fbProjectId) els.fbProjectId.value = FIREBASE_CONFIG.projectId || "";
     }
 
-    function setDefaultDatetimes() {
-      const now = toDatetimeLocal(new Date());
-      if (els.readingDatetime) els.readingDatetime.value = now;
-      if (els.refillDatetime) els.refillDatetime.value = now;
-      if (els.purchaseDatetime) els.purchaseDatetime.value = now;
-      if (els.resetDatetime) els.resetDatetime.value = now;
-      if (els.resetNewValue) els.resetNewValue.value = 0;
-    }
+function setDefaultDatetimes() {
+  const now = toDatetimeLocal(new Date());
+  if (els.batchReadingDatetime) els.batchReadingDatetime.value = now;
+  if (els.quickReadingDatetime) els.quickReadingDatetime.value = now;
+  if (els.refillDatetime) els.refillDatetime.value = now;
+  if (els.purchaseDatetime) els.purchaseDatetime.value = now;
+  if (els.resetDatetime) els.resetDatetime.value = now;
+  if (els.resetNewValue) els.resetNewValue.value = 0;
+}
 
     function restoreLocalData() {
       const local = loadJSON(LOCAL_KEYS.localData, null);
@@ -453,23 +591,130 @@
       fillSettingsForm();
     }
 
-    function registerEvents() {
-      els.mainTabs?.addEventListener("click", handleTabClick);
-      els.exportBackupBtn?.addEventListener("click", exportBackup);
-      els.readingType?.addEventListener("change", syncReadingHint);
-      els.refillBags?.addEventListener("input", syncRefillTotal);
-      els.refillKgPerBag?.addEventListener("input", syncRefillTotal);
-      els.purchaseBags?.addEventListener("input", syncPurchaseTotals);
-      els.purchaseKgPerBag?.addEventListener("input", syncPurchaseTotals);
-      els.purchasePrice?.addEventListener("input", syncPurchaseTotals);
-      els.readingForm?.addEventListener("submit", handleReadingSubmit);
-      els.refillForm?.addEventListener("submit", handleRefillSubmit);
-      els.purchaseForm?.addEventListener("submit", handlePurchaseSubmit);
-      els.resetForm?.addEventListener("submit", handleResetSubmit);
-      els.settingsForm?.addEventListener("submit", handleSettingsSubmit);
-      els.firebaseForm?.addEventListener("submit", handleFirebaseSubmit);
-      els.disconnectFirebaseBtn?.addEventListener("click", disconnectFirebase);
+        function registerEvents() {
+          els.mainTabs?.addEventListener("click", handleTabClick);
+          els.exportBackupBtn?.addEventListener("click", exportBackup);
+
+          els.quickUseNow?.addEventListener("change", syncQuickNowUi);
+
+          els.batchReadingForm?.addEventListener("submit", handleBatchReadingSubmit);
+          els.batchReadingForm?.addEventListener("reset", () => setTimeout(() => {
+            if (els.batchReadingDatetime) els.batchReadingDatetime.value = toDatetimeLocal(new Date());
+          }, 0));
+
+          els.quickReadingForm?.addEventListener("submit", handleQuickReadingSubmit);
+          els.quickReadingForm?.addEventListener("reset", () => setTimeout(() => {
+            if (els.quickUseNow) els.quickUseNow.checked = true;
+            if (els.quickReadingDatetime) els.quickReadingDatetime.value = toDatetimeLocal(new Date());
+            syncQuickNowUi();
+          }, 0));
+
+          els.refillBags?.addEventListener("input", syncRefillTotal);
+          els.refillKgPerBag?.addEventListener("input", syncRefillTotal);
+
+          els.refillForm?.addEventListener("submit", handleRefillSubmit);
+
+          els.purchaseBags?.addEventListener("input", syncPurchaseTotals);
+          els.purchaseKgPerBag?.addEventListener("input", syncPurchaseTotals);
+          els.purchasePrice?.addEventListener("input", syncPurchaseTotals);
+
+          els.purchaseForm?.addEventListener("submit", handlePurchaseSubmit);
+          els.resetForm?.addEventListener("submit", handleResetSubmit);
+          els.settingsForm?.addEventListener("submit", handleSettingsSubmit);
+          els.firebaseForm?.addEventListener("submit", handleFirebaseSubmit);
+          els.disconnectFirebaseBtn?.addEventListener("click", disconnectFirebase);
+        }
+          
+function syncQuickNowUi() {
+  const useNow = !!els.quickUseNow?.checked;
+  els.quickDatetimeWrap?.classList.toggle("hidden", useNow);
+
+  if (els.quickReadingDatetime) {
+    els.quickReadingDatetime.required = !useNow;
+    if (useNow) {
+      els.quickReadingDatetime.value = toDatetimeLocal(new Date());
     }
+  }
+}
+
+async function handleBatchReadingSubmit(event) {
+  event.preventDefault();
+
+  const datetime = new Date(els.batchReadingDatetime.value).toISOString();
+  const note = els.batchReadingNote.value.trim();
+
+  const entries = [
+    { type: "strom", value: toNumber(els.batchStromValue.value) },
+    { type: "wasser", value: toNumber(els.batchWasserValue.value) },
+    { type: "pellets", value: toNumber(els.batchPelletsValue.value) }
+  ].filter((item) => Number.isFinite(item.value));
+
+  if (!entries.length) {
+    showToast("Bitte mindestens einen Wert eintragen.", "error");
+    return;
+  }
+
+  for (const item of entries) {
+    const previous = getPreviousReading(item.type, datetime);
+    if (previous && item.value < previous.value) {
+      const proceed = confirm(`Der neue Zählerstand für ${typeConfig[item.type].label} ist kleiner als der vorherige. Trotzdem speichern?`);
+      if (!proceed) return;
+    }
+  }
+
+  for (const item of entries) {
+    await saveRecord("readings", {
+      type: item.type,
+      value: item.value,
+      note,
+      date: datetime,
+      createdAt: new Date().toISOString()
+    });
+  }
+
+  els.batchReadingForm.reset();
+  els.batchReadingDatetime.value = toDatetimeLocal(new Date());
+  showToast("Zeitpunkt mit Zählerständen gespeichert.", "success");
+}
+
+async function handleQuickReadingSubmit(event) {
+  event.preventDefault();
+
+  const useNow = !!els.quickUseNow?.checked;
+  const datetime = useNow
+    ? new Date().toISOString()
+    : new Date(els.quickReadingDatetime.value).toISOString();
+
+  const type = els.quickReadingType.value;
+  const value = toNumber(els.quickReadingValue.value);
+  const note = els.quickReadingNote.value.trim();
+
+  if (!Number.isFinite(value) || value < 0) {
+    showToast("Bitte einen gültigen Zählerstand eingeben.", "error");
+    return;
+  }
+
+  const previous = getPreviousReading(type, datetime);
+  if (previous && value < previous.value) {
+    const proceed = confirm("Der neue Zählerstand ist kleiner als der vorherige. Trotzdem speichern?");
+    if (!proceed) return;
+  }
+
+  await saveRecord("readings", {
+    type,
+    value,
+    note,
+    date: datetime,
+    createdAt: new Date().toISOString()
+  });
+
+  els.quickReadingForm.reset();
+  if (els.quickUseNow) els.quickUseNow.checked = true;
+  if (els.quickReadingDatetime) els.quickReadingDatetime.value = toDatetimeLocal(new Date());
+  syncQuickNowUi();
+
+  showToast("Zählerstand gespeichert.", "success");
+}
 
     function registerInstallHandling() {
       window.addEventListener("beforeinstallprompt", (event) => { event.preventDefault(); deferredPrompt = event; els.installBtn.classList.remove("hidden"); });
@@ -504,17 +749,6 @@
       const bags = toNumber(els.purchaseBags.value); const kgPerBag = toNumber(els.purchaseKgPerBag.value); const totalPrice = toNumber(els.purchasePrice.value);
       const totalKg = round2((bags || 0) * (kgPerBag || 0)); const pricePerKg = totalKg > 0 ? round4(totalPrice / totalKg) : 0;
       els.purchaseTotalKg.value = totalKg || ""; els.purchasePricePerKg.value = pricePerKg || "";
-    }
-
-    async function handleReadingSubmit(event) {
-      event.preventDefault();
-      const payload = { type: els.readingType.value, value: toNumber(els.readingValue.value), note: els.readingNote.value.trim(), date: new Date(els.readingDatetime.value).toISOString(), createdAt: new Date().toISOString() };
-      if (!payload.date || !Number.isFinite(payload.value) || payload.value < 0) return showToast("Bitte einen gültigen Zählerstand eingeben.", "error");
-      const previous = getPreviousReading(payload.type, payload.date);
-      if (previous && payload.value < previous.value && !confirm("Der neue Zählerstand ist kleiner als der vorherige. Trotzdem speichern?")) return;
-      await saveRecord("readings", payload);
-      els.readingForm.reset(); els.readingType.value = "strom"; syncReadingHint(); els.readingDatetime.value = toDatetimeLocal(new Date());
-      showToast("Zählerstand gespeichert.", "success");
     }
 
     async function handleRefillSubmit(event) {
