@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -5,14 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Verbrauch Zuhause</title>
   <meta name="theme-color" content="#0f172a" />
-  <meta name="description" content="Zählerstände, Pellets-Nachfüllung, Käufe, Preiszeiträume, Monatsübersicht und Firebase Firestore." />
+  <meta name="description" content="Zählerstände, Pellets, Preiszeiträume und Firebase Firestore in einer Datei." />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png" />
   <link rel="apple-touch-icon" href="icon-192.png" />
   <style>
     :root {
       --bg: #081120;
-      --bg-soft: #0f172a;
       --card: rgba(15, 23, 42, 0.72);
       --card-solid: #111c33;
       --text: #e5eefc;
@@ -20,9 +20,9 @@
       --line: rgba(148, 163, 184, 0.18);
       --primary: #38bdf8;
       --primary-strong: #0ea5e9;
-      --accent: #22c55e;
+      --ok: #22c55e;
+      --warn: #f59e0b;
       --danger: #ef4444;
-      --warning: #f59e0b;
       --shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
       --radius: 22px;
       --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -43,8 +43,8 @@
 
     button, input, select, textarea { font: inherit; }
     .hidden { display: none !important; }
-
     .app-shell { max-width: 1450px; margin: 0 auto; padding: 24px; }
+
     .hero {
       display: flex;
       justify-content: space-between;
@@ -65,7 +65,7 @@
     }
     .hero-copy, .hero-status {
       margin: 0;
-      max-width: 850px;
+      max-width: 900px;
       color: var(--muted);
       line-height: 1.6;
     }
@@ -89,7 +89,6 @@
       grid-template-columns: repeat(12, 1fr);
       gap: 20px;
     }
-
     .card {
       grid-column: span 6;
       background: var(--card-solid);
@@ -153,7 +152,7 @@
     .view { display: none; }
     .view.active { display: block; }
 
-    .form-grid, .settings-grid, .split-grid, .price-grid {
+    .form-grid, .settings-grid, .price-grid, .split-grid {
       display: grid;
       gap: 16px;
     }
@@ -172,7 +171,6 @@
       font-weight: 600;
       font-size: 0.95rem;
     }
-
     input, select, textarea {
       width: 100%;
       border: 1px solid var(--line);
@@ -188,10 +186,9 @@
       border-color: rgba(56, 189, 248, 0.55);
       box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.13);
     }
-
     small { color: var(--muted); font-weight: 500; }
 
-    .btn, .icon-btn {
+    .btn, .icon-btn, .chart-overlay-close {
       border: 0;
       cursor: pointer;
       transition: 0.2s ease;
@@ -202,21 +199,13 @@
       font-weight: 700;
     }
     .btn.primary { background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: #03111f; }
-    .btn.secondary {
-      background: rgba(34, 197, 94, 0.18);
-      color: #dcfce7;
-      border: 1px solid rgba(34, 197, 94, 0.22);
-    }
-    .btn.ghost {
-      background: rgba(148, 163, 184, 0.08);
-      color: var(--text);
-      border: 1px solid var(--line);
-    }
+    .btn.secondary { background: rgba(34, 197, 94, 0.18); color: #dcfce7; border: 1px solid rgba(34, 197, 94, 0.22); }
+    .btn.ghost { background: rgba(148, 163, 184, 0.08); color: var(--text); border: 1px solid var(--line); }
 
-    .stats-grid, .summary-grid, .settings-summary-grid {
+    .summary-grid, .summary-grid.four, .stats-grid, .settings-summary-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 14px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
     .summary-grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
@@ -226,17 +215,9 @@
       border-radius: 18px;
       padding: 16px;
     }
-    .stat-label {
-      color: var(--muted);
-      font-size: 0.82rem;
-      margin-bottom: 6px;
-    }
-    .stat-value {
-      font-size: 1.08rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      line-height: 1.4;
-    }
+    .stat-label { color: var(--muted); font-size: 0.82rem; margin-bottom: 6px; }
+    .stat-value { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.45; }
+
     .muted { color: var(--muted); }
     .list-stack { display: grid; gap: 14px; }
 
@@ -262,11 +243,11 @@
     }
     .entry-type { font-weight: 700; color: #ccecff; }
     .entry-value {
-      font-size: 1.02rem;
+      font-size: 1rem;
       font-weight: 800;
       letter-spacing: -0.02em;
       margin-bottom: 6px;
-      line-height: 1.45;
+      line-height: 1.5;
     }
     .entry-note {
       color: var(--muted);
@@ -299,10 +280,7 @@
       overflow: hidden;
       padding: 10px;
     }
-    .chart.clickable {
-      cursor: pointer;
-      transition: 0.2s ease;
-    }
+    .chart.clickable { cursor: pointer; }
     .chart svg { width: 100%; height: 100%; display: block; }
 
     .chart-overlay {
@@ -328,11 +306,7 @@
       flex-direction: column;
       gap: 16px;
     }
-    .chart-overlay-head {
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: nowrap;
-    }
+    .chart-overlay-head { justify-content: space-between; align-items: center; }
     .chart-overlay-close {
       width: 44px;
       height: 44px;
@@ -387,7 +361,7 @@
 
     @media (max-width: 1100px) {
       .card, .card.wide { grid-column: 1 / -1; }
-      .price-grid, .stats-grid, .summary-grid, .summary-grid.four, .settings-summary-grid {
+      .price-grid, .summary-grid, .summary-grid.four, .stats-grid, .settings-summary-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
       .span-4, .span-6 { grid-column: span 12; }
@@ -401,7 +375,7 @@
         flex-direction: column;
         align-items: stretch;
       }
-      .form-grid, .settings-grid, .price-grid, .stats-grid, .summary-grid, .summary-grid.four, .settings-summary-grid {
+      .form-grid, .settings-grid, .price-grid, .summary-grid, .summary-grid.four, .stats-grid, .settings-summary-grid {
         grid-template-columns: 1fr;
       }
       .entry-item { flex-direction: column; }
@@ -419,7 +393,7 @@
         <p class="eyebrow">Verbrauch Zuhause</p>
         <h1>Zählerstände, Pellets und Kosten im Blick</h1>
         <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
-        <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du die Haushalt-ID ändern.</p>
+        <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du den Haushalt wechseln oder neu anlegen.</p>
       </div>
       <div class="hero-actions">
         <button id="installBtn" class="btn secondary hidden" type="button">App installieren</button>
@@ -440,7 +414,7 @@
           <div class="card-head">
             <div>
               <p class="section-kicker">Momentaufnahme</p>
-              <h2>Aktuelle Stände und Kosten</h2>
+              <h2>Aktuelle Stände und Hochrechnungen</h2>
             </div>
             <span id="syncBadge" class="badge warn">lokal / Firestore noch aus</span>
           </div>
@@ -487,7 +461,7 @@
           <div class="card-head">
             <div>
               <p class="section-kicker">Letzte Intervalle</p>
-              <h2>Verbrauch pro Tag zwischen zwei Einträgen</h2>
+              <h2>Verbrauch pro Tag und Jahreshochrechnung</h2>
             </div>
           </div>
           <div id="consumptionHistory" class="list-stack"></div>
@@ -516,7 +490,6 @@
             </div>
             <span class="badge">ein Datum für Strom, Wasser, Pellets</span>
           </div>
-
           <form id="batchReadingForm" class="form-grid">
             <label>
               Datum & Uhrzeit
@@ -553,7 +526,6 @@
             </div>
             <span class="badge ok">schnell auf Handy</span>
           </div>
-
           <form id="quickReadingForm" class="form-grid">
             <label>
               Bereich
@@ -612,12 +584,15 @@
             <span class="badge ok">unabhängig vom Verbrauch</span>
           </div>
           <form id="refillForm" class="form-grid">
-            <label>Datum & Uhrzeit<input id="refillDatetime" type="datetime-local" required /></label>
+            <label>Datum<input id="refillDate" type="date" required /></label>
             <label>Anzahl Säcke<input id="refillBags" type="number" step="1" min="1" required /></label>
             <label>Kilogramm pro Sack<input id="refillKgPerBag" type="number" step="0.1" min="0.1" required /></label>
             <label>Gesamtgewicht<input id="refillTotalKg" type="number" step="0.01" min="0" readonly /><small>Wird automatisch berechnet.</small></label>
             <label class="span-12">Notiz<input id="refillNote" type="text" maxlength="160" placeholder="optional" /></label>
-            <div class="form-actions span-12"><button type="submit" class="btn primary">Nachfüllung speichern</button><button type="reset" class="btn ghost">Leeren</button></div>
+            <div class="form-actions span-12">
+              <button type="submit" class="btn primary">Nachfüllung speichern</button>
+              <button type="reset" class="btn ghost">Leeren</button>
+            </div>
           </form>
         </section>
 
@@ -649,15 +624,29 @@
           <div class="card-head">
             <div>
               <p class="section-kicker">Firebase</p>
-              <h2>Firestore ist bereits eingebaut</h2>
+              <h2>Haushalte wechseln oder anlegen</h2>
             </div>
             <span class="badge ok">Projekt fest eingebaut</span>
           </div>
           <form id="firebaseForm" class="settings-grid">
-            <label>Haushalt / Datenraum<input id="householdId" type="text" placeholder="z. B. zuhause-haupt" /><small>Alle Geräte mit derselben ID sehen dieselben Daten.</small></label>
-            <label>Firebase Projekt<input id="fbProjectId" type="text" value="verbrauch-zuhause" disabled /><small>Die restliche Firebase-Konfiguration ist bereits fest im Code hinterlegt.</small></label>
+            <label>Haushalt auswählen
+              <select id="householdSelect"></select>
+              <small>Alle vorhandenen Haushalte aus Firebase. Mit derselben Auswahl sehen alle Geräte dieselben Daten.</small>
+            </label>
+            <label>Neuen Haushalt anlegen
+              <input id="newHouseholdId" type="text" placeholder="z. B. ferienhaus oder zuhause-oben" />
+              <small>Optional. Wenn gefüllt, wird dieser Haushalt angelegt und direkt verbunden.</small>
+            </label>
+            <label>Aktiver Haushalt
+              <input id="householdId" type="text" placeholder="z. B. zuhause-haupt" />
+              <small>Wird automatisch gesetzt.</small>
+            </label>
+            <label>Firebase Projekt
+              <input id="fbProjectId" type="text" value="verbrauch-zuhause" disabled />
+              <small>Die restliche Firebase-Konfiguration ist bereits fest im Code hinterlegt.</small>
+            </label>
             <div class="form-actions span-12">
-              <button type="submit" class="btn primary">Haushalt-ID speichern & verbinden</button>
+              <button type="submit" class="btn primary">Haushalt speichern & verbinden</button>
               <button type="button" class="btn ghost" id="disconnectFirebaseBtn">Nur lokale Daten nutzen</button>
             </div>
           </form>
@@ -671,15 +660,63 @@
             </div>
           </div>
           <form id="pricePeriodForm" class="price-grid">
-            <label>Bereich<select id="pricePeriodType" required><option value="strom">Strom</option><option value="wasser">Wasser</option><option value="pellets">Pellets</option></select></label>
-            <label>Startdatum<input id="pricePeriodFrom" type="datetime-local" required /></label>
-            <label>Enddatum<input id="pricePeriodTo" type="datetime-local" required /></label>
-            <label>Grundpreis für den Zeitraum (€)<input id="pricePeriodBase" type="number" step="0.01" min="0" /></label>
-            <label>Preis pro Einheit (€)<input id="pricePeriodUnit" type="number" step="0.0001" min="0" required /></label>
-            <label>Notiz<input id="pricePeriodNote" type="text" maxlength="160" placeholder="optional" /></label>
+            <label>Bereich
+              <select id="pricePeriodType" required>
+                <option value="strom">Strom</option>
+                <option value="wasser">Wasser</option>
+                <option value="pellets">Pellets</option>
+              </select>
+            </label>
+            <label>Startdatum
+              <input id="pricePeriodFrom" type="datetime-local" required />
+            </label>
+            <label>Enddatum
+              <input id="pricePeriodTo" type="datetime-local" required />
+            </label>
+            <label>Grundpreis für den Zeitraum (€)
+              <input id="pricePeriodBase" type="number" step="0.01" min="0" />
+            </label>
+            <label>Preis pro Einheit (€)
+              <input id="pricePeriodUnit" type="number" step="0.0001" min="0" required />
+            </label>
+            <label>Notiz
+              <input id="pricePeriodNote" type="text" maxlength="160" placeholder="optional" />
+            </label>
             <div class="form-actions span-12">
               <button type="submit" class="btn primary">Preiszeitraum speichern</button>
               <button type="reset" class="btn ghost">Leeren</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card glass">
+          <div class="card-head">
+            <div>
+              <p class="section-kicker">Aktuelle Basispreise</p>
+              <h2>Fallback, wenn kein Preiszeitraum passt</h2>
+            </div>
+          </div>
+          <form id="settingsForm" class="form-grid">
+            <label>Strom Grundpreis
+              <input id="priceStromBase" type="number" step="0.01" min="0" />
+            </label>
+            <label>Strom Preis pro kWh
+              <input id="priceStromUnit" type="number" step="0.0001" min="0" />
+            </label>
+            <label>Wasser Grundpreis
+              <input id="priceWasserBase" type="number" step="0.01" min="0" />
+            </label>
+            <label>Wasser Preis pro m³
+              <input id="priceWasserUnit" type="number" step="0.0001" min="0" />
+            </label>
+            <label>Pellets Grundpreis
+              <input id="pricePelletsBase" type="number" step="0.01" min="0" />
+            </label>
+            <label>Pellets Preis pro kg
+              <input id="pricePelletsUnit" type="number" step="0.0001" min="0" />
+            </label>
+            <div class="form-actions span-12">
+              <button type="submit" class="btn primary">Basispreise speichern</button>
             </div>
           </form>
         </section>
@@ -692,12 +729,28 @@
             </div>
           </div>
           <form id="resetForm" class="form-grid">
-            <label>Bereich<select id="resetType" required><option value="strom">Strom</option><option value="wasser">Wasser</option><option value="pellets">Pellets Verbrauch</option></select></label>
-            <label>Datum & Uhrzeit<input id="resetDatetime" type="datetime-local" required /></label>
-            <label>Letzter alter Zählerstand<input id="resetPreviousValue" type="number" step="0.01" min="0" required /></label>
-            <label>Neuer Startwert<input id="resetNewValue" type="number" step="0.01" min="0" value="0" required /></label>
-            <label class="span-12">Notiz<input id="resetNote" type="text" maxlength="160" placeholder="z. B. Wasseruhr getauscht" /></label>
-            <div class="form-actions span-12"><button type="submit" class="btn primary">Reset speichern</button></div>
+            <label>Bereich
+              <select id="resetType" required>
+                <option value="strom">Strom</option>
+                <option value="wasser">Wasser</option>
+                <option value="pellets">Pellets Verbrauch</option>
+              </select>
+            </label>
+            <label>Datum & Uhrzeit
+              <input id="resetDatetime" type="datetime-local" required />
+            </label>
+            <label>Letzter alter Zählerstand
+              <input id="resetPreviousValue" type="number" step="0.01" min="0" required />
+            </label>
+            <label>Neuer Startwert
+              <input id="resetNewValue" type="number" step="0.01" min="0" value="0" required />
+            </label>
+            <label class="span-12">Notiz
+              <input id="resetNote" type="text" maxlength="160" placeholder="z. B. Wasseruhr getauscht" />
+            </label>
+            <div class="form-actions span-12">
+              <button type="submit" class="btn primary">Reset speichern</button>
+            </div>
           </form>
         </section>
 
@@ -709,19 +762,60 @@
             </div>
           </div>
           <form id="purchaseForm" class="form-grid">
-            <label>Kaufdatum<input id="purchaseDatetime" type="datetime-local" required /></label>
-            <label>Anzahl Säcke<input id="purchaseBags" type="number" step="1" min="1" required /></label>
-            <label>Kilogramm pro Sack<input id="purchaseKgPerBag" type="number" step="0.1" min="0.1" required /></label>
-            <label>Gesamtpreis (€)<input id="purchasePrice" type="number" step="0.01" min="0" required /></label>
-            <label>Gesamtgewicht<input id="purchaseTotalKg" type="number" step="0.01" min="0" readonly /></label>
-            <label>Preis pro kg<input id="purchasePricePerKg" type="number" step="0.0001" min="0" readonly /></label>
-            <div class="form-actions span-12"><button type="submit" class="btn primary">Kauf speichern</button><button type="reset" class="btn ghost">Leeren</button></div>
+            <label>Kaufdatum
+              <input id="purchaseDatetime" type="datetime-local" required />
+            </label>
+            <label>Anzahl Säcke
+              <input id="purchaseBags" type="number" step="1" min="1" required />
+            </label>
+            <label>Kilogramm pro Sack
+              <input id="purchaseKgPerBag" type="number" step="0.1" min="0.1" required />
+            </label>
+            <label>Gesamtpreis (€)
+              <input id="purchasePrice" type="number" step="0.01" min="0" required />
+            </label>
+            <label>Gesamtgewicht
+              <input id="purchaseTotalKg" type="number" step="0.01" min="0" readonly />
+            </label>
+            <label>Preis pro kg
+              <input id="purchasePricePerKg" type="number" step="0.0001" min="0" readonly />
+            </label>
+            <div class="form-actions span-12">
+              <button type="submit" class="btn primary">Kauf speichern</button>
+              <button type="reset" class="btn ghost">Leeren</button>
+            </div>
           </form>
         </section>
 
-        <section class="card"><div class="card-head"><div><p class="section-kicker">Aktuelle Preislage</p><h2>Aktive Werte heute</h2></div></div><div id="settingsSummary" class="settings-summary-grid"></div></section>
-        <section class="card wide"><div class="card-head"><div><p class="section-kicker">Preis-Historie</p><h2>Gespeicherte Preiszeiträume</h2></div></div><div id="pricePeriodList" class="list-stack"></div></section>
-        <section class="card wide"><div class="card-head"><div><p class="section-kicker">Pellets Käufe</p><h2>Einkaufshistorie</h2></div></div><div id="purchaseList" class="list-stack"></div></section>
+        <section class="card">
+          <div class="card-head">
+            <div>
+              <p class="section-kicker">Aktive Preislage</p>
+              <h2>Heute gültige Werte</h2>
+            </div>
+          </div>
+          <div id="settingsSummary" class="settings-summary-grid"></div>
+        </section>
+
+        <section class="card wide">
+          <div class="card-head">
+            <div>
+              <p class="section-kicker">Preis-Historie</p>
+              <h2>Gespeicherte Preiszeiträume</h2>
+            </div>
+          </div>
+          <div id="pricePeriodList" class="list-stack"></div>
+        </section>
+
+        <section class="card wide">
+          <div class="card-head">
+            <div>
+              <p class="section-kicker">Pellets Käufe</p>
+              <h2>Einkaufshistorie</h2>
+            </div>
+          </div>
+          <div id="purchaseList" class="list-stack"></div>
+        </section>
       </div>
     </section>
   </div>
@@ -743,17 +837,36 @@
   <template id="entryTemplate">
     <article class="entry-item">
       <div class="entry-main">
-        <div class="entry-topline"><span class="entry-type"></span><span class="entry-datetime"></span></div>
+        <div class="entry-topline">
+          <span class="entry-type"></span>
+          <span class="entry-datetime"></span>
+        </div>
         <div class="entry-value"></div>
         <div class="entry-note"></div>
       </div>
-      <div class="entry-actions"><button class="icon-btn delete-btn" title="Löschen" type="button">🗑️</button></div>
+      <div class="entry-actions">
+        <button class="icon-btn delete-btn" title="Löschen" type="button">🗑️</button>
+      </div>
     </article>
   </template>
 
   <script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc, collection, addDoc, deleteDoc, onSnapshot, orderBy, query, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    import {
+      getFirestore,
+      doc,
+      setDoc,
+      getDoc,
+      collection,
+      addDoc,
+      deleteDoc,
+      onSnapshot,
+      orderBy,
+      query,
+      serverTimestamp,
+      Timestamp,
+      getDocs
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
     const FIREBASE_CONFIG = {
       apiKey: "AIzaSyBrKjajSNPgmFUwjMghkox1kM8NjbCWZ_Y",
@@ -768,7 +881,7 @@
     const DEFAULT_HOUSEHOLD_ID = "zuhause-haupt";
     const LOCAL_KEYS = {
       householdId: "verbrauch-household-id-v1",
-      localData: "verbrauch-local-data-v6"
+      localData: "verbrauch-local-data-v7"
     };
 
     const defaultSettings = {
@@ -791,6 +904,7 @@
       pricePeriods: [],
       settings: structuredClone(defaultSettings),
       householdId: localStorage.getItem(LOCAL_KEYS.householdId) || DEFAULT_HOUSEHOLD_ID,
+      availableHouseholds: [],
       firebaseEnabled: false,
       app: null,
       db: null,
@@ -824,7 +938,7 @@
       readingsList: document.getElementById("readingsList"),
 
       refillForm: document.getElementById("refillForm"),
-      refillDatetime: document.getElementById("refillDatetime"),
+      refillDate: document.getElementById("refillDate"),
       refillBags: document.getElementById("refillBags"),
       refillKgPerBag: document.getElementById("refillKgPerBag"),
       refillTotalKg: document.getElementById("refillTotalKg"),
@@ -867,14 +981,17 @@
       resetNote: document.getElementById("resetNote"),
 
       firebaseForm: document.getElementById("firebaseForm"),
-      fbProjectId: document.getElementById("fbProjectId"),
+      householdSelect: document.getElementById("householdSelect"),
+      newHouseholdId: document.getElementById("newHouseholdId"),
       householdId: document.getElementById("householdId"),
+      fbProjectId: document.getElementById("fbProjectId"),
       disconnectFirebaseBtn: document.getElementById("disconnectFirebaseBtn"),
 
       dashboardStats: document.getElementById("dashboardStats"),
       consumptionHistory: document.getElementById("consumptionHistory"),
       pelletSummary: document.getElementById("pelletSummary"),
       pelletActivity: document.getElementById("pelletActivity"),
+      monthlyOverview: document.getElementById("monthlyOverview"),
 
       chartStrom: document.getElementById("chart-strom"),
       chartWasser: document.getElementById("chart-wasser"),
@@ -889,7 +1006,6 @@
       chartOverlayContent: document.getElementById("chartOverlayContent"),
       chartOverlayClose: document.getElementById("chartOverlayClose"),
 
-      monthlyOverview: document.getElementById("monthlyOverview"),
       entryTemplate: document.getElementById("entryTemplate")
     };
 
@@ -911,18 +1027,19 @@
     function hydrateLocalForms() {
       if (els.householdId) els.householdId.value = state.householdId || DEFAULT_HOUSEHOLD_ID;
       if (els.fbProjectId) els.fbProjectId.value = FIREBASE_CONFIG.projectId || "";
+      renderHouseholdOptions();
     }
 
     function setDefaultDatetimes() {
       const now = toDatetimeLocal(new Date());
       els.batchReadingDatetime.value = now;
       els.quickReadingDatetime.value = now;
-      els.refillDatetime.value = now;
       els.purchaseDatetime.value = now;
       els.resetDatetime.value = now;
-      els.resetNewValue.value = 0;
       els.pricePeriodFrom.value = now;
       els.pricePeriodTo.value = now;
+      els.refillDate.value = now.slice(0, 10);
+      els.resetNewValue.value = 0;
     }
 
     function restoreLocalData() {
@@ -940,30 +1057,62 @@
     function registerEvents() {
       els.mainTabs?.addEventListener("click", handleTabClick);
       els.exportBackupBtn?.addEventListener("click", exportBackup);
+
       els.quickUseNow?.addEventListener("change", syncQuickNowUi);
+
       els.batchReadingForm?.addEventListener("submit", handleBatchReadingSubmit);
-      els.batchReadingForm?.addEventListener("reset", () => setTimeout(() => { els.batchReadingDatetime.value = toDatetimeLocal(new Date()); }, 0));
+      els.batchReadingForm?.addEventListener("reset", () => setTimeout(() => {
+        els.batchReadingDatetime.value = toDatetimeLocal(new Date());
+      }, 0));
+
       els.quickReadingForm?.addEventListener("submit", handleQuickReadingSubmit);
-      els.quickReadingForm?.addEventListener("reset", () => setTimeout(() => { els.quickUseNow.checked = true; els.quickReadingDatetime.value = toDatetimeLocal(new Date()); syncQuickNowUi(); }, 0));
+      els.quickReadingForm?.addEventListener("reset", () => setTimeout(() => {
+        els.quickUseNow.checked = true;
+        els.quickReadingDatetime.value = toDatetimeLocal(new Date());
+        syncQuickNowUi();
+      }, 0));
+
       els.refillBags?.addEventListener("input", syncRefillTotal);
       els.refillKgPerBag?.addEventListener("input", syncRefillTotal);
       els.refillForm?.addEventListener("submit", handleRefillSubmit);
+      els.refillForm?.addEventListener("reset", () => setTimeout(() => {
+        els.refillDate.value = toDatetimeLocal(new Date()).slice(0, 10);
+        syncRefillTotal();
+      }, 0));
+
       els.purchaseBags?.addEventListener("input", syncPurchaseTotals);
       els.purchaseKgPerBag?.addEventListener("input", syncPurchaseTotals);
       els.purchasePrice?.addEventListener("input", syncPurchaseTotals);
       els.purchaseForm?.addEventListener("submit", handlePurchaseSubmit);
+      els.purchaseForm?.addEventListener("reset", () => setTimeout(() => {
+        els.purchaseDatetime.value = toDatetimeLocal(new Date());
+        syncPurchaseTotals();
+      }, 0));
+
       els.resetForm?.addEventListener("submit", handleResetSubmit);
       els.settingsForm?.addEventListener("submit", handleSettingsSubmit);
       els.pricePeriodForm?.addEventListener("submit", handlePricePeriodSubmit);
-      els.pricePeriodForm?.addEventListener("reset", () => setTimeout(() => { els.pricePeriodFrom.value = toDatetimeLocal(new Date()); els.pricePeriodTo.value = toDatetimeLocal(new Date()); }, 0));
+      els.pricePeriodForm?.addEventListener("reset", () => setTimeout(() => {
+        els.pricePeriodFrom.value = toDatetimeLocal(new Date());
+        els.pricePeriodTo.value = toDatetimeLocal(new Date());
+      }, 0));
+
       els.firebaseForm?.addEventListener("submit", handleFirebaseSubmit);
       els.disconnectFirebaseBtn?.addEventListener("click", disconnectFirebase);
+      els.householdSelect?.addEventListener("change", () => {
+        if (els.householdSelect.value) els.householdId.value = els.householdSelect.value;
+      });
+
       els.chartStrom?.addEventListener("click", () => openChartOverlay("strom"));
       els.chartWasser?.addEventListener("click", () => openChartOverlay("wasser"));
       els.chartPellets?.addEventListener("click", () => openChartOverlay("pellets"));
       els.chartOverlayClose?.addEventListener("click", closeChartOverlay);
-      els.chartOverlay?.addEventListener("click", (event) => { if (event.target === els.chartOverlay) closeChartOverlay(); });
-      document.addEventListener("keydown", (event) => { if (event.key === "Escape") closeChartOverlay(); });
+      els.chartOverlay?.addEventListener("click", (event) => {
+        if (event.target === els.chartOverlay) closeChartOverlay();
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") closeChartOverlay();
+      });
     }
 
     function registerInstallHandling() {
@@ -972,14 +1121,19 @@
         deferredPrompt = event;
         els.installBtn.classList.remove("hidden");
       });
+
       els.installBtn?.addEventListener("click", async () => {
-        if (!deferredPrompt) return showToast("Im Browser-Menü installieren oder zum Startbildschirm hinzufügen.", "error");
+        if (!deferredPrompt) {
+          showToast("Im Browser-Menü installieren oder zum Startbildschirm hinzufügen.", "error");
+          return;
+        }
         deferredPrompt.prompt();
         const choiceResult = await deferredPrompt.userChoice;
         deferredPrompt = null;
         els.installBtn.classList.add("hidden");
         showToast(choiceResult.outcome === "accepted" ? "App-Installation gestartet." : "Installation abgebrochen.", choiceResult.outcome === "accepted" ? "success" : "error");
       });
+
       window.addEventListener("appinstalled", () => {
         els.installBtn.classList.add("hidden");
         deferredPrompt = null;
@@ -989,7 +1143,9 @@
 
     function registerServiceWorker() {
       if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch((err) => console.error("SW-Fehler:", err)));
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("./sw.js").catch((err) => console.error("SW-Fehler:", err));
+        });
       }
     }
 
@@ -1002,8 +1158,8 @@
     }
 
     function syncQuickNowUi() {
-      const useNow = !!els.quickUseNow?.checked;
-      els.quickDatetimeWrap?.classList.toggle("hidden", useNow);
+      const useNow = !!els.quickUseNow.checked;
+      els.quickDatetimeWrap.classList.toggle("hidden", useNow);
       els.quickReadingDatetime.required = !useNow;
       if (useNow) els.quickReadingDatetime.value = toDatetimeLocal(new Date());
     }
@@ -1035,19 +1191,27 @@
         { type: "wasser", value: toNumber(els.batchWasserValue.value) },
         { type: "pellets", value: toNumber(els.batchPelletsValue.value) }
       ].filter((item) => Number.isFinite(item.value));
+
       if (!entries.length) return showToast("Bitte mindestens einen Wert eintragen.", "error");
+
       for (const item of entries) {
-        const previous = getPreviousReading(item.type, datetime);
-        const resetBridge = getLatestResetBridge(item.type, datetime);
-        const comparablePreviousValue = resetBridge ? resetBridge.newMeterStartValue : previous?.value;
-        if (Number.isFinite(comparablePreviousValue) && item.value < comparablePreviousValue) {
+        const comparable = getComparableReferenceValue(item.type, datetime);
+        if (Number.isFinite(comparable) && item.value < comparable) {
           const proceed = confirm(`Der neue Zählerstand für ${typeConfig[item.type].label} ist kleiner als der erwartete Vergleichswert. Trotzdem speichern?`);
           if (!proceed) return;
         }
       }
+
       for (const item of entries) {
-        await saveRecord("readings", { type: item.type, value: item.value, note, date: datetime, createdAt: new Date().toISOString() });
+        await saveRecord("readings", {
+          type: item.type,
+          value: item.value,
+          note,
+          date: datetime,
+          createdAt: new Date().toISOString()
+        });
       }
+
       els.batchReadingForm.reset();
       els.batchReadingDatetime.value = toDatetimeLocal(new Date());
       showToast("Zeitpunkt mit Zählerständen gespeichert.", "success");
@@ -1055,27 +1219,37 @@
 
     async function handleQuickReadingSubmit(event) {
       event.preventDefault();
-      const useNow = !!els.quickUseNow?.checked;
+      const useNow = !!els.quickUseNow.checked;
       let datetime;
-      if (useNow) datetime = new Date().toISOString();
-      else {
+      if (useNow) {
+        datetime = new Date().toISOString();
+      } else {
         if (!els.quickReadingDatetime.value) return showToast("Bitte Datum und Uhrzeit eingeben.", "error");
         const dt = new Date(els.quickReadingDatetime.value);
         if (Number.isNaN(dt.getTime())) return showToast("Datum ist ungültig.", "error");
         datetime = dt.toISOString();
       }
+
       const type = els.quickReadingType.value;
       const value = toNumber(els.quickReadingValue.value);
       const note = els.quickReadingNote.value.trim();
+
       if (!Number.isFinite(value) || value < 0) return showToast("Bitte einen gültigen Zählerstand eingeben.", "error");
-      const previous = getPreviousReading(type, datetime);
-      const resetBridge = getLatestResetBridge(type, datetime);
-      const comparablePreviousValue = resetBridge ? resetBridge.newMeterStartValue : previous?.value;
-      if (Number.isFinite(comparablePreviousValue) && value < comparablePreviousValue) {
+
+      const comparable = getComparableReferenceValue(type, datetime);
+      if (Number.isFinite(comparable) && value < comparable) {
         const proceed = confirm("Der neue Zählerstand ist kleiner als der erwartete Vergleichswert. Trotzdem speichern?");
         if (!proceed) return;
       }
-      await saveRecord("readings", { type, value, note, date: datetime, createdAt: new Date().toISOString() });
+
+      await saveRecord("readings", {
+        type,
+        value,
+        note,
+        date: datetime,
+        createdAt: new Date().toISOString()
+      });
+
       els.quickReadingForm.reset();
       els.quickUseNow.checked = true;
       els.quickReadingDatetime.value = toDatetimeLocal(new Date());
@@ -1085,15 +1259,27 @@
 
     async function handleRefillSubmit(event) {
       event.preventDefault();
-      const dt = new Date(els.refillDatetime.value);
+      if (!els.refillDate.value) return showToast("Bitte ein Datum eingeben.", "error");
+      const dt = new Date(`${els.refillDate.value}T12:00:00`);
       if (Number.isNaN(dt.getTime())) return showToast("Datum ist ungültig.", "error");
+
       const bags = toNumber(els.refillBags.value);
       const kgPerBag = toNumber(els.refillKgPerBag.value);
       const totalKg = round2(bags * kgPerBag);
+
       if (!Number.isFinite(bags) || !Number.isFinite(kgPerBag) || bags <= 0 || kgPerBag <= 0) return showToast("Bitte Säcke und kg pro Sack korrekt eingeben.", "error");
-      await saveRecord("refills", { bags, kgPerBag, totalKg, note: els.refillNote.value.trim(), date: dt.toISOString(), createdAt: new Date().toISOString() });
+
+      await saveRecord("refills", {
+        bags,
+        kgPerBag,
+        totalKg,
+        note: els.refillNote.value.trim(),
+        date: dt.toISOString(),
+        createdAt: new Date().toISOString()
+      });
+
       els.refillForm.reset();
-      els.refillDatetime.value = toDatetimeLocal(new Date());
+      els.refillDate.value = toDatetimeLocal(new Date()).slice(0, 10);
       syncRefillTotal();
       showToast("Pellets-Nachfüllung gespeichert.", "success");
     }
@@ -1102,12 +1288,24 @@
       event.preventDefault();
       const dt = new Date(els.purchaseDatetime.value);
       if (Number.isNaN(dt.getTime())) return showToast("Datum ist ungültig.", "error");
+
       const bags = toNumber(els.purchaseBags.value);
       const kgPerBag = toNumber(els.purchaseKgPerBag.value);
       const totalPrice = toNumber(els.purchasePrice.value);
       const totalKg = round2(bags * kgPerBag);
+
       if (!Number.isFinite(bags) || !Number.isFinite(kgPerBag) || !Number.isFinite(totalPrice) || bags <= 0 || kgPerBag <= 0 || totalPrice < 0) return showToast("Bitte Kaufdaten korrekt eingeben.", "error");
-      await saveRecord("purchases", { bags, kgPerBag, totalKg, totalPrice: round2(totalPrice), pricePerKg: totalKg > 0 ? round4(totalPrice / totalKg) : 0, date: dt.toISOString(), createdAt: new Date().toISOString() });
+
+      await saveRecord("purchases", {
+        bags,
+        kgPerBag,
+        totalKg,
+        totalPrice: round2(totalPrice),
+        pricePerKg: totalKg > 0 ? round4(totalPrice / totalKg) : 0,
+        date: dt.toISOString(),
+        createdAt: new Date().toISOString()
+      });
+
       els.purchaseForm.reset();
       els.purchaseDatetime.value = toDatetimeLocal(new Date());
       syncPurchaseTotals();
@@ -1118,6 +1316,7 @@
       event.preventDefault();
       const dt = new Date(els.resetDatetime.value);
       if (Number.isNaN(dt.getTime())) return showToast("Datum ist ungültig.", "error");
+
       const payload = {
         type: els.resetType.value,
         previousMeterValue: toNumber(els.resetPreviousValue.value),
@@ -1126,7 +1325,9 @@
         date: dt.toISOString(),
         createdAt: new Date().toISOString()
       };
+
       if (!Number.isFinite(payload.previousMeterValue) || !Number.isFinite(payload.newMeterStartValue)) return showToast("Bitte Reset-Daten korrekt eingeben.", "error");
+
       await saveRecord("resets", payload);
       els.resetForm.reset();
       els.resetDatetime.value = toDatetimeLocal(new Date());
@@ -1141,9 +1342,11 @@
       if (Number.isNaN(from.getTime())) return showToast("Bitte ein gültiges Startdatum eingeben.", "error");
       if (Number.isNaN(to.getTime())) return showToast("Bitte ein gültiges Enddatum eingeben.", "error");
       if (to < from) return showToast("Enddatum darf nicht vor Startdatum liegen.", "error");
+
       const unitPrice = toNumber(els.pricePeriodUnit.value);
       const basePrice = toNumber(els.pricePeriodBase.value) || 0;
       if (!Number.isFinite(unitPrice) || unitPrice < 0) return showToast("Bitte einen gültigen Preis pro Einheit eingeben.", "error");
+
       await saveRecord("pricePeriods", {
         type: els.pricePeriodType.value,
         fromDate: from.toISOString(),
@@ -1151,9 +1354,10 @@
         basePrice,
         unitPrice,
         note: els.pricePeriodNote.value.trim(),
-        createdAt: new Date().toISOString(),
-        date: from.toISOString()
+        date: from.toISOString(),
+        createdAt: new Date().toISOString()
       });
+
       els.pricePeriodForm.reset();
       els.pricePeriodFrom.value = toDatetimeLocal(new Date());
       els.pricePeriodTo.value = toDatetimeLocal(new Date());
@@ -1170,15 +1374,24 @@
       persistLocalSnapshot();
       renderAll();
       if (state.firebaseEnabled) await saveSettingsToFirestore();
-      showToast("Aktuelle Basispreise gespeichert.", "success");
+      showToast("Basispreise gespeichert.", "success");
     }
 
     async function handleFirebaseSubmit(event) {
       event.preventDefault();
-      const householdId = els.householdId.value.trim() || DEFAULT_HOUSEHOLD_ID;
+      const newId = els.newHouseholdId.value.trim();
+      const selectedId = els.householdSelect.value.trim();
+      const householdId = newId || selectedId || els.householdId.value.trim() || DEFAULT_HOUSEHOLD_ID;
       localStorage.setItem(LOCAL_KEYS.householdId, householdId);
       state.householdId = householdId;
+      els.householdId.value = householdId;
       await connectFirebase(FIREBASE_CONFIG, householdId, true);
+      if (newId && !state.availableHouseholds.includes(newId)) {
+        state.availableHouseholds.push(newId);
+        state.availableHouseholds.sort((a, b) => a.localeCompare(b));
+      }
+      els.newHouseholdId.value = "";
+      renderHouseholdOptions();
     }
 
     async function connectFirebase(config, householdId, showSuccess) {
@@ -1190,9 +1403,11 @@
         state.app = app;
         state.db = db;
         state.firebaseEnabled = true;
+        await loadAvailableHouseholds();
         listenToFirestore();
         await ensureInitialSettingsDoc();
         updateFirebaseStatus();
+        renderHouseholdOptions();
         if (showSuccess) showToast("Firebase verbunden.", "success");
       } catch (error) {
         console.error(error);
@@ -1221,6 +1436,27 @@
       return `households/${state.householdId}`;
     }
 
+    async function loadAvailableHouseholds() {
+      try {
+        const snapshot = await getDocs(collection(state.db, "households"));
+        const ids = snapshot.docs.map((d) => d.id);
+        if (!ids.includes(state.householdId)) ids.push(state.householdId);
+        state.availableHouseholds = ids.sort((a, b) => a.localeCompare(b));
+      } catch {
+        state.availableHouseholds = [state.householdId].filter(Boolean);
+      }
+      renderHouseholdOptions();
+    }
+
+    function renderHouseholdOptions() {
+      if (!els.householdSelect) return;
+      const ids = [...new Set([...(state.availableHouseholds || []), state.householdId || DEFAULT_HOUSEHOLD_ID])]
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b));
+      els.householdSelect.innerHTML = ids.map((id) => `<option value="${escapeHtml(id)}" ${id === state.householdId ? "selected" : ""}>${escapeHtml(id)}</option>`).join("");
+      els.householdId.value = state.householdId || DEFAULT_HOUSEHOLD_ID;
+    }
+
     function listenToFirestore() {
       const basePath = householdBasePath();
       const readingsQuery = query(collection(state.db, `${basePath}/readings`), orderBy("date", "desc"));
@@ -1230,11 +1466,31 @@
       const pricePeriodsQuery = query(collection(state.db, `${basePath}/pricePeriods`), orderBy("fromDate", "desc"));
       const settingsDocRef = doc(state.db, `${basePath}/settings/main`);
 
-      state.unsubscribers.push(onSnapshot(readingsQuery, (s) => { state.readings = s.docs.map(mapFirestoreDoc); persistLocalSnapshot(); renderAll(); }));
-      state.unsubscribers.push(onSnapshot(refillsQuery, (s) => { state.refills = s.docs.map(mapFirestoreDoc); persistLocalSnapshot(); renderAll(); }));
-      state.unsubscribers.push(onSnapshot(purchasesQuery, (s) => { state.purchases = s.docs.map(mapFirestoreDoc); persistLocalSnapshot(); renderAll(); }));
-      state.unsubscribers.push(onSnapshot(resetsQuery, (s) => { state.resets = s.docs.map(mapFirestoreDoc); persistLocalSnapshot(); renderAll(); }));
-      state.unsubscribers.push(onSnapshot(pricePeriodsQuery, (s) => { state.pricePeriods = s.docs.map(mapFirestoreDoc); persistLocalSnapshot(); renderAll(); }));
+      state.unsubscribers.push(onSnapshot(readingsQuery, (s) => {
+        state.readings = s.docs.map(mapFirestoreDoc);
+        persistLocalSnapshot();
+        renderAll();
+      }));
+      state.unsubscribers.push(onSnapshot(refillsQuery, (s) => {
+        state.refills = s.docs.map(mapFirestoreDoc);
+        persistLocalSnapshot();
+        renderAll();
+      }));
+      state.unsubscribers.push(onSnapshot(purchasesQuery, (s) => {
+        state.purchases = s.docs.map(mapFirestoreDoc);
+        persistLocalSnapshot();
+        renderAll();
+      }));
+      state.unsubscribers.push(onSnapshot(resetsQuery, (s) => {
+        state.resets = s.docs.map(mapFirestoreDoc);
+        persistLocalSnapshot();
+        renderAll();
+      }));
+      state.unsubscribers.push(onSnapshot(pricePeriodsQuery, (s) => {
+        state.pricePeriods = s.docs.map(mapFirestoreDoc);
+        persistLocalSnapshot();
+        renderAll();
+      }));
       state.unsubscribers.push(onSnapshot(settingsDocRef, (snapshot) => {
         if (snapshot.exists()) {
           state.settings = mergeSettings(snapshot.data());
@@ -1266,7 +1522,10 @@
           resets: `${householdBasePath()}/resets`,
           pricePeriods: `${householdBasePath()}/pricePeriods`
         };
-        await addDoc(collection(state.db, pathMap[kind]), { ...payload, serverCreatedAt: serverTimestamp() });
+        await addDoc(collection(state.db, pathMap[kind]), {
+          ...payload,
+          serverCreatedAt: serverTimestamp()
+        });
       } else {
         state[kind].unshift({ ...payload, id: generateId() });
         persistLocalSnapshot();
@@ -1350,14 +1609,17 @@
     function renderReadings() {
       const computed = buildComputedReadings();
       els.readingsList.innerHTML = "";
-      if (!computed.length) return els.readingsList.innerHTML = '<div class="empty-state">Noch keine Zählerstände gespeichert.</div>';
+      if (!computed.length) {
+        els.readingsList.innerHTML = '<div class="empty-state">Noch keine Zählerstände gespeichert.</div>';
+        return;
+      }
       computed.forEach((entry) => {
         els.readingsList.appendChild(createEntryNode({
           id: entry.id,
           kind: "readings",
           typeLabel: typeConfig[entry.type].label,
           datetime: formatDateTime(entry.date),
-          valueHtml: `${formatNumber(entry.value)} ${typeConfig[entry.type].unit}<br><small class="muted">Verbrauch gesamt: ${formatSigned(entry.delta)} ${typeConfig[entry.type].unit} · pro Tag: ${formatNumber(entry.dailyDelta)} ${typeConfig[entry.type].unit}/Tag${entry.cost !== null ? ` · ${formatCurrency(entry.cost)}` : ""}${entry.resetApplied ? " · Reset aktiv" : ""}</small>`,
+          valueHtml: `${formatNumber(entry.value)} ${typeConfig[entry.type].unit}<br><small class="muted">Verbrauch gesamt: ${formatSigned(entry.delta)} ${typeConfig[entry.type].unit} · pro Tag: ${formatNumber(entry.dailyDelta)} ${typeConfig[entry.type].unit}/Tag · Jahr: ${formatNumber(entry.yearProjection)} ${typeConfig[entry.type].unit}${entry.cost !== null ? ` · ${formatCurrency(entry.cost)}` : ""}${entry.resetApplied ? " · Reset aktiv" : ""}</small>`,
           note: entry.note || (entry.previousDate ? `Vorheriger Stand: ${formatNumber(entry.previousValue)} am ${formatDateTime(entry.previousDate)}` : "Erster gespeicherter Stand")
         }));
       });
@@ -1365,13 +1627,16 @@
 
     function renderRefills() {
       els.refillsList.innerHTML = "";
-      if (!state.refills.length) return els.refillsList.innerHTML = '<div class="empty-state">Noch keine Nachfüllungen gespeichert.</div>';
+      if (!state.refills.length) {
+        els.refillsList.innerHTML = '<div class="empty-state">Noch keine Nachfüllungen gespeichert.</div>';
+        return;
+      }
       state.refills.forEach((entry) => {
         els.refillsList.appendChild(createEntryNode({
           id: entry.id,
           kind: "refills",
           typeLabel: "Pellets Nachfüllung",
-          datetime: formatDateTime(entry.date),
+          datetime: new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(new Date(entry.date)),
           valueHtml: `${formatNumber(entry.totalKg)} kg<br><small class="muted">${formatNumber(entry.bags)} Sack/Säcke × ${formatNumber(entry.kgPerBag)} kg</small>`,
           note: entry.note || "Keine Notiz"
         }));
@@ -1380,7 +1645,10 @@
 
     function renderPurchases() {
       els.purchaseList.innerHTML = "";
-      if (!state.purchases.length) return els.purchaseList.innerHTML = '<div class="empty-state">Noch keine Pellets-Käufe gespeichert.</div>';
+      if (!state.purchases.length) {
+        els.purchaseList.innerHTML = '<div class="empty-state">Noch keine Pellets-Käufe gespeichert.</div>';
+        return;
+      }
       state.purchases.forEach((entry) => {
         els.purchaseList.appendChild(createEntryNode({
           id: entry.id,
@@ -1395,7 +1663,10 @@
 
     function renderPricePeriods() {
       els.pricePeriodList.innerHTML = "";
-      if (!state.pricePeriods.length) return els.pricePeriodList.innerHTML = '<div class="empty-state">Noch keine Preiszeiträume gespeichert.</div>';
+      if (!state.pricePeriods.length) {
+        els.pricePeriodList.innerHTML = '<div class="empty-state">Noch keine Preiszeiträume gespeichert.</div>';
+        return;
+      }
       state.pricePeriods
         .slice()
         .sort((a, b) => new Date(b.fromDate) - new Date(a.fromDate))
@@ -1443,17 +1714,17 @@
         {
           label: "Strom aktuell",
           value: latest.strom ? `${formatNumber(latest.strom.value)} kWh` : "–",
-          sub: lastDiffs.strom ? `zuletzt Ø ${formatNumber(lastDiffs.strom.dailyDelta)} kWh/Tag · ${formatCurrency(lastDiffs.strom.cost || 0)}` : "noch keine Differenz"
+          sub: lastDiffs.strom ? `Ø ${formatNumber(lastDiffs.strom.dailyDelta)} kWh/Tag · Jahr ${formatNumber(lastDiffs.strom.yearProjection)} kWh` : "noch keine Differenz"
         },
         {
           label: "Wasser aktuell",
           value: latest.wasser ? `${formatNumber(latest.wasser.value)} m³` : "–",
-          sub: lastDiffs.wasser ? `zuletzt Ø ${formatNumber(lastDiffs.wasser.dailyDelta)} m³/Tag · ${formatCurrency(lastDiffs.wasser.cost || 0)}` : "noch keine Differenz"
+          sub: lastDiffs.wasser ? `Ø ${formatNumber(lastDiffs.wasser.dailyDelta)} m³/Tag · Jahr ${formatNumber(lastDiffs.wasser.yearProjection)} m³` : "noch keine Differenz"
         },
         {
           label: "Pellets Verbrauchszähler",
           value: latest.pellets ? `${formatNumber(latest.pellets.value)} kg` : "–",
-          sub: lastDiffs.pellets ? `zuletzt Ø ${formatNumber(lastDiffs.pellets.dailyDelta)} kg/Tag · ${formatCurrency(lastDiffs.pellets.cost || 0)}` : "noch keine Differenz"
+          sub: lastDiffs.pellets ? `Ø ${formatNumber(lastDiffs.pellets.dailyDelta)} kg/Tag · Jahr ${formatNumber(lastDiffs.pellets.yearProjection)} kg` : "noch keine Differenz"
         },
         {
           label: "Pellets Lager grob",
@@ -1467,15 +1738,18 @@
     function renderConsumptionHistory() {
       const computed = buildComputedReadings().filter((entry) => entry.previousValue !== null).slice(0, 10);
       els.consumptionHistory.innerHTML = "";
-      if (!computed.length) return els.consumptionHistory.innerHTML = '<div class="empty-state">Sobald zwei Stände je Kategorie vorliegen, erscheinen hier die Differenzen.</div>';
+      if (!computed.length) {
+        els.consumptionHistory.innerHTML = '<div class="empty-state">Sobald zwei Stände je Kategorie vorliegen, erscheinen hier die Differenzen.</div>';
+        return;
+      }
       computed.forEach((entry) => {
         els.consumptionHistory.appendChild(createEntryNode({
           id: entry.id,
           kind: "readings",
           typeLabel: typeConfig[entry.type].label,
           datetime: `${formatDateTime(entry.previousDate)} → ${formatDateTime(entry.date)}`,
-          valueHtml: `${formatNumber(entry.dailyDelta)} ${typeConfig[entry.type].unit}/Tag${entry.cost !== null ? ` · ${formatCurrency(entry.cost)}` : ""}`,
-          note: `gesamt ${formatNumber(entry.delta)} ${typeConfig[entry.type].unit} in ${entry.daysBetween} Tag(en)${entry.priceSource ? ` · ${entry.priceSource}` : ""}${entry.resetApplied ? " · mit Reset" : ""}`,
+          valueHtml: `${formatNumber(entry.dailyDelta)} ${typeConfig[entry.type].unit}/Tag · Hochrechnung Jahr: ${formatNumber(entry.yearProjection)} ${typeConfig[entry.type].unit}${entry.cost !== null ? ` · ${formatCurrency(entry.cost)}` : ""}`,
+          note: `gesamt ${formatNumber(entry.delta)} ${typeConfig[entry.type].unit} in ${formatNumber(entry.daysBetween)} Tagen${entry.priceSource ? ` · ${entry.priceSource}` : ""}${entry.resetApplied ? " · mit Reset" : ""}`,
           allowDelete: false
         }));
       });
@@ -1499,17 +1773,23 @@
     }
 
     function renderPelletActivity() {
-      const merged = [...state.refills.map((item) => ({ ...item, activityType: "Nachfüllung" })), ...state.purchases.map((item) => ({ ...item, activityType: "Kauf" }))]
-        .sort((a, b) => new Date(b.date) - new Date(a.date))
-        .slice(0, 8);
+      const merged = [
+        ...state.refills.map((item) => ({ ...item, activityType: "Nachfüllung" })),
+        ...state.purchases.map((item) => ({ ...item, activityType: "Kauf" }))
+      ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 8);
       els.pelletActivity.innerHTML = "";
-      if (!merged.length) return els.pelletActivity.innerHTML = '<div class="empty-state">Noch keine Pellets-Aktivität vorhanden.</div>';
+      if (!merged.length) {
+        els.pelletActivity.innerHTML = '<div class="empty-state">Noch keine Pellets-Aktivität vorhanden.</div>';
+        return;
+      }
       merged.forEach((entry) => {
         els.pelletActivity.appendChild(createEntryNode({
           id: entry.id,
           kind: entry.activityType === "Kauf" ? "purchases" : "refills",
           typeLabel: entry.activityType,
-          datetime: formatDateTime(entry.date),
+          datetime: entry.activityType === "Nachfüllung"
+            ? new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(new Date(entry.date))
+            : formatDateTime(entry.date),
           valueHtml: entry.activityType === "Kauf" ? `${formatNumber(entry.totalKg)} kg · ${formatCurrency(entry.totalPrice)}` : `${formatNumber(entry.totalKg)} kg`,
           note: `${formatNumber(entry.bags)} Sack/Säcke × ${formatNumber(entry.kgPerBag)} kg`,
           allowDelete: false
@@ -1548,16 +1828,24 @@
     }
 
     function renderConsumptionChart(type, container, metaContainer, large = false) {
-      const entries = buildComputedReadings().filter((entry) => entry.type === type && entry.previousValue !== null).slice().reverse();
+      let entries = buildComputedReadings().filter((entry) => entry.type === type && entry.previousValue !== null).slice().reverse();
+      if (type === "wasser") entries = entries.filter((entry) => entry.dailyDelta > 0);
+
       const cfg = typeConfig[type];
-      const total = entries.reduce((sum, entry) => sum + Math.max(entry.dailyDelta || 0, 0), 0);
-      const avg = entries.length ? total / entries.length : 0;
-      const metaText = entries.length ? `${entries.length} Intervalle · Summe Tageswerte ${formatNumber(total)} ${cfg.unit}/Tag · Ø ${formatNumber(avg)} ${cfg.unit}/Tag` : "Noch keine Differenzen vorhanden";
+      const avg = entries.length
+        ? entries.reduce((sum, entry) => sum + Math.max(entry.dailyDelta || 0, 0), 0) / entries.length
+        : 0;
+      const metaText = entries.length
+        ? `${entries.length} Intervalle · Ø ${formatNumber(avg)} ${cfg.unit}/Tag · Jahr ${formatNumber(avg * 365)} ${cfg.unit}`
+        : "Noch keine Differenzen vorhanden";
+
       if (metaContainer) metaContainer.textContent = metaText;
+
       if (!entries.length) {
         container.innerHTML = '<div class="empty-state" style="height:100%;display:grid;place-items:center;">Noch keine Daten</div>';
         return metaText;
       }
+
       const width = large ? 1200 : 500;
       const height = large ? 620 : 200;
       const padding = large ? 28 : 18;
@@ -1565,15 +1853,23 @@
       const range = Math.max(maxValue, 1);
       const usableWidth = width - padding * 2;
       const usableHeight = height - padding * 2;
+
       const points = entries.map((entry, index) => ({
         x: padding + (entries.length === 1 ? usableWidth / 2 : (index / (entries.length - 1)) * usableWidth),
         y: padding + usableHeight - (entry.dailyDelta / range) * usableHeight,
         entry
       }));
+
       const polyline = points.map((p) => `${p.x},${p.y}`).join(" ");
-      const areaPoints = [`${points[0].x},${height - padding}`, ...points.map((p) => `${p.x},${p.y}`), `${points[points.length - 1].x},${height - padding}`].join(" ");
+      const areaPoints = [
+        `${points[0].x},${height - padding}`,
+        ...points.map((p) => `${p.x},${p.y}`),
+        `${points[points.length - 1].x},${height - padding}`
+      ].join(" ");
+
       const circles = points.map((p) => `<circle cx="${p.x}" cy="${p.y}" r="${large ? 6 : 4.5}" fill="${cfg.color}"><title>${formatDateShort(p.entry.date)}: ${formatNumber(p.entry.dailyDelta)} ${cfg.unit}/Tag</title></circle>`).join("");
       const labels = buildChartLabels(entries, width, height, padding, large);
+
       container.innerHTML = `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-label="${cfg.label} Chart"><defs><linearGradient id="grad-${type}-${large ? "lg" : "sm"}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${cfg.color}" stop-opacity="0.32"></stop><stop offset="100%" stop-color="${cfg.color}" stop-opacity="0.02"></stop></linearGradient></defs><polygon points="${areaPoints}" fill="url(#grad-${type}-${large ? "lg" : "sm"})"></polygon><polyline points="${polyline}" fill="none" stroke="${cfg.color}" stroke-width="${large ? 4 : 3}" stroke-linecap="round" stroke-linejoin="round"></polyline>${circles}${labels}</svg>`;
       return metaText;
     }
@@ -1623,6 +1919,7 @@
           let resetApplied = false;
           let daysBetween = null;
           let dailyDelta = null;
+          let yearProjection = null;
           let cost = null;
           let priceSource = null;
 
@@ -1630,7 +1927,7 @@
             const prevTime = new Date(previous.date).getTime();
             const currentTime = new Date(entry.date).getTime();
             const rawDays = (currentTime - prevTime) / 86400000;
-            daysBetween = Math.max(1, Math.round(rawDays));
+            daysBetween = Math.max(1 / 24, rawDays);
 
             const resetBetween = resetsForType.find((reset) => {
               const resetTime = new Date(reset.date).getTime();
@@ -1645,7 +1942,8 @@
             }
 
             delta = Math.max(0, delta);
-            dailyDelta = round2(delta / daysBetween);
+            dailyDelta = round4(delta / daysBetween);
+            yearProjection = round2(dailyDelta * 365);
 
             const pricing = calculateCostForInterval(type, previous.date, entry.date, delta, daysBetween);
             cost = pricing.cost;
@@ -1662,6 +1960,7 @@
             resetApplied,
             daysBetween,
             dailyDelta,
+            yearProjection,
             priceSource
           });
         });
@@ -1678,7 +1977,7 @@
       const matchingPeriods = findMatchingPricePeriods(type, startIso, endIso);
       if (!matchingPeriods.length) {
         const fallbackCost = round2((totalDelta * (state.settings[type].unitPrice || 0)) + (state.settings[type].basePrice || 0));
-        return { cost: fallbackCost, source: `Basispreis aktiv` };
+        return { cost: fallbackCost, source: "Basispreis aktiv" };
       }
 
       const dailyConsumption = totalDelta / daysBetween;
@@ -1691,7 +1990,7 @@
         const consumptionPart = dailyConsumption * coveredDays;
         const costPart = consumptionPart * (period.unitPrice || 0) + (period.basePrice || 0);
         totalCost += costPart;
-        labels.push(`${coveredDays}T @ ${formatCurrency(period.unitPrice)}/${typeConfig[type].unit}`);
+        labels.push(`${formatNumber(coveredDays)}T @ ${formatCurrency(period.unitPrice)}/${typeConfig[type].unit}`);
       }
 
       return {
@@ -1714,24 +2013,23 @@
     }
 
     function countOverlapDays(startA, endA, startB, endB) {
-      const start = new Date(Math.max(new Date(startA).getTime(), new Date(startB).getTime()));
-      const end = new Date(Math.min(new Date(endA).getTime(), new Date(endB).getTime()));
+      const start = Math.max(new Date(startA).getTime(), new Date(startB).getTime());
+      const end = Math.min(new Date(endA).getTime(), new Date(endB).getTime());
       if (end < start) return 0;
-      return Math.max(1, Math.round((end - start) / 86400000));
+      return Math.max(1 / 24, (end - start) / 86400000);
     }
 
-    function getLatestResetBridge(type, isoDate) {
-      const targetTime = new Date(isoDate).getTime();
+    function getComparableReferenceValue(type, isoDate) {
       const latestReading = getPreviousReading(type, isoDate);
       const latestReadingTime = latestReading ? new Date(latestReading.date).getTime() : -Infinity;
       const relevantReset = state.resets
         .filter((r) => r.type === type)
         .filter((r) => {
           const t = new Date(r.date).getTime();
-          return t > latestReadingTime && t <= targetTime;
+          return t > latestReadingTime && t <= new Date(isoDate).getTime();
         })
         .sort((a, b) => new Date(b.date) - new Date(a.date))[0] || null;
-      return relevantReset;
+      return relevantReset ? relevantReset.newMeterStartValue : latestReading?.value ?? null;
     }
 
     function buildMonthlyStats() {
@@ -1740,24 +2038,17 @@
       computed.forEach((entry) => {
         const d = new Date(entry.date);
         const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-        if (!result[entry.type][monthKey]) result[entry.type][monthKey] = { total: 0, cost: 0, days: new Set() };
+        if (!result[entry.type][monthKey]) result[entry.type][monthKey] = { total: 0, cost: 0, totalDays: 0 };
         result[entry.type][monthKey].total += Math.max(entry.delta || 0, 0);
         result[entry.type][monthKey].cost += entry.cost || 0;
-        const prev = new Date(entry.previousDate);
-        const curr = new Date(entry.date);
-        let loopDate = new Date(prev);
-        while (loopDate <= curr) {
-          result[entry.type][monthKey].days.add(loopDate.toISOString().slice(0, 10));
-          loopDate.setDate(loopDate.getDate() + 1);
-        }
+        result[entry.type][monthKey].totalDays += entry.daysBetween || 0;
       });
       Object.keys(result).forEach((type) => Object.keys(result[type]).forEach((monthKey) => {
         const item = result[type][monthKey];
         item.total = round2(item.total);
         item.cost = round2(item.cost);
-        item.dayCount = item.days.size || 1;
-        item.avgPerDay = round2(item.total / item.dayCount);
-        delete item.days;
+        item.dayCount = item.totalDays || 1;
+        item.avgPerDay = round4(item.total / item.dayCount);
       }));
       return result;
     }
@@ -1807,12 +2098,15 @@
       node.querySelector(".entry-value").innerHTML = valueHtml;
       node.querySelector(".entry-note").textContent = note || "Keine Notiz";
       const deleteBtn = node.querySelector(".delete-btn");
-      if (!allowDelete) deleteBtn.remove();
-      else deleteBtn.addEventListener("click", async () => {
-        if (!confirm(`${typeLabel} löschen?`)) return;
-        await deleteRecord(kind, id);
-        showToast("Eintrag gelöscht.", "success");
-      });
+      if (!allowDelete) {
+        deleteBtn.remove();
+      } else {
+        deleteBtn.addEventListener("click", async () => {
+          if (!confirm(`${typeLabel} löschen?`)) return;
+          await deleteRecord(kind, id);
+          showToast("Eintrag gelöscht.", "success");
+        });
+      }
       return node;
     }
 
