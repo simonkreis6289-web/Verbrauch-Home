@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Verbrauch Zuhause</title>
-  <meta name="theme-color" content="#ffe312" />
+  <meta name="theme-color" content="#0f172a" />
   <meta name="description" content="Zählerstände, Pellets, Preiszeiträume und Firebase Firestore in einer Datei." />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png" />
@@ -585,7 +585,9 @@
           <form id="refillForm" class="form-grid">
             <label>Datum<input id="refillDate" type="date" required /></label>
             <label>Anzahl Säcke<input id="refillBags" type="number" step="1" min="1" required /></label>
-            <label>Kilogramm pro Sack<input id="refillKgPerBag" type="number" step="0.1" min="0.1" required /></label>
+            <label>Kilogramm pro Sack
+              <select id="refillKgPerBag" required></select>
+            </label>
             <label>Gesamtgewicht<input id="refillTotalKg" type="number" step="0.01" min="0" readonly /><small>Wird automatisch berechnet.</small></label>
             <label class="span-12">Notiz<input id="refillNote" type="text" maxlength="160" placeholder="optional" /></label>
             <div class="form-actions span-12">
@@ -688,6 +690,24 @@
           </form>
         </section>
 
+        <section class="card wide">
+          <div class="card-head">
+            <div>
+              <p class="section-kicker">Sackgrößen</p>
+              <h2>Auswahl für Pellets-Säcke</h2>
+            </div>
+          </div>
+          <form id="bagSizeForm" class="form-grid">
+            <label>Neue Sackgröße in kg
+              <input id="bagSizeValue" type="number" step="0.1" min="0.1" placeholder="z. B. 15 oder 12.5" />
+            </label>
+            <div class="form-actions">
+              <button type="submit" class="btn primary">Sackgröße speichern</button>
+            </div>
+          </form>
+          <div id="bagSizeList" class="list-stack" style="margin-top:14px;"></div>
+        </section>
+
         <section class="card glass">
           <div class="card-head">
             <div>
@@ -768,7 +788,7 @@
               <input id="purchaseBags" type="number" step="1" min="1" required />
             </label>
             <label>Kilogramm pro Sack
-              <input id="purchaseKgPerBag" type="number" step="0.1" min="0.1" required />
+              <select id="purchaseKgPerBag" required></select>
             </label>
             <label>Gesamtpreis (€)
               <input id="purchasePrice" type="number" step="0.01" min="0" required />
@@ -880,7 +900,8 @@
     const DEFAULT_HOUSEHOLD_ID = "zuhause-haupt";
     const LOCAL_KEYS = {
       householdId: "verbrauch-household-id-v1",
-      localData: "verbrauch-local-data-v7"
+      localData: "verbrauch-local-data-v8",
+      lastBagSize: "verbrauch-last-bag-size-v1"
     };
 
     const defaultSettings = {
@@ -895,6 +916,8 @@
       pellets: { label: "Pellets Verbrauch", unit: "kg", color: "#f59e0b" }
     };
 
+    const defaultBagSizes = [15, 12.5];
+
     const state = {
       readings: [],
       refills: [],
@@ -904,6 +927,7 @@
       settings: structuredClone(defaultSettings),
       householdId: localStorage.getItem(LOCAL_KEYS.householdId) || DEFAULT_HOUSEHOLD_ID,
       availableHouseholds: [],
+      bagSizes: [...defaultBagSizes],
       firebaseEnabled: false,
       app: null,
       db: null,
@@ -962,6 +986,9 @@
       pricePeriodUnit: document.getElementById("pricePeriodUnit"),
       pricePeriodNote: document.getElementById("pricePeriodNote"),
       pricePeriodList: document.getElementById("pricePeriodList"),
+      bagSizeForm: document.getElementById("bagSizeForm"),
+      bagSizeValue: document.getElementById("bagSizeValue"),
+      bagSizeList: document.getElementById("bagSizeList"),
 
       purchaseForm: document.getElementById("purchaseForm"),
       purchaseDatetime: document.getElementById("purchaseDatetime"),
@@ -1043,14 +1070,19 @@
 
     function restoreLocalData() {
       const local = loadJSON(LOCAL_KEYS.localData, null);
-      if (!local) return;
+      if (!local) {
+        hydrateBagSizeSelects();
+        return;
+      }
       state.readings = normalizeDateArray(local.readings || []);
       state.refills = normalizeDateArray(local.refills || []);
       state.purchases = normalizeDateArray(local.purchases || []);
       state.resets = normalizeDateArray(local.resets || []);
       state.pricePeriods = normalizeDateArray(local.pricePeriods || []);
       state.settings = mergeSettings(local.settings || defaultSettings);
+      state.bagSizes = normalizeBagSizes(local.bagSizes || defaultBagSizes);
       fillSettingsForm();
+      hydrateBagSizeSelects();
     }
 
     function registerEvents() {
@@ -1091,6 +1123,7 @@
       els.resetForm?.addEventListener("submit", handleResetSubmit);
       els.settingsForm?.addEventListener("submit", handleSettingsSubmit);
       els.pricePeriodForm?.addEventListener("submit", handlePricePeriodSubmit);
+      els.bagSizeForm?.addEventListener("submit", handleBagSizeSubmit);
       els.pricePeriodForm?.addEventListener("reset", () => setTimeout(() => {
         els.pricePeriodFrom.value = toDatetimeLocal(new Date());
         els.pricePeriodTo.value = toDatetimeLocal(new Date());
@@ -1166,6 +1199,103 @@
     function syncRefillTotal() {
       const total = round2((toNumber(els.refillBags.value) || 0) * (toNumber(els.refillKgPerBag.value) || 0));
       els.refillTotalKg.value = total || "";
+    }
+
+    function normalizeBagSizes(list) {
+      const nums = (list || []).map((v) => Number(v)).filter((v) => Number.isFinite(v) && v > 0);
+      const merged = [...new Set([...nums, ...defaultBagSizes])];
+      return merged.sort((a, b) => b - a);
+    }
+
+    function rememberBagSize(value) {
+      const num = Number(value);
+      if (!Number.isFinite(num) || num <= 0) return;
+      localStorage.setItem(LOCAL_KEYS.lastBagSize, String(num));
+      if (!state.bagSizes.includes(num)) {
+        state.bagSizes = normalizeBagSizes([...state.bagSizes, num]);
+        persistLocalSnapshot();
+      }
+    }
+
+    function hydrateBagSizeSelects() {
+      const last = Number(localStorage.getItem(LOCAL_KEYS.lastBagSize));
+      const options = normalizeBagSizes(state.bagSizes);
+      state.bagSizes = options;
+      const buildOptions = () => options.map((size) => `<option value="${size}" ${size === last ? "selected" : ""}>${formatNumber(size)} kg</option>`).join("");
+      if (els.refillKgPerBag) els.refillKgPerBag.innerHTML = buildOptions();
+      if (els.purchaseKgPerBag) els.purchaseKgPerBag.innerHTML = buildOptions();
+      if (!Number.isFinite(last) && options[0] != null) {
+        if (els.refillKgPerBag) els.refillKgPerBag.value = String(options[0]);
+        if (els.purchaseKgPerBag) els.purchaseKgPerBag.value = String(options[0]);
+      }
+    }
+
+    function renderBagSizes() {
+      if (!els.bagSizeList) return;
+      if (!state.bagSizes.length) {
+        els.bagSizeList.innerHTML = '<div class="empty-state">Noch keine Sackgrößen vorhanden.</div>';
+        return;
+      }
+      const last = Number(localStorage.getItem(LOCAL_KEYS.lastBagSize));
+      els.bagSizeList.innerHTML = state.bagSizes.map((size) => `
+        <div class="entry-item">
+          <div class="entry-main">
+            <div class="entry-topline">
+              <span class="entry-type">Sackgröße</span>
+              <span class="entry-datetime">${size === last ? "zuletzt verwendet" : ""}</span>
+            </div>
+            <div class="entry-value">${formatNumber(size)} kg</div>
+            <div class="entry-note">Für Nachfüllung und Pellets-Kauf auswählbar.</div>
+          </div>
+          <div class="entry-actions">
+            <button class="icon-btn" type="button" data-bag-use="${size}" title="Als Standard wählen">✓</button>
+            ${state.bagSizes.length > 1 ? `<button class="icon-btn" type="button" data-bag-delete="${size}" title="Löschen">🗑️</button>` : ""}
+          </div>
+        </div>
+      `).join("");
+
+      els.bagSizeList.querySelectorAll('[data-bag-use]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          rememberBagSize(Number(btn.dataset.bagUse));
+          hydrateBagSizeSelects();
+          renderBagSizes();
+          syncRefillTotal();
+          syncPurchaseTotals();
+          showToast('Sackgröße als Standard gesetzt.', 'success');
+        });
+      });
+
+      els.bagSizeList.querySelectorAll('[data-bag-delete]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const value = Number(btn.dataset.bagDelete);
+          state.bagSizes = state.bagSizes.filter((v) => v !== value);
+          state.bagSizes = normalizeBagSizes(state.bagSizes);
+          if (Number(localStorage.getItem(LOCAL_KEYS.lastBagSize)) === value) {
+            localStorage.setItem(LOCAL_KEYS.lastBagSize, String(state.bagSizes[0]));
+          }
+          persistLocalSnapshot();
+          hydrateBagSizeSelects();
+          renderBagSizes();
+          syncRefillTotal();
+          syncPurchaseTotals();
+          showToast('Sackgröße gelöscht.', 'success');
+        });
+      });
+    }
+
+    async function handleBagSizeSubmit(event) {
+      event.preventDefault();
+      const value = toNumber(els.bagSizeValue.value);
+      if (!Number.isFinite(value) || value <= 0) return showToast('Bitte eine gültige Sackgröße eingeben.', 'error');
+      state.bagSizes = normalizeBagSizes([...state.bagSizes, value]);
+      rememberBagSize(value);
+      persistLocalSnapshot();
+      els.bagSizeForm.reset();
+      hydrateBagSizeSelects();
+      renderBagSizes();
+      syncRefillTotal();
+      syncPurchaseTotals();
+      showToast('Sackgröße gespeichert.', 'success');
     }
 
     function syncPurchaseTotals() {
@@ -1268,6 +1398,7 @@
 
       if (!Number.isFinite(bags) || !Number.isFinite(kgPerBag) || bags <= 0 || kgPerBag <= 0) return showToast("Bitte Säcke und kg pro Sack korrekt eingeben.", "error");
 
+      rememberBagSize(kgPerBag);
       await saveRecord("refills", {
         bags,
         kgPerBag,
@@ -1279,6 +1410,7 @@
 
       els.refillForm.reset();
       els.refillDate.value = toDatetimeLocal(new Date()).slice(0, 10);
+      hydrateBagSizeSelects();
       syncRefillTotal();
       showToast("Pellets-Nachfüllung gespeichert.", "success");
     }
@@ -1295,6 +1427,7 @@
 
       if (!Number.isFinite(bags) || !Number.isFinite(kgPerBag) || !Number.isFinite(totalPrice) || bags <= 0 || kgPerBag <= 0 || totalPrice < 0) return showToast("Bitte Kaufdaten korrekt eingeben.", "error");
 
+      rememberBagSize(kgPerBag);
       await saveRecord("purchases", {
         bags,
         kgPerBag,
@@ -1307,6 +1440,7 @@
 
       els.purchaseForm.reset();
       els.purchaseDatetime.value = toDatetimeLocal(new Date());
+      hydrateBagSizeSelects();
       syncPurchaseTotals();
       showToast("Pellets-Kauf gespeichert.", "success");
     }
@@ -1589,16 +1723,19 @@
         purchases: state.purchases,
         resets: state.resets,
         pricePeriods: state.pricePeriods,
-        settings: state.settings
+        settings: state.settings,
+        bagSizes: state.bagSizes
       }));
     }
 
     function renderAll() {
       fillSettingsForm();
+      hydrateBagSizeSelects();
       renderReadings();
       renderRefills();
       renderPurchases();
       renderPricePeriods();
+      renderBagSizes();
       renderDashboard();
       renderMonthlyOverview();
       renderSettingsSummary();
