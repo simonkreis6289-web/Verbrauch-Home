@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Verbrauch Zuhause</title>
   <meta name="theme-color" content="#0f172a" />
-  <meta name="description" content="Zählerstände, Pellets-Nachfüllung, Käufe, Monatsübersicht und Preise mit Firebase Firestore." />
+  <meta name="description" content="Zählerstände, Pellets-Nachfüllung, Käufe, Preiszeiträume, Monatsübersicht und Firebase Firestore." />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png" />
   <link rel="apple-touch-icon" href="icon-192.png" />
@@ -30,7 +30,6 @@
 
     * { box-sizing: border-box; }
     html { color-scheme: dark; scroll-behavior: smooth; }
-
     body {
       margin: 0;
       font-family: var(--font);
@@ -46,7 +45,6 @@
     .hidden { display: none !important; }
 
     .app-shell { max-width: 1450px; margin: 0 auto; padding: 24px; }
-
     .hero {
       display: flex;
       justify-content: space-between;
@@ -59,21 +57,18 @@
       box-shadow: var(--shadow);
       margin-bottom: 24px;
     }
-
     .hero h1 {
       margin: 8px 0 12px;
       font-size: clamp(2rem, 4vw, 3.1rem);
       line-height: 1.05;
       letter-spacing: -0.03em;
     }
-
     .hero-copy, .hero-status {
       margin: 0;
       max-width: 850px;
       color: var(--muted);
       line-height: 1.6;
     }
-
     .eyebrow, .section-kicker {
       margin: 0;
       text-transform: uppercase;
@@ -83,7 +78,7 @@
       font-weight: 700;
     }
 
-    .hero-actions, .form-actions, .tabs, .entry-actions {
+    .hero-actions, .form-actions, .tabs, .entry-actions, .chart-overlay-head {
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
@@ -103,12 +98,8 @@
       padding: 22px;
       box-shadow: var(--shadow);
     }
-
     .card.wide { grid-column: 1 / -1; }
-    .card.glass {
-      background: var(--card);
-      backdrop-filter: blur(20px);
-    }
+    .card.glass { background: var(--card); backdrop-filter: blur(20px); }
 
     .card-head {
       display: flex;
@@ -117,11 +108,7 @@
       align-items: flex-start;
       margin-bottom: 18px;
     }
-
-    .card-head h2, .card-head h3 {
-      margin: 6px 0 0;
-      line-height: 1.2;
-    }
+    .card-head h2, .card-head h3 { margin: 6px 0 0; line-height: 1.2; }
 
     .badge {
       padding: 8px 12px;
@@ -132,13 +119,11 @@
       font-size: 0.82rem;
       white-space: nowrap;
     }
-
     .badge.ok {
       background: rgba(34, 197, 94, 0.12);
       border-color: rgba(34, 197, 94, 0.22);
       color: #dcfce7;
     }
-
     .badge.warn {
       background: rgba(245, 158, 11, 0.12);
       border-color: rgba(245, 158, 11, 0.22);
@@ -152,7 +137,6 @@
       border: 1px solid var(--line);
       margin-bottom: 20px;
     }
-
     .tab {
       padding: 10px 14px;
       background: transparent;
@@ -163,15 +147,8 @@
       cursor: pointer;
       transition: 0.2s ease;
     }
-
-    .tab.active {
-      background: rgba(56, 189, 248, 0.16);
-      color: var(--text);
-    }
-
-    .tab:hover, .btn:hover, .icon-btn:hover {
-      transform: translateY(-1px);
-    }
+    .tab.active { background: rgba(56, 189, 248, 0.16); color: var(--text); }
+    .tab:hover, .btn:hover, .icon-btn:hover, .chart.clickable:hover { transform: translateY(-1px); }
 
     .view { display: none; }
     .view.active { display: block; }
@@ -180,12 +157,10 @@
       display: grid;
       gap: 16px;
     }
-
     .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .settings-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .price-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .split-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); }
-
     .span-4 { grid-column: span 4; }
     .span-6 { grid-column: span 6; }
     .span-12 { grid-column: 1 / -1; }
@@ -208,44 +183,30 @@
       outline: none;
       transition: 0.2s ease;
     }
-
-    input::placeholder, textarea::placeholder {
-      color: #7283a6;
-    }
-
+    input::placeholder, textarea::placeholder { color: #7283a6; }
     input:focus, select:focus, textarea:focus {
       border-color: rgba(56, 189, 248, 0.55);
       box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.13);
     }
 
-    small {
-      color: var(--muted);
-      font-weight: 500;
-    }
+    small { color: var(--muted); font-weight: 500; }
 
     .btn, .icon-btn {
       border: 0;
       cursor: pointer;
       transition: 0.2s ease;
     }
-
     .btn {
       border-radius: 14px;
       padding: 12px 16px;
       font-weight: 700;
     }
-
-    .btn.primary {
-      background: linear-gradient(135deg, var(--primary), var(--primary-strong));
-      color: #03111f;
-    }
-
+    .btn.primary { background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: #03111f; }
     .btn.secondary {
       background: rgba(34, 197, 94, 0.18);
       color: #dcfce7;
       border: 1px solid rgba(34, 197, 94, 0.22);
     }
-
     .btn.ghost {
       background: rgba(148, 163, 184, 0.08);
       color: var(--text);
@@ -257,10 +218,7 @@
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 14px;
     }
-
-    .summary-grid.four {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
+    .summary-grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
     .stat-box {
       background: rgba(8, 17, 32, 0.7);
@@ -268,19 +226,17 @@
       border-radius: 18px;
       padding: 16px;
     }
-
     .stat-label {
       color: var(--muted);
       font-size: 0.82rem;
       margin-bottom: 6px;
     }
-
     .stat-value {
-      font-size: 1.35rem;
+      font-size: 1.15rem;
       font-weight: 800;
       letter-spacing: -0.02em;
+      line-height: 1.35;
     }
-
     .muted { color: var(--muted); }
     .list-stack { display: grid; gap: 14px; }
 
@@ -294,12 +250,7 @@
       border: 1px solid var(--line);
       background: rgba(8, 17, 32, 0.68);
     }
-
-    .entry-main {
-      flex: 1;
-      min-width: 0;
-    }
-
+    .entry-main { flex: 1; min-width: 0; }
     .entry-topline {
       display: flex;
       justify-content: space-between;
@@ -309,25 +260,19 @@
       color: var(--muted);
       font-size: 0.88rem;
     }
-
-    .entry-type {
-      font-weight: 700;
-      color: #ccecff;
-    }
-
+    .entry-type { font-weight: 700; color: #ccecff; }
     .entry-value {
-      font-size: 1.12rem;
+      font-size: 1.02rem;
       font-weight: 800;
       letter-spacing: -0.02em;
       margin-bottom: 6px;
+      line-height: 1.45;
     }
-
     .entry-note {
       color: var(--muted);
       font-size: 0.93rem;
       word-break: break-word;
     }
-
     .icon-btn {
       width: 42px;
       height: 42px;
@@ -344,29 +289,70 @@
       border-radius: 20px;
       padding: 18px;
     }
-
     .chart {
       height: 240px;
       position: relative;
       border-radius: 16px;
       background:
         linear-gradient(to bottom, rgba(148, 163, 184, 0.04), rgba(148, 163, 184, 0.01)),
-        repeating-linear-gradient(
-          to top,
-          rgba(148, 163, 184, 0.08) 0,
-          rgba(148, 163, 184, 0.08) 1px,
-          transparent 1px,
-          transparent 44px
-        );
+        repeating-linear-gradient(to top, rgba(148, 163, 184, 0.08) 0, rgba(148, 163, 184, 0.08) 1px, transparent 1px, transparent 44px);
       overflow: hidden;
       padding: 10px;
     }
-
-    .chart svg {
-      width: 100%;
-      height: 100%;
-      display: block;
+    .chart.clickable {
+      cursor: pointer;
+      transition: 0.2s ease;
     }
+    .chart svg { width: 100%; height: 100%; display: block; }
+
+    .chart-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.88);
+      backdrop-filter: blur(6px);
+      z-index: 3000;
+      display: none;
+      padding: 20px;
+    }
+    .chart-overlay.active { display: block; }
+    .chart-overlay-inner {
+      width: min(1280px, 100%);
+      height: min(88vh, 100%);
+      margin: 0 auto;
+      background: #0d172c;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .chart-overlay-head {
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: nowrap;
+    }
+    .chart-overlay-close {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(148, 163, 184, 0.1);
+      color: var(--text);
+      border: 1px solid var(--line);
+      font-size: 1.2rem;
+    }
+    .chart-overlay-chart {
+      flex: 1;
+      min-height: 0;
+      border-radius: 18px;
+      background:
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.04), rgba(148, 163, 184, 0.01)),
+        repeating-linear-gradient(to top, rgba(148, 163, 184, 0.08) 0, rgba(148, 163, 184, 0.08) 1px, transparent 1px, transparent 56px);
+      padding: 12px;
+      overflow: hidden;
+    }
+    .chart-overlay-chart svg { width: 100%; height: 100%; display: block; }
 
     .empty-state {
       padding: 28px;
@@ -389,7 +375,6 @@
       box-shadow: var(--shadow);
       z-index: 1000;
     }
-
     .toast.success { border-color: rgba(34, 197, 94, 0.3); }
     .toast.error { border-color: rgba(239, 68, 68, 0.35); }
 
@@ -422,6 +407,8 @@
       .entry-item { flex-direction: column; }
       .entry-actions { width: 100%; justify-content: flex-end; }
       .tabs { width: 100%; overflow-x: auto; }
+      .chart-overlay { padding: 10px; }
+      .chart-overlay-inner { height: 92vh; }
     }
   </style>
 </head>
@@ -431,7 +418,7 @@
       <div>
         <p class="eyebrow">Verbrauch Zuhause</p>
         <h1>Zählerstände, Pellets und Kosten im Blick</h1>
-        <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Monatsübersichten und Reset-Funktionen für Zählerwechsel.</p>
+        <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
         <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du die Haushalt-ID ändern.</p>
       </div>
       <div class="hero-actions">
@@ -481,17 +468,17 @@
             <article class="chart-card span-4">
               <h3>Strom</h3>
               <div class="muted" id="chartMetaStrom"></div>
-              <div id="chart-strom" class="chart"></div>
+              <div id="chart-strom" class="chart clickable"></div>
             </article>
             <article class="chart-card span-4">
               <h3>Wasser</h3>
               <div class="muted" id="chartMetaWasser"></div>
-              <div id="chart-wasser" class="chart"></div>
+              <div id="chart-wasser" class="chart clickable"></div>
             </article>
             <article class="chart-card span-4">
               <h3>Pellets Verbrauch</h3>
               <div class="muted" id="chartMetaPellets"></div>
-              <div id="chart-pellets" class="chart"></div>
+              <div id="chart-pellets" class="chart clickable"></div>
             </article>
           </div>
         </section>
@@ -535,27 +522,22 @@
               Datum & Uhrzeit
               <input id="batchReadingDatetime" type="datetime-local" required />
             </label>
-
             <label>
               Notiz
               <input id="batchReadingNote" type="text" maxlength="160" placeholder="optional" />
             </label>
-
             <label>
               Strom Zählerstand
               <input id="batchStromValue" type="number" step="0.01" min="0" placeholder="optional" />
             </label>
-
             <label>
               Wasser Zählerstand
               <input id="batchWasserValue" type="number" step="0.01" min="0" placeholder="optional" />
             </label>
-
             <label>
               Pellets Zählerstand
               <input id="batchPelletsValue" type="number" step="0.01" min="0" placeholder="optional" />
             </label>
-
             <div class="form-actions span-12">
               <button type="submit" class="btn primary">Zeitpunkt mit Werten speichern</button>
               <button type="reset" class="btn ghost">Leeren</button>
@@ -581,12 +563,10 @@
                 <option value="pellets">Pellets Verbrauch</option>
               </select>
             </label>
-
             <label>
               Aktueller Zählerstand
               <input id="quickReadingValue" type="number" step="0.01" min="0" required />
             </label>
-
             <label>
               JETZT verwenden
               <div class="inline-toggle">
@@ -594,43 +574,19 @@
                 <span class="muted">aktueller Zeitpunkt</span>
               </div>
             </label>
-
             <label id="quickDatetimeWrap" class="hidden">
               Datum & Uhrzeit
               <input id="quickReadingDatetime" type="datetime-local" />
             </label>
-
             <label class="span-12">
               Notiz
               <input id="quickReadingNote" type="text" maxlength="160" placeholder="optional" />
             </label>
-
             <div class="form-actions span-12">
               <button type="submit" class="btn primary">Einzelwert speichern</button>
               <button type="reset" class="btn ghost">Leeren</button>
             </div>
           </form>
-        </section>
-
-        <section class="card wide">
-          <div class="card-head">
-            <div>
-              <p class="section-kicker">Hinweis</p>
-              <h2>So wird erfasst</h2>
-            </div>
-          </div>
-          <div class="list-stack">
-            <div class="stat-box">
-              <div class="stat-label">Nachträge</div>
-              <div class="stat-value">Ein Zeitpunkt, drei Werte</div>
-              <div class="muted">Beim Nachtragen kannst du Strom, Wasser und Pellets gemeinsam für denselben Zeitpunkt speichern.</div>
-            </div>
-            <div class="stat-box">
-              <div class="stat-label">JETZT</div>
-              <div class="stat-value">Schnell erfassen</div>
-              <div class="muted">Ist JETZT aktiv, nimmt die App automatisch den aktuellen Zeitpunkt. Sonst kannst du Datum und Uhrzeit manuell setzen.</div>
-            </div>
-          </div>
         </section>
 
         <section class="card wide">
@@ -710,8 +666,29 @@
         <section class="card wide">
           <div class="card-head">
             <div>
-              <p class="section-kicker">Preise & Grundpreise</p>
-              <h2>Kostenbasis hinterlegen</h2>
+              <p class="section-kicker">Preiszeiträume</p>
+              <h2>Preise für bestimmte Zeiträume hinterlegen</h2>
+            </div>
+          </div>
+          <form id="pricePeriodForm" class="price-grid">
+            <label>Bereich<select id="pricePeriodType" required><option value="strom">Strom</option><option value="wasser">Wasser</option><option value="pellets">Pellets</option></select></label>
+            <label>Gültig von<input id="pricePeriodFrom" type="datetime-local" required /></label>
+            <label>Gültig bis<input id="pricePeriodTo" type="datetime-local" /></label>
+            <label>Grundpreis pro Monat (€)<input id="pricePeriodBase" type="number" step="0.01" min="0" /></label>
+            <label>Preis pro Einheit (€)<input id="pricePeriodUnit" type="number" step="0.0001" min="0" required /></label>
+            <label>Notiz<input id="pricePeriodNote" type="text" maxlength="160" placeholder="optional" /></label>
+            <div class="form-actions span-12">
+              <button type="submit" class="btn primary">Preiszeitraum speichern</button>
+              <button type="reset" class="btn ghost">Leeren</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card wide">
+          <div class="card-head">
+            <div>
+              <p class="section-kicker">Aktuelle Basiswerte</p>
+              <h2>Schnellwerte hinterlegen</h2>
             </div>
           </div>
           <form id="settingsForm" class="price-grid">
@@ -721,7 +698,7 @@
             <label>Wasser Preis pro m³ (€)<input id="priceWasserUnit" type="number" step="0.0001" min="0" /></label>
             <label>Pellets Grundpreis pro Monat (€)<input id="pricePelletsBase" type="number" step="0.01" min="0" /></label>
             <label>Pellets Preis pro kg (€)<input id="pricePelletsUnit" type="number" step="0.0001" min="0" /></label>
-            <div class="form-actions span-12"><button type="submit" class="btn primary">Preise speichern</button></div>
+            <div class="form-actions span-12"><button type="submit" class="btn primary">Aktuelle Preise als offenen Zeitraum speichern</button></div>
           </form>
         </section>
 
@@ -760,27 +737,25 @@
           </form>
         </section>
 
-        <section class="card">
-          <div class="card-head">
-            <div>
-              <p class="section-kicker">Preisspiegel</p>
-              <h2>Gespeicherte Basiswerte</h2>
-            </div>
-          </div>
-          <div id="settingsSummary" class="settings-summary-grid"></div>
-        </section>
-
-        <section class="card wide">
-          <div class="card-head">
-            <div>
-              <p class="section-kicker">Pellets Käufe</p>
-              <h2>Einkaufshistorie</h2>
-            </div>
-          </div>
-          <div id="purchaseList" class="list-stack"></div>
-        </section>
+        <section class="card"><div class="card-head"><div><p class="section-kicker">Aktuelle Preislage</p><h2>Aktive Basiswerte</h2></div></div><div id="settingsSummary" class="settings-summary-grid"></div></section>
+        <section class="card wide"><div class="card-head"><div><p class="section-kicker">Preis-Historie</p><h2>Gespeicherte Preiszeiträume</h2></div></div><div id="pricePeriodList" class="list-stack"></div></section>
+        <section class="card wide"><div class="card-head"><div><p class="section-kicker">Pellets Käufe</p><h2>Einkaufshistorie</h2></div></div><div id="purchaseList" class="list-stack"></div></section>
       </div>
     </section>
+  </div>
+
+  <div id="chartOverlay" class="chart-overlay" aria-hidden="true">
+    <div class="chart-overlay-inner">
+      <div class="chart-overlay-head">
+        <div>
+          <p class="section-kicker">Diagramm groß</p>
+          <h2 id="chartOverlayTitle">Diagramm</h2>
+          <div class="muted" id="chartOverlayMeta"></div>
+        </div>
+        <button id="chartOverlayClose" class="chart-overlay-close" type="button">✕</button>
+      </div>
+      <div id="chartOverlayContent" class="chart-overlay-chart"></div>
+    </div>
   </div>
 
   <template id="entryTemplate">
@@ -790,9 +765,7 @@
         <div class="entry-value"></div>
         <div class="entry-note"></div>
       </div>
-      <div class="entry-actions">
-        <button class="icon-btn delete-btn" title="Löschen" type="button">🗑️</button>
-      </div>
+      <div class="entry-actions"><button class="icon-btn delete-btn" title="Löschen" type="button">🗑️</button></div>
     </article>
   </template>
 
@@ -813,7 +786,7 @@
     const DEFAULT_HOUSEHOLD_ID = "zuhause-haupt";
     const LOCAL_KEYS = {
       householdId: "verbrauch-household-id-v1",
-      localData: "verbrauch-local-data-v4"
+      localData: "verbrauch-local-data-v5"
     };
 
     const defaultSettings = {
@@ -833,6 +806,7 @@
       refills: [],
       purchases: [],
       resets: [],
+      pricePeriods: [],
       settings: structuredClone(defaultSettings),
       householdId: localStorage.getItem(LOCAL_KEYS.householdId) || DEFAULT_HOUSEHOLD_ID,
       firebaseEnabled: false,
@@ -865,7 +839,6 @@
       quickReadingDatetime: document.getElementById("quickReadingDatetime"),
       quickDatetimeWrap: document.getElementById("quickDatetimeWrap"),
       quickReadingNote: document.getElementById("quickReadingNote"),
-
       readingsList: document.getElementById("readingsList"),
 
       refillForm: document.getElementById("refillForm"),
@@ -885,6 +858,15 @@
       pricePelletsBase: document.getElementById("pricePelletsBase"),
       pricePelletsUnit: document.getElementById("pricePelletsUnit"),
       settingsSummary: document.getElementById("settingsSummary"),
+
+      pricePeriodForm: document.getElementById("pricePeriodForm"),
+      pricePeriodType: document.getElementById("pricePeriodType"),
+      pricePeriodFrom: document.getElementById("pricePeriodFrom"),
+      pricePeriodTo: document.getElementById("pricePeriodTo"),
+      pricePeriodBase: document.getElementById("pricePeriodBase"),
+      pricePeriodUnit: document.getElementById("pricePeriodUnit"),
+      pricePeriodNote: document.getElementById("pricePeriodNote"),
+      pricePeriodList: document.getElementById("pricePeriodList"),
 
       purchaseForm: document.getElementById("purchaseForm"),
       purchaseDatetime: document.getElementById("purchaseDatetime"),
@@ -919,6 +901,12 @@
       chartMetaWasser: document.getElementById("chartMetaWasser"),
       chartMetaPellets: document.getElementById("chartMetaPellets"),
 
+      chartOverlay: document.getElementById("chartOverlay"),
+      chartOverlayTitle: document.getElementById("chartOverlayTitle"),
+      chartOverlayMeta: document.getElementById("chartOverlayMeta"),
+      chartOverlayContent: document.getElementById("chartOverlayContent"),
+      chartOverlayClose: document.getElementById("chartOverlayClose"),
+
       monthlyOverview: document.getElementById("monthlyOverview"),
       entryTemplate: document.getElementById("entryTemplate")
     };
@@ -934,12 +922,8 @@
       registerInstallHandling();
       registerServiceWorker();
       renderAll();
-
-      if (state.householdId) {
-        await connectFirebase(FIREBASE_CONFIG, state.householdId, false);
-      } else {
-        updateFirebaseStatus();
-      }
+      if (state.householdId) await connectFirebase(FIREBASE_CONFIG, state.householdId, false);
+      else updateFirebaseStatus();
     }
 
     function hydrateLocalForms() {
@@ -949,12 +933,14 @@
 
     function setDefaultDatetimes() {
       const now = toDatetimeLocal(new Date());
-      if (els.batchReadingDatetime) els.batchReadingDatetime.value = now;
-      if (els.quickReadingDatetime) els.quickReadingDatetime.value = now;
-      if (els.refillDatetime) els.refillDatetime.value = now;
-      if (els.purchaseDatetime) els.purchaseDatetime.value = now;
-      if (els.resetDatetime) els.resetDatetime.value = now;
-      if (els.resetNewValue) els.resetNewValue.value = 0;
+      els.batchReadingDatetime.value = now;
+      els.quickReadingDatetime.value = now;
+      els.refillDatetime.value = now;
+      els.purchaseDatetime.value = now;
+      els.resetDatetime.value = now;
+      els.resetNewValue.value = 0;
+      els.pricePeriodFrom.value = now;
+      els.pricePeriodTo.value = "";
     }
 
     function restoreLocalData() {
@@ -964,6 +950,7 @@
       state.refills = normalizeDateArray(local.refills || []);
       state.purchases = normalizeDateArray(local.purchases || []);
       state.resets = normalizeDateArray(local.resets || []);
+      state.pricePeriods = normalizeDateArray(local.pricePeriods || []);
       state.settings = mergeSettings(local.settings || defaultSettings);
       fillSettingsForm();
     }
@@ -971,35 +958,30 @@
     function registerEvents() {
       els.mainTabs?.addEventListener("click", handleTabClick);
       els.exportBackupBtn?.addEventListener("click", exportBackup);
-
       els.quickUseNow?.addEventListener("change", syncQuickNowUi);
-
       els.batchReadingForm?.addEventListener("submit", handleBatchReadingSubmit);
-      els.batchReadingForm?.addEventListener("reset", () => setTimeout(() => {
-        if (els.batchReadingDatetime) els.batchReadingDatetime.value = toDatetimeLocal(new Date());
-      }, 0));
-
+      els.batchReadingForm?.addEventListener("reset", () => setTimeout(() => { els.batchReadingDatetime.value = toDatetimeLocal(new Date()); }, 0));
       els.quickReadingForm?.addEventListener("submit", handleQuickReadingSubmit);
-      els.quickReadingForm?.addEventListener("reset", () => setTimeout(() => {
-        if (els.quickUseNow) els.quickUseNow.checked = true;
-        if (els.quickReadingDatetime) els.quickReadingDatetime.value = toDatetimeLocal(new Date());
-        syncQuickNowUi();
-      }, 0));
-
+      els.quickReadingForm?.addEventListener("reset", () => setTimeout(() => { els.quickUseNow.checked = true; els.quickReadingDatetime.value = toDatetimeLocal(new Date()); syncQuickNowUi(); }, 0));
       els.refillBags?.addEventListener("input", syncRefillTotal);
       els.refillKgPerBag?.addEventListener("input", syncRefillTotal);
-
       els.refillForm?.addEventListener("submit", handleRefillSubmit);
-
       els.purchaseBags?.addEventListener("input", syncPurchaseTotals);
       els.purchaseKgPerBag?.addEventListener("input", syncPurchaseTotals);
       els.purchasePrice?.addEventListener("input", syncPurchaseTotals);
-
       els.purchaseForm?.addEventListener("submit", handlePurchaseSubmit);
       els.resetForm?.addEventListener("submit", handleResetSubmit);
       els.settingsForm?.addEventListener("submit", handleSettingsSubmit);
+      els.pricePeriodForm?.addEventListener("submit", handlePricePeriodSubmit);
+      els.pricePeriodForm?.addEventListener("reset", () => setTimeout(() => { els.pricePeriodFrom.value = toDatetimeLocal(new Date()); els.pricePeriodTo.value = ""; }, 0));
       els.firebaseForm?.addEventListener("submit", handleFirebaseSubmit);
       els.disconnectFirebaseBtn?.addEventListener("click", disconnectFirebase);
+      els.chartStrom?.addEventListener("click", () => openChartOverlay("strom"));
+      els.chartWasser?.addEventListener("click", () => openChartOverlay("wasser"));
+      els.chartPellets?.addEventListener("click", () => openChartOverlay("pellets"));
+      els.chartOverlayClose?.addEventListener("click", closeChartOverlay);
+      els.chartOverlay?.addEventListener("click", (event) => { if (event.target === els.chartOverlay) closeChartOverlay(); });
+      document.addEventListener("keydown", (event) => { if (event.key === "Escape") closeChartOverlay(); });
     }
 
     function registerInstallHandling() {
@@ -1008,24 +990,14 @@
         deferredPrompt = event;
         els.installBtn.classList.remove("hidden");
       });
-
       els.installBtn?.addEventListener("click", async () => {
-        if (!deferredPrompt) {
-          showToast("Im Browser-Menü installieren oder zum Startbildschirm hinzufügen.", "error");
-          return;
-        }
-
+        if (!deferredPrompt) return showToast("Im Browser-Menü installieren oder zum Startbildschirm hinzufügen.", "error");
         deferredPrompt.prompt();
         const choiceResult = await deferredPrompt.userChoice;
         deferredPrompt = null;
         els.installBtn.classList.add("hidden");
-
-        showToast(
-          choiceResult.outcome === "accepted" ? "App-Installation gestartet." : "Installation abgebrochen.",
-          choiceResult.outcome === "accepted" ? "success" : "error"
-        );
+        showToast(choiceResult.outcome === "accepted" ? "App-Installation gestartet." : "Installation abgebrochen.", choiceResult.outcome === "accepted" ? "success" : "error");
       });
-
       window.addEventListener("appinstalled", () => {
         els.installBtn.classList.add("hidden");
         deferredPrompt = null;
@@ -1035,9 +1007,7 @@
 
     function registerServiceWorker() {
       if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-          navigator.serviceWorker.register("./sw.js").catch((err) => console.error("SW-Fehler:", err));
-        });
+        window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch((err) => console.error("SW-Fehler:", err)));
       }
     }
 
@@ -1045,26 +1015,15 @@
       const button = event.target.closest(".tab");
       if (!button) return;
       const targetView = button.dataset.view;
-
-      document.querySelectorAll(".tab").forEach((tab) => {
-        tab.classList.toggle("active", tab === button);
-      });
-
-      els.views.forEach((view) => {
-        view.classList.toggle("active", view.id === targetView);
-      });
+      document.querySelectorAll(".tab").forEach((tab) => tab.classList.toggle("active", tab === button));
+      els.views.forEach((view) => view.classList.toggle("active", view.id === targetView));
     }
 
     function syncQuickNowUi() {
       const useNow = !!els.quickUseNow?.checked;
       els.quickDatetimeWrap?.classList.toggle("hidden", useNow);
-
-      if (els.quickReadingDatetime) {
-        els.quickReadingDatetime.required = !useNow;
-        if (useNow) {
-          els.quickReadingDatetime.value = toDatetimeLocal(new Date());
-        }
-      }
+      els.quickReadingDatetime.required = !useNow;
+      if (useNow) els.quickReadingDatetime.value = toDatetimeLocal(new Date());
     }
 
     function syncRefillTotal() {
@@ -1078,39 +1037,23 @@
       const totalPrice = toNumber(els.purchasePrice.value);
       const totalKg = round2((bags || 0) * (kgPerBag || 0));
       const pricePerKg = totalKg > 0 ? round4(totalPrice / totalKg) : 0;
-
       els.purchaseTotalKg.value = totalKg || "";
       els.purchasePricePerKg.value = pricePerKg || "";
     }
 
     async function handleBatchReadingSubmit(event) {
       event.preventDefault();
-
-      if (!els.batchReadingDatetime.value) {
-        showToast("Bitte Datum und Uhrzeit eingeben.", "error");
-        return;
-      }
-
+      if (!els.batchReadingDatetime.value) return showToast("Bitte Datum und Uhrzeit eingeben.", "error");
       const dt = new Date(els.batchReadingDatetime.value);
-      if (Number.isNaN(dt.getTime())) {
-        showToast("Datum ist ungültig.", "error");
-        return;
-      }
-
+      if (Number.isNaN(dt.getTime())) return showToast("Datum ist ungültig.", "error");
       const datetime = dt.toISOString();
       const note = els.batchReadingNote.value.trim();
-
       const entries = [
         { type: "strom", value: toNumber(els.batchStromValue.value) },
         { type: "wasser", value: toNumber(els.batchWasserValue.value) },
         { type: "pellets", value: toNumber(els.batchPelletsValue.value) }
       ].filter((item) => Number.isFinite(item.value));
-
-      if (!entries.length) {
-        showToast("Bitte mindestens einen Wert eintragen.", "error");
-        return;
-      }
-
+      if (!entries.length) return showToast("Bitte mindestens einen Wert eintragen.", "error");
       for (const item of entries) {
         const previous = getPreviousReading(item.type, datetime);
         if (previous && item.value < previous.value) {
@@ -1118,17 +1061,9 @@
           if (!proceed) return;
         }
       }
-
       for (const item of entries) {
-        await saveRecord("readings", {
-          type: item.type,
-          value: item.value,
-          note,
-          date: datetime,
-          createdAt: new Date().toISOString()
-        });
+        await saveRecord("readings", { type: item.type, value: item.value, note, date: datetime, createdAt: new Date().toISOString() });
       }
-
       els.batchReadingForm.reset();
       els.batchReadingDatetime.value = toDatetimeLocal(new Date());
       showToast("Zeitpunkt mit Zählerständen gespeichert.", "success");
@@ -1136,83 +1071,41 @@
 
     async function handleQuickReadingSubmit(event) {
       event.preventDefault();
-
       const useNow = !!els.quickUseNow?.checked;
       let datetime;
-
-      if (useNow) {
-        datetime = new Date().toISOString();
-      } else {
-        if (!els.quickReadingDatetime.value) {
-          showToast("Bitte Datum und Uhrzeit eingeben.", "error");
-          return;
-        }
+      if (useNow) datetime = new Date().toISOString();
+      else {
+        if (!els.quickReadingDatetime.value) return showToast("Bitte Datum und Uhrzeit eingeben.", "error");
         const dt = new Date(els.quickReadingDatetime.value);
-        if (Number.isNaN(dt.getTime())) {
-          showToast("Datum ist ungültig.", "error");
-          return;
-        }
+        if (Number.isNaN(dt.getTime())) return showToast("Datum ist ungültig.", "error");
         datetime = dt.toISOString();
       }
-
       const type = els.quickReadingType.value;
       const value = toNumber(els.quickReadingValue.value);
       const note = els.quickReadingNote.value.trim();
-
-      if (!Number.isFinite(value) || value < 0) {
-        showToast("Bitte einen gültigen Zählerstand eingeben.", "error");
-        return;
-      }
-
+      if (!Number.isFinite(value) || value < 0) return showToast("Bitte einen gültigen Zählerstand eingeben.", "error");
       const previous = getPreviousReading(type, datetime);
       if (previous && value < previous.value) {
         const proceed = confirm("Der neue Zählerstand ist kleiner als der vorherige. Trotzdem speichern?");
         if (!proceed) return;
       }
-
-      await saveRecord("readings", {
-        type,
-        value,
-        note,
-        date: datetime,
-        createdAt: new Date().toISOString()
-      });
-
+      await saveRecord("readings", { type, value, note, date: datetime, createdAt: new Date().toISOString() });
       els.quickReadingForm.reset();
-      if (els.quickUseNow) els.quickUseNow.checked = true;
-      if (els.quickReadingDatetime) els.quickReadingDatetime.value = toDatetimeLocal(new Date());
+      els.quickUseNow.checked = true;
+      els.quickReadingDatetime.value = toDatetimeLocal(new Date());
       syncQuickNowUi();
-
       showToast("Zählerstand gespeichert.", "success");
     }
 
     async function handleRefillSubmit(event) {
       event.preventDefault();
-
       const dt = new Date(els.refillDatetime.value);
-      if (Number.isNaN(dt.getTime())) {
-        showToast("Datum ist ungültig.", "error");
-        return;
-      }
-
+      if (Number.isNaN(dt.getTime())) return showToast("Datum ist ungültig.", "error");
       const bags = toNumber(els.refillBags.value);
       const kgPerBag = toNumber(els.refillKgPerBag.value);
       const totalKg = round2(bags * kgPerBag);
-
-      if (!Number.isFinite(bags) || !Number.isFinite(kgPerBag) || bags <= 0 || kgPerBag <= 0) {
-        showToast("Bitte Säcke und kg pro Sack korrekt eingeben.", "error");
-        return;
-      }
-
-      await saveRecord("refills", {
-        bags,
-        kgPerBag,
-        totalKg,
-        note: els.refillNote.value.trim(),
-        date: dt.toISOString(),
-        createdAt: new Date().toISOString()
-      });
-
+      if (!Number.isFinite(bags) || !Number.isFinite(kgPerBag) || bags <= 0 || kgPerBag <= 0) return showToast("Bitte Säcke und kg pro Sack korrekt eingeben.", "error");
+      await saveRecord("refills", { bags, kgPerBag, totalKg, note: els.refillNote.value.trim(), date: dt.toISOString(), createdAt: new Date().toISOString() });
       els.refillForm.reset();
       els.refillDatetime.value = toDatetimeLocal(new Date());
       syncRefillTotal();
@@ -1221,33 +1114,14 @@
 
     async function handlePurchaseSubmit(event) {
       event.preventDefault();
-
       const dt = new Date(els.purchaseDatetime.value);
-      if (Number.isNaN(dt.getTime())) {
-        showToast("Datum ist ungültig.", "error");
-        return;
-      }
-
+      if (Number.isNaN(dt.getTime())) return showToast("Datum ist ungültig.", "error");
       const bags = toNumber(els.purchaseBags.value);
       const kgPerBag = toNumber(els.purchaseKgPerBag.value);
       const totalPrice = toNumber(els.purchasePrice.value);
       const totalKg = round2(bags * kgPerBag);
-
-      if (!Number.isFinite(bags) || !Number.isFinite(kgPerBag) || !Number.isFinite(totalPrice) || bags <= 0 || kgPerBag <= 0 || totalPrice < 0) {
-        showToast("Bitte Kaufdaten korrekt eingeben.", "error");
-        return;
-      }
-
-      await saveRecord("purchases", {
-        bags,
-        kgPerBag,
-        totalKg,
-        totalPrice: round2(totalPrice),
-        pricePerKg: totalKg > 0 ? round4(totalPrice / totalKg) : 0,
-        date: dt.toISOString(),
-        createdAt: new Date().toISOString()
-      });
-
+      if (!Number.isFinite(bags) || !Number.isFinite(kgPerBag) || !Number.isFinite(totalPrice) || bags <= 0 || kgPerBag <= 0 || totalPrice < 0) return showToast("Bitte Kaufdaten korrekt eingeben.", "error");
+      await saveRecord("purchases", { bags, kgPerBag, totalKg, totalPrice: round2(totalPrice), pricePerKg: totalKg > 0 ? round4(totalPrice / totalKg) : 0, date: dt.toISOString(), createdAt: new Date().toISOString() });
       els.purchaseForm.reset();
       els.purchaseDatetime.value = toDatetimeLocal(new Date());
       syncPurchaseTotals();
@@ -1256,13 +1130,8 @@
 
     async function handleResetSubmit(event) {
       event.preventDefault();
-
       const dt = new Date(els.resetDatetime.value);
-      if (Number.isNaN(dt.getTime())) {
-        showToast("Datum ist ungültig.", "error");
-        return;
-      }
-
+      if (Number.isNaN(dt.getTime())) return showToast("Datum ist ungültig.", "error");
       const payload = {
         type: els.resetType.value,
         previousMeterValue: toNumber(els.resetPreviousValue.value),
@@ -1271,12 +1140,7 @@
         date: dt.toISOString(),
         createdAt: new Date().toISOString()
       };
-
-      if (!Number.isFinite(payload.previousMeterValue) || !Number.isFinite(payload.newMeterStartValue)) {
-        showToast("Bitte Reset-Daten korrekt eingeben.", "error");
-        return;
-      }
-
+      if (!Number.isFinite(payload.previousMeterValue) || !Number.isFinite(payload.newMeterStartValue)) return showToast("Bitte Reset-Daten korrekt eingeben.", "error");
       await saveRecord("resets", payload);
       els.resetForm.reset();
       els.resetDatetime.value = toDatetimeLocal(new Date());
@@ -1284,24 +1148,65 @@
       showToast("Zähler-Reset gespeichert.", "success");
     }
 
+    async function handlePricePeriodSubmit(event) {
+      event.preventDefault();
+      const from = new Date(els.pricePeriodFrom.value);
+      const to = els.pricePeriodTo.value ? new Date(els.pricePeriodTo.value) : null;
+      if (Number.isNaN(from.getTime())) return showToast("Bitte einen gültigen Start eingeben.", "error");
+      if (to && Number.isNaN(to.getTime())) return showToast("Bitte ein gültiges Ende eingeben.", "error");
+      if (to && to < from) return showToast("Das Ende darf nicht vor dem Start liegen.", "error");
+      const unitPrice = toNumber(els.pricePeriodUnit.value);
+      const basePrice = toNumber(els.pricePeriodBase.value) || 0;
+      if (!Number.isFinite(unitPrice) || unitPrice < 0) return showToast("Bitte einen gültigen Preis pro Einheit eingeben.", "error");
+      await saveRecord("pricePeriods", {
+        type: els.pricePeriodType.value,
+        fromDate: from.toISOString(),
+        toDate: to ? to.toISOString() : null,
+        basePrice,
+        unitPrice,
+        note: els.pricePeriodNote.value.trim(),
+        createdAt: new Date().toISOString(),
+        date: from.toISOString()
+      });
+      els.pricePeriodForm.reset();
+      els.pricePeriodFrom.value = toDatetimeLocal(new Date());
+      els.pricePeriodTo.value = "";
+      showToast("Preiszeitraum gespeichert.", "success");
+    }
+
     async function handleSettingsSubmit(event) {
       event.preventDefault();
-
       state.settings = mergeSettings({
         strom: { basePrice: toNumber(els.priceStromBase.value) || 0, unitPrice: toNumber(els.priceStromUnit.value) || 0 },
         wasser: { basePrice: toNumber(els.priceWasserBase.value) || 0, unitPrice: toNumber(els.priceWasserUnit.value) || 0 },
         pellets: { basePrice: toNumber(els.pricePelletsBase.value) || 0, unitPrice: toNumber(els.pricePelletsUnit.value) || 0 }
       });
-
       persistLocalSnapshot();
       renderAll();
       if (state.firebaseEnabled) await saveSettingsToFirestore();
-      showToast("Einstellungen gespeichert.", "success");
+
+      const now = new Date().toISOString();
+      for (const type of ["strom", "wasser", "pellets"]) {
+        const existingOpen = state.pricePeriods.find((p) => p.type === type && !p.toDate);
+        if (!existingOpen) {
+          await saveRecord("pricePeriods", {
+            type,
+            fromDate: now,
+            toDate: null,
+            basePrice: state.settings[type].basePrice,
+            unitPrice: state.settings[type].unitPrice,
+            note: "Offener aktueller Zeitraum",
+            createdAt: new Date().toISOString(),
+            date: now
+          });
+        }
+      }
+      showToast("Aktuelle Preise gespeichert.", "success");
     }
 
     async function handleFirebaseSubmit(event) {
       event.preventDefault();
-      const householdId = els.householdId && els.householdId.value.trim() ? els.householdId.value.trim() : DEFAULT_HOUSEHOLD_ID;
+      const householdId = els.householdId.value.trim() || DEFAULT_HOUSEHOLD_ID;
       localStorage.setItem(LOCAL_KEYS.householdId, householdId);
       state.householdId = householdId;
       await connectFirebase(FIREBASE_CONFIG, householdId, true);
@@ -1353,32 +1258,14 @@
       const refillsQuery = query(collection(state.db, `${basePath}/refills`), orderBy("date", "desc"));
       const purchasesQuery = query(collection(state.db, `${basePath}/purchases`), orderBy("date", "desc"));
       const resetsQuery = query(collection(state.db, `${basePath}/resets`), orderBy("date", "desc"));
+      const pricePeriodsQuery = query(collection(state.db, `${basePath}/pricePeriods`), orderBy("fromDate", "desc"));
       const settingsDocRef = doc(state.db, `${basePath}/settings/main`);
 
-      state.unsubscribers.push(onSnapshot(readingsQuery, (s) => {
-        state.readings = s.docs.map(mapFirestoreDoc);
-        persistLocalSnapshot();
-        renderAll();
-      }));
-
-      state.unsubscribers.push(onSnapshot(refillsQuery, (s) => {
-        state.refills = s.docs.map(mapFirestoreDoc);
-        persistLocalSnapshot();
-        renderAll();
-      }));
-
-      state.unsubscribers.push(onSnapshot(purchasesQuery, (s) => {
-        state.purchases = s.docs.map(mapFirestoreDoc);
-        persistLocalSnapshot();
-        renderAll();
-      }));
-
-      state.unsubscribers.push(onSnapshot(resetsQuery, (s) => {
-        state.resets = s.docs.map(mapFirestoreDoc);
-        persistLocalSnapshot();
-        renderAll();
-      }));
-
+      state.unsubscribers.push(onSnapshot(readingsQuery, (s) => { state.readings = s.docs.map(mapFirestoreDoc); persistLocalSnapshot(); renderAll(); }));
+      state.unsubscribers.push(onSnapshot(refillsQuery, (s) => { state.refills = s.docs.map(mapFirestoreDoc); persistLocalSnapshot(); renderAll(); }));
+      state.unsubscribers.push(onSnapshot(purchasesQuery, (s) => { state.purchases = s.docs.map(mapFirestoreDoc); persistLocalSnapshot(); renderAll(); }));
+      state.unsubscribers.push(onSnapshot(resetsQuery, (s) => { state.resets = s.docs.map(mapFirestoreDoc); persistLocalSnapshot(); renderAll(); }));
+      state.unsubscribers.push(onSnapshot(pricePeriodsQuery, (s) => { state.pricePeriods = s.docs.map(mapFirestoreDoc); persistLocalSnapshot(); renderAll(); }));
       state.unsubscribers.push(onSnapshot(settingsDocRef, (snapshot) => {
         if (snapshot.exists()) {
           state.settings = mergeSettings(snapshot.data());
@@ -1397,9 +1284,8 @@
     }
 
     async function saveSettingsToFirestore() {
-      if (state.firebaseEnabled) {
-        await setDoc(doc(state.db, `${householdBasePath()}/settings/main`), state.settings, { merge: true });
-      }
+      if (!state.firebaseEnabled) return;
+      await setDoc(doc(state.db, `${householdBasePath()}/settings/main`), state.settings, { merge: true });
     }
 
     async function saveRecord(kind, payload) {
@@ -1408,13 +1294,10 @@
           readings: `${householdBasePath()}/readings`,
           refills: `${householdBasePath()}/refills`,
           purchases: `${householdBasePath()}/purchases`,
-          resets: `${householdBasePath()}/resets`
+          resets: `${householdBasePath()}/resets`,
+          pricePeriods: `${householdBasePath()}/pricePeriods`
         };
-
-        await addDoc(collection(state.db, pathMap[kind]), {
-          ...payload,
-          serverCreatedAt: serverTimestamp()
-        });
+        await addDoc(collection(state.db, pathMap[kind]), { ...payload, serverCreatedAt: serverTimestamp() });
       } else {
         state[kind].unshift({ ...payload, id: generateId() });
         persistLocalSnapshot();
@@ -1428,7 +1311,8 @@
           readings: `${householdBasePath()}/readings/${id}`,
           refills: `${householdBasePath()}/refills/${id}`,
           purchases: `${householdBasePath()}/purchases/${id}`,
-          resets: `${householdBasePath()}/resets/${id}`
+          resets: `${householdBasePath()}/resets/${id}`,
+          pricePeriods: `${householdBasePath()}/pricePeriods/${id}`
         };
         await deleteDoc(doc(state.db, pathMap[kind]));
       } else {
@@ -1477,6 +1361,7 @@
         refills: state.refills,
         purchases: state.purchases,
         resets: state.resets,
+        pricePeriods: state.pricePeriods,
         settings: state.settings
       }));
     }
@@ -1486,6 +1371,7 @@
       renderReadings();
       renderRefills();
       renderPurchases();
+      renderPricePeriods();
       renderDashboard();
       renderMonthlyOverview();
       renderSettingsSummary();
@@ -1495,19 +1381,14 @@
     function renderReadings() {
       const computed = buildComputedReadings();
       els.readingsList.innerHTML = "";
-
-      if (!computed.length) {
-        els.readingsList.innerHTML = '<div class="empty-state">Noch keine Zählerstände gespeichert.</div>';
-        return;
-      }
-
+      if (!computed.length) return els.readingsList.innerHTML = '<div class="empty-state">Noch keine Zählerstände gespeichert.</div>';
       computed.forEach((entry) => {
         els.readingsList.appendChild(createEntryNode({
           id: entry.id,
           kind: "readings",
           typeLabel: typeConfig[entry.type].label,
           datetime: formatDateTime(entry.date),
-          valueHtml: `${formatNumber(entry.value)} ${typeConfig[entry.type].unit}<br><small class="muted">Verbrauch gesamt: ${formatSigned(entry.delta)} ${typeConfig[entry.type].unit} · pro Tag: ${formatNumber(entry.dailyDelta)} ${typeConfig[entry.type].unit}${entry.cost !== null ? ` · ${formatCurrency(entry.cost)}` : ""}${entry.resetApplied ? " · Reset aktiv" : ""}</small>`,
+          valueHtml: `${formatNumber(entry.value)} ${typeConfig[entry.type].unit}<br><small class="muted">Verbrauch gesamt: ${formatSigned(entry.delta)} ${typeConfig[entry.type].unit} · pro Tag: ${formatNumber(entry.dailyDelta)} ${typeConfig[entry.type].unit}/Tag${entry.cost !== null ? ` · ${formatCurrency(entry.cost)}` : ""}${entry.resetApplied ? " · Reset aktiv" : ""}</small>`,
           note: entry.note || (entry.previousDate ? `Vorheriger Stand: ${formatNumber(entry.previousValue)} am ${formatDateTime(entry.previousDate)}` : "Erster gespeicherter Stand")
         }));
       });
@@ -1515,11 +1396,7 @@
 
     function renderRefills() {
       els.refillsList.innerHTML = "";
-      if (!state.refills.length) {
-        els.refillsList.innerHTML = '<div class="empty-state">Noch keine Nachfüllungen gespeichert.</div>';
-        return;
-      }
-
+      if (!state.refills.length) return els.refillsList.innerHTML = '<div class="empty-state">Noch keine Nachfüllungen gespeichert.</div>';
       state.refills.forEach((entry) => {
         els.refillsList.appendChild(createEntryNode({
           id: entry.id,
@@ -1534,11 +1411,7 @@
 
     function renderPurchases() {
       els.purchaseList.innerHTML = "";
-      if (!state.purchases.length) {
-        els.purchaseList.innerHTML = '<div class="empty-state">Noch keine Pellets-Käufe gespeichert.</div>';
-        return;
-      }
-
+      if (!state.purchases.length) return els.purchaseList.innerHTML = '<div class="empty-state">Noch keine Pellets-Käufe gespeichert.</div>';
       state.purchases.forEach((entry) => {
         els.purchaseList.appendChild(createEntryNode({
           id: entry.id,
@@ -1551,6 +1424,24 @@
       });
     }
 
+    function renderPricePeriods() {
+      els.pricePeriodList.innerHTML = "";
+      if (!state.pricePeriods.length) return els.pricePeriodList.innerHTML = '<div class="empty-state">Noch keine Preiszeiträume gespeichert.</div>';
+      state.pricePeriods
+        .slice()
+        .sort((a, b) => new Date(b.fromDate) - new Date(a.fromDate))
+        .forEach((entry) => {
+          els.pricePeriodList.appendChild(createEntryNode({
+            id: entry.id,
+            kind: "pricePeriods",
+            typeLabel: `${typeConfig[entry.type].label} Preis`,
+            datetime: `${formatDateTime(entry.fromDate)}${entry.toDate ? ` → ${formatDateTime(entry.toDate)}` : " → offen"}`,
+            valueHtml: `${formatCurrency(entry.unitPrice)}/${typeConfig[entry.type].unit}<br><small class="muted">Grundpreis: ${formatCurrency(entry.basePrice || 0)}/Monat</small>`,
+            note: entry.note || "Kein Hinweis"
+          }));
+        });
+    }
+
     function renderDashboard() {
       renderDashboardStats();
       renderConsumptionHistory();
@@ -1560,31 +1451,11 @@
     }
 
     function renderMonthlyOverview() {
-      if (!els.monthlyOverview) return;
-
       const monthly = buildMonthlyStats();
       const types = ["strom", "wasser", "pellets"];
-
       els.monthlyOverview.innerHTML = types.map((type) => {
-        const months = Object.entries(monthly[type])
-          .sort((a, b) => b[0].localeCompare(a[0]))
-          .slice(0, 6);
-
-        return `
-          <div class="stat-box">
-            <div class="stat-label">${typeConfig[type].label}</div>
-            ${months.length
-              ? months.map(([month, data]) => `
-                <div style="margin-bottom:10px;">
-                  <strong>${month}</strong><br>
-                  ${formatNumber(data.total)} ${typeConfig[type].unit}<br>
-                  <span class="muted">Ø ${formatNumber(data.avgPerDay)} ${typeConfig[type].unit}/Tag · ${formatCurrency(data.cost)}</span>
-                </div>
-              `).join("")
-              : `<div class="muted">Noch keine Monatsdaten</div>`
-            }
-          </div>
-        `;
+        const months = Object.entries(monthly[type]).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 6);
+        return `<div class="stat-box"><div class="stat-label">${typeConfig[type].label}</div>${months.length ? months.map(([month, data]) => `<div style="margin-bottom:10px;"><strong>${month}</strong><br>${formatNumber(data.total)} ${typeConfig[type].unit}<br><span class="muted">Ø ${formatNumber(data.avgPerDay)} ${typeConfig[type].unit}/Tag · ${formatCurrency(data.cost)}</span></div>`).join("") : `<div class="muted">Noch keine Monatsdaten</div>`}</div>`;
       }).join("");
     }
 
@@ -1594,13 +1465,11 @@
         wasser: latestReadingOfType("wasser"),
         pellets: latestReadingOfType("pellets")
       };
-
       const lastDiffs = {
         strom: latestConsumptionOfType("strom"),
         wasser: latestConsumptionOfType("wasser"),
         pellets: latestConsumptionOfType("pellets")
       };
-
       const cards = [
         {
           label: "Strom aktuell",
@@ -1623,25 +1492,13 @@
           sub: `${formatNumber(totalRefillKg())} kg nachgefüllt · ${formatNumber(totalPurchasedKg())} kg gekauft`
         }
       ];
-
-      els.dashboardStats.innerHTML = cards.map((card) => `
-        <div class="stat-box">
-          <div class="stat-label">${card.label}</div>
-          <div class="stat-value">${card.value}</div>
-          <div class="stat-label">${card.sub}</div>
-        </div>
-      `).join("");
+      els.dashboardStats.innerHTML = cards.map((card) => `<div class="stat-box"><div class="stat-label">${card.label}</div><div class="stat-value">${card.value}</div><div class="stat-label">${card.sub}</div></div>`).join("");
     }
 
     function renderConsumptionHistory() {
       const computed = buildComputedReadings().filter((entry) => entry.previousValue !== null).slice(0, 10);
       els.consumptionHistory.innerHTML = "";
-
-      if (!computed.length) {
-        els.consumptionHistory.innerHTML = '<div class="empty-state">Sobald zwei Stände je Kategorie vorliegen, erscheinen hier die Differenzen.</div>';
-        return;
-      }
-
+      if (!computed.length) return els.consumptionHistory.innerHTML = '<div class="empty-state">Sobald zwei Stände je Kategorie vorliegen, erscheinen hier die Differenzen.</div>';
       computed.forEach((entry) => {
         els.consumptionHistory.appendChild(createEntryNode({
           id: entry.id,
@@ -1649,7 +1506,7 @@
           typeLabel: typeConfig[entry.type].label,
           datetime: `${formatDateTime(entry.previousDate)} → ${formatDateTime(entry.date)}`,
           valueHtml: `${formatNumber(entry.dailyDelta)} ${typeConfig[entry.type].unit}/Tag${entry.cost !== null ? ` · ${formatCurrency(entry.cost)}` : ""}`,
-          note: `gesamt ${formatNumber(entry.delta)} ${typeConfig[entry.type].unit} in ${entry.daysBetween} Tag(en)${entry.resetApplied ? " · mit Reset" : ""}`,
+          note: `gesamt ${formatNumber(entry.delta)} ${typeConfig[entry.type].unit} in ${entry.daysBetween} Tag(en)${entry.priceSource ? ` · Preis: ${entry.priceSource}` : ""}${entry.resetApplied ? " · mit Reset" : ""}`,
           allowDelete: false
         }));
       });
@@ -1661,7 +1518,6 @@
       const consumed = totalConsumptionOfType("pellets");
       const estimated = getPelletInventoryKg();
       const avgPrice = averagePelletPricePerKg();
-
       const cards = [
         { label: "Gekauft", value: `${formatNumber(totalBought)} kg` },
         { label: "Nachgefüllt", value: `${formatNumber(totalRefilled)} kg` },
@@ -1670,39 +1526,22 @@
         { label: "Ø Einkaufspreis", value: avgPrice ? `${formatCurrency(avgPrice)}/kg` : "–" },
         { label: "Käufe", value: `${state.purchases.length} Stück` }
       ];
-
-      els.pelletSummary.innerHTML = cards.map((card) => `
-        <div class="stat-box">
-          <div class="stat-label">${card.label}</div>
-          <div class="stat-value">${card.value}</div>
-        </div>
-      `).join("");
+      els.pelletSummary.innerHTML = cards.map((card) => `<div class="stat-box"><div class="stat-label">${card.label}</div><div class="stat-value">${card.value}</div></div>`).join("");
     }
 
     function renderPelletActivity() {
-      const merged = [
-        ...state.refills.map((item) => ({ ...item, activityType: "Nachfüllung" })),
-        ...state.purchases.map((item) => ({ ...item, activityType: "Kauf" }))
-      ]
+      const merged = [...state.refills.map((item) => ({ ...item, activityType: "Nachfüllung" })), ...state.purchases.map((item) => ({ ...item, activityType: "Kauf" }))]
         .sort((a, b) => new Date(b.date) - new Date(a.date))
         .slice(0, 8);
-
       els.pelletActivity.innerHTML = "";
-
-      if (!merged.length) {
-        els.pelletActivity.innerHTML = '<div class="empty-state">Noch keine Pellets-Aktivität vorhanden.</div>';
-        return;
-      }
-
+      if (!merged.length) return els.pelletActivity.innerHTML = '<div class="empty-state">Noch keine Pellets-Aktivität vorhanden.</div>';
       merged.forEach((entry) => {
         els.pelletActivity.appendChild(createEntryNode({
           id: entry.id,
           kind: entry.activityType === "Kauf" ? "purchases" : "refills",
           typeLabel: entry.activityType,
           datetime: formatDateTime(entry.date),
-          valueHtml: entry.activityType === "Kauf"
-            ? `${formatNumber(entry.totalKg)} kg · ${formatCurrency(entry.totalPrice)}`
-            : `${formatNumber(entry.totalKg)} kg`,
+          valueHtml: entry.activityType === "Kauf" ? `${formatNumber(entry.totalKg)} kg · ${formatCurrency(entry.totalPrice)}` : `${formatNumber(entry.totalKg)} kg`,
           note: `${formatNumber(entry.bags)} Sack/Säcke × ${formatNumber(entry.kgPerBag)} kg`,
           allowDelete: false
         }));
@@ -1715,28 +1554,21 @@
         { label: "Verbrauch gesamt", value: `${formatNumber(totalConsumptionOfType("pellets"))} kg` },
         { label: "Geschätzter Bestand", value: `${formatNumber(getPelletInventoryKg())} kg` }
       ];
-
-      els.pelletInventoryStats.innerHTML = stats.map((stat) => `
-        <div class="stat-box">
-          <div class="stat-label">${stat.label}</div>
-          <div class="stat-value">${stat.value}</div>
-        </div>
-      `).join("");
+      els.pelletInventoryStats.innerHTML = stats.map((stat) => `<div class="stat-box"><div class="stat-label">${stat.label}</div><div class="stat-value">${stat.value}</div></div>`).join("");
     }
 
     function renderSettingsSummary() {
+      const active = {
+        strom: getActivePriceForDate("strom", new Date().toISOString()),
+        wasser: getActivePriceForDate("wasser", new Date().toISOString()),
+        pellets: getActivePriceForDate("pellets", new Date().toISOString())
+      };
       const rows = [
-        { label: "Strom", value: `${formatCurrency(state.settings.strom.basePrice)} Grundpreis · ${formatCurrency(state.settings.strom.unitPrice)}/kWh` },
-        { label: "Wasser", value: `${formatCurrency(state.settings.wasser.basePrice)} Grundpreis · ${formatCurrency(state.settings.wasser.unitPrice)}/m³` },
-        { label: "Pellets", value: `${formatCurrency(state.settings.pellets.basePrice)} Grundpreis · ${formatCurrency(state.settings.pellets.unitPrice)}/kg` }
+        { label: "Strom", value: active.strom ? `${formatCurrency(active.strom.basePrice)}/Monat · ${formatCurrency(active.strom.unitPrice)}/kWh` : `${formatCurrency(state.settings.strom.basePrice)} Grundpreis · ${formatCurrency(state.settings.strom.unitPrice)}/kWh` },
+        { label: "Wasser", value: active.wasser ? `${formatCurrency(active.wasser.basePrice)}/Monat · ${formatCurrency(active.wasser.unitPrice)}/m³` : `${formatCurrency(state.settings.wasser.basePrice)} Grundpreis · ${formatCurrency(state.settings.wasser.unitPrice)}/m³` },
+        { label: "Pellets", value: active.pellets ? `${formatCurrency(active.pellets.basePrice)}/Monat · ${formatCurrency(active.pellets.unitPrice)}/kg` : `${formatCurrency(state.settings.pellets.basePrice)} Grundpreis · ${formatCurrency(state.settings.pellets.unitPrice)}/kg` }
       ];
-
-      els.settingsSummary.innerHTML = rows.map((row) => `
-        <div class="stat-box">
-          <div class="stat-label">${row.label}</div>
-          <div class="stat-value">${row.value}</div>
-        </div>
-      `).join("");
+      els.settingsSummary.innerHTML = rows.map((row) => `<div class="stat-box"><div class="stat-label">${row.label}</div><div class="stat-value">${row.value}</div></div>`).join("");
     }
 
     function renderCharts() {
@@ -1745,65 +1577,62 @@
       renderConsumptionChart("pellets", els.chartPellets, els.chartMetaPellets);
     }
 
-    function renderConsumptionChart(type, container, metaContainer) {
-      const entries = buildComputedReadings()
-        .filter((entry) => entry.type === type && entry.previousValue !== null)
-        .slice()
-        .reverse();
-
+    function renderConsumptionChart(type, container, metaContainer, large = false) {
+      const entries = buildComputedReadings().filter((entry) => entry.type === type && entry.previousValue !== null).slice().reverse();
       const cfg = typeConfig[type];
       const total = entries.reduce((sum, entry) => sum + Math.max(entry.dailyDelta || 0, 0), 0);
       const avg = entries.length ? total / entries.length : 0;
-
-      metaContainer.textContent = entries.length
-        ? `${entries.length} Intervalle · Summe Tageswerte ${formatNumber(total)} ${cfg.unit}/Tag · Ø ${formatNumber(avg)} ${cfg.unit}/Tag`
-        : "Noch keine Differenzen vorhanden";
-
+      const metaText = entries.length ? `${entries.length} Intervalle · Summe Tageswerte ${formatNumber(total)} ${cfg.unit}/Tag · Ø ${formatNumber(avg)} ${cfg.unit}/Tag` : "Noch keine Differenzen vorhanden";
+      if (metaContainer) metaContainer.textContent = metaText;
       if (!entries.length) {
         container.innerHTML = '<div class="empty-state" style="height:100%;display:grid;place-items:center;">Noch keine Daten</div>';
-        return;
+        return metaText;
       }
-
-      const width = 500;
-      const height = 200;
-      const padding = 18;
+      const width = large ? 1200 : 500;
+      const height = large ? 620 : 200;
+      const padding = large ? 28 : 18;
       const maxValue = Math.max(...entries.map((e) => e.dailyDelta), 1);
       const range = Math.max(maxValue, 1);
       const usableWidth = width - padding * 2;
       const usableHeight = height - padding * 2;
-
       const points = entries.map((entry, index) => ({
         x: padding + (entries.length === 1 ? usableWidth / 2 : (index / (entries.length - 1)) * usableWidth),
         y: padding + usableHeight - (entry.dailyDelta / range) * usableHeight,
         entry
       }));
-
       const polyline = points.map((p) => `${p.x},${p.y}`).join(" ");
-      const areaPoints = [
-        `${points[0].x},${height - padding}`,
-        ...points.map((p) => `${p.x},${p.y}`),
-        `${points[points.length - 1].x},${height - padding}`
-      ].join(" ");
+      const areaPoints = [`${points[0].x},${height - padding}`, ...points.map((p) => `${p.x},${p.y}`), `${points[points.length - 1].x},${height - padding}`].join(" ");
+      const circles = points.map((p) => `<circle cx="${p.x}" cy="${p.y}" r="${large ? 6 : 4.5}" fill="${cfg.color}"><title>${formatDateShort(p.entry.date)}: ${formatNumber(p.entry.dailyDelta)} ${cfg.unit}/Tag</title></circle>`).join("");
+      const labels = buildChartLabels(entries, width, height, padding, large);
+      container.innerHTML = `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-label="${cfg.label} Chart"><defs><linearGradient id="grad-${type}-${large ? "lg" : "sm"}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${cfg.color}" stop-opacity="0.32"></stop><stop offset="100%" stop-color="${cfg.color}" stop-opacity="0.02"></stop></linearGradient></defs><polygon points="${areaPoints}" fill="url(#grad-${type}-${large ? "lg" : "sm"})"></polygon><polyline points="${polyline}" fill="none" stroke="${cfg.color}" stroke-width="${large ? 4 : 3}" stroke-linecap="round" stroke-linejoin="round"></polyline>${circles}${labels}</svg>`;
+      return metaText;
+    }
 
-      const circles = points.map((p) => `
-        <circle cx="${p.x}" cy="${p.y}" r="4.5" fill="${cfg.color}">
-          <title>${formatDateShort(p.entry.date)}: ${formatNumber(p.entry.dailyDelta)} ${cfg.unit}/Tag</title>
-        </circle>
-      `).join("");
-
-      container.innerHTML = `
-        <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-label="${cfg.label} Chart">
-          <defs>
-            <linearGradient id="grad-${type}" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="${cfg.color}" stop-opacity="0.32"></stop>
-              <stop offset="100%" stop-color="${cfg.color}" stop-opacity="0.02"></stop>
-            </linearGradient>
-          </defs>
-          <polygon points="${areaPoints}" fill="url(#grad-${type})"></polygon>
-          <polyline points="${polyline}" fill="none" stroke="${cfg.color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
-          ${circles}
-        </svg>
+    function buildChartLabels(entries, width, height, padding, large = false) {
+      if (!entries.length) return "";
+      const fontSize = large ? 16 : 11;
+      if (entries.length === 1) {
+        return `<text x="${width / 2}" y="${height - 6}" fill="#99a8c7" font-size="${fontSize}" text-anchor="middle">${escapeHtml(formatDateShort(entries[0].date))}</text>`;
+      }
+      return `
+        <text x="${padding}" y="${height - 6}" fill="#99a8c7" font-size="${fontSize}" text-anchor="start">${escapeHtml(formatDateShort(entries[0].date))}</text>
+        <text x="${width - padding}" y="${height - 6}" fill="#99a8c7" font-size="${fontSize}" text-anchor="end">${escapeHtml(formatDateShort(entries[entries.length - 1].date))}</text>
       `;
+    }
+
+    function openChartOverlay(type) {
+      els.chartOverlayTitle.textContent = `${typeConfig[type].label} · groß`;
+      const meta = renderConsumptionChart(type, els.chartOverlayContent, null, true);
+      els.chartOverlayMeta.textContent = meta;
+      els.chartOverlay.classList.add("active");
+      els.chartOverlay.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeChartOverlay() {
+      els.chartOverlay.classList.remove("active");
+      els.chartOverlay.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
     }
 
     function buildComputedReadings() {
@@ -1812,43 +1641,39 @@
         wasser: sortAsc(state.readings.filter((e) => e.type === "wasser")),
         pellets: sortAsc(state.readings.filter((e) => e.type === "pellets"))
       };
-
       const computed = [];
-
       Object.entries(byType).forEach(([type, list]) => {
         const resetsForType = sortAsc(state.resets.filter((r) => r.type === type));
-
         list.forEach((entry, index) => {
           const previous = index > 0 ? list[index - 1] : null;
           let delta = null;
           let resetApplied = false;
           let daysBetween = null;
           let dailyDelta = null;
-
+          let cost = null;
+          let priceSource = null;
           if (previous) {
             const prevTime = new Date(previous.date).getTime();
             const currentTime = new Date(entry.date).getTime();
-
-            daysBetween = Math.max(1, Math.round((currentTime - prevTime) / 86400000));
-
+            const rawDays = (currentTime - prevTime) / 86400000;
+            daysBetween = Math.max(1, Math.round(rawDays));
             const resetBetween = resetsForType.find((reset) => {
               const resetTime = new Date(reset.date).getTime();
               return resetTime > prevTime && resetTime <= currentTime;
             });
-
             if (resetBetween) {
               delta = round2((resetBetween.previousMeterValue - previous.value) + (entry.value - resetBetween.newMeterStartValue));
               resetApplied = true;
             } else {
               delta = round2(entry.value - previous.value);
             }
-
             delta = Math.max(0, delta);
             dailyDelta = round2(delta / daysBetween);
+            const priceAtEnd = getActivePriceForDate(type, entry.date);
+            const unitPrice = priceAtEnd ? priceAtEnd.unitPrice : state.settings[type].unitPrice;
+            cost = round2(delta * unitPrice);
+            if (priceAtEnd) priceSource = `${formatCurrency(priceAtEnd.unitPrice)}/${typeConfig[type].unit}`;
           }
-
-          const cost = delta !== null ? round2(delta * state.settings[type].unitPrice) : null;
-
           computed.push({
             ...entry,
             type,
@@ -1858,98 +1683,81 @@
             cost,
             resetApplied,
             daysBetween,
-            dailyDelta
+            dailyDelta,
+            priceSource
           });
         });
       });
-
       return computed.sort((a, b) => new Date(b.date) - new Date(a.date));
     }
 
     function buildMonthlyStats() {
       const computed = buildComputedReadings().filter((entry) => entry.previousValue !== null && entry.delta !== null);
       const result = { strom: {}, wasser: {}, pellets: {} };
-
       computed.forEach((entry) => {
         const d = new Date(entry.date);
         const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-
-        if (!result[entry.type][monthKey]) {
-          result[entry.type][monthKey] = {
-            total: 0,
-            cost: 0,
-            days: new Set()
-          };
-        }
-
+        if (!result[entry.type][monthKey]) result[entry.type][monthKey] = { total: 0, cost: 0, days: new Set() };
         result[entry.type][monthKey].total += Math.max(entry.delta || 0, 0);
         result[entry.type][monthKey].cost += entry.cost || 0;
-
         const prev = new Date(entry.previousDate);
         const curr = new Date(entry.date);
         let loopDate = new Date(prev);
-
         while (loopDate <= curr) {
           result[entry.type][monthKey].days.add(loopDate.toISOString().slice(0, 10));
           loopDate.setDate(loopDate.getDate() + 1);
         }
       });
-
-      Object.keys(result).forEach((type) => {
-        Object.keys(result[type]).forEach((monthKey) => {
-          const item = result[type][monthKey];
-          item.total = round2(item.total);
-          item.cost = round2(item.cost);
-          item.dayCount = item.days.size || 1;
-          item.avgPerDay = round2(item.total / item.dayCount);
-          delete item.days;
-        });
-      });
-
+      Object.keys(result).forEach((type) => Object.keys(result[type]).forEach((monthKey) => {
+        const item = result[type][monthKey];
+        item.total = round2(item.total);
+        item.cost = round2(item.cost);
+        item.dayCount = item.days.size || 1;
+        item.avgPerDay = round2(item.total / item.dayCount);
+        delete item.days;
+      }));
       return result;
     }
 
-    function latestReadingOfType(type) {
-      return state.readings
-        .filter((entry) => entry.type === type)
-        .sort((a, b) => new Date(b.date) - new Date(a.date))[0] || null;
+    function getActivePriceForDate(type, isoDate) {
+      const target = new Date(isoDate).getTime();
+      const matches = state.pricePeriods
+        .filter((p) => p.type === type)
+        .filter((p) => {
+          const from = new Date(p.fromDate).getTime();
+          const to = p.toDate ? new Date(p.toDate).getTime() : Infinity;
+          return target >= from && target <= to;
+        })
+        .sort((a, b) => new Date(b.fromDate) - new Date(a.fromDate));
+      return matches[0] || null;
     }
 
+    function latestReadingOfType(type) {
+      return state.readings.filter((entry) => entry.type === type).sort((a, b) => new Date(b.date) - new Date(a.date))[0] || null;
+    }
     function latestConsumptionOfType(type) {
       return buildComputedReadings().find((entry) => entry.type === type && entry.previousValue !== null) || null;
     }
-
     function totalConsumptionOfType(type) {
-      return round2(
-        buildComputedReadings()
-          .filter((entry) => entry.type === type && entry.previousValue !== null && entry.delta > 0)
-          .reduce((sum, entry) => sum + entry.delta, 0)
-      );
+      return round2(buildComputedReadings().filter((entry) => entry.type === type && entry.previousValue !== null && entry.delta > 0).reduce((sum, entry) => sum + entry.delta, 0));
     }
-
     function totalRefillKg() {
       return round2(state.refills.reduce((sum, entry) => sum + (toNumber(entry.totalKg) || 0), 0));
     }
-
     function totalPurchasedKg() {
       return round2(state.purchases.reduce((sum, entry) => sum + (toNumber(entry.totalKg) || 0), 0));
     }
-
     function averagePelletPricePerKg() {
       const totalKg = totalPurchasedKg();
       if (!totalKg) return 0;
       const totalPrice = state.purchases.reduce((sum, entry) => sum + (toNumber(entry.totalPrice) || 0), 0);
       return round4(totalPrice / totalKg);
     }
-
     function getPelletInventoryKg() {
       return Math.max(0, round2(totalPurchasedKg() + totalRefillKg() - totalConsumptionOfType("pellets")));
     }
-
     function getPreviousReading(type, isoDate) {
-      return sortAsc(
-        state.readings.filter((entry) => entry.type === type && new Date(entry.date) < new Date(isoDate))
-      ).slice(-1)[0] || null;
+      return sortAsc(state.readings.filter((entry) => entry.type === type && new Date(entry.date) < new Date(isoDate))).slice(-1)[0] || null;
     }
 
     function createEntryNode({ id, kind, typeLabel, datetime, valueHtml, note, allowDelete = true }) {
@@ -1957,24 +1765,17 @@
       const article = node.querySelector(".entry-item");
       article.dataset.id = id;
       article.dataset.kind = kind;
-
       node.querySelector(".entry-type").textContent = typeLabel;
       node.querySelector(".entry-datetime").textContent = datetime;
       node.querySelector(".entry-value").innerHTML = valueHtml;
       node.querySelector(".entry-note").textContent = note || "Keine Notiz";
-
       const deleteBtn = node.querySelector(".delete-btn");
-
-      if (!allowDelete) {
-        deleteBtn.remove();
-      } else {
-        deleteBtn.addEventListener("click", async () => {
-          if (!confirm(`${typeLabel} löschen?`)) return;
-          await deleteRecord(kind, id);
-          showToast("Eintrag gelöscht.", "success");
-        });
-      }
-
+      if (!allowDelete) deleteBtn.remove();
+      else deleteBtn.addEventListener("click", async () => {
+        if (!confirm(`${typeLabel} löschen?`)) return;
+        await deleteRecord(kind, id);
+        showToast("Eintrag gelöscht.", "success");
+      });
       return node;
     }
 
@@ -1987,44 +1788,42 @@
         refills: state.refills,
         purchases: state.purchases,
         resets: state.resets,
+        pricePeriods: state.pricePeriods,
         settings: state.settings
       };
-
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
       downloadBlob(blob, `verbrauch-backup-${dateStamp()}.json`);
       showToast("Backup exportiert.", "success");
     }
 
     function mapFirestoreDoc(docSnap) {
-      return {
-        id: docSnap.id,
-        ...convertFirestoreTimestamps(docSnap.data())
-      };
+      return { id: docSnap.id, ...convertFirestoreTimestamps(docSnap.data()) };
     }
 
     function convertFirestoreTimestamps(value) {
       if (value instanceof Timestamp) return value.toDate().toISOString();
       if (Array.isArray(value)) return value.map(convertFirestoreTimestamps);
-
       if (value && typeof value === "object") {
         const output = {};
-        Object.entries(value).forEach(([key, val]) => {
-          output[key] = convertFirestoreTimestamps(val);
-        });
+        Object.entries(value).forEach(([key, val]) => { output[key] = convertFirestoreTimestamps(val); });
         return output;
       }
-
       return value;
     }
 
     function normalizeDateArray(list) {
       return list
-        .map((item) => ({ ...item, date: new Date(item.date).toISOString() }))
-        .sort((a, b) => new Date(b.date) - new Date(a.date));
+        .map((item) => ({
+          ...item,
+          date: item.date ? new Date(item.date).toISOString() : (item.fromDate ? new Date(item.fromDate).toISOString() : new Date().toISOString()),
+          fromDate: item.fromDate ? new Date(item.fromDate).toISOString() : item.fromDate,
+          toDate: item.toDate ? new Date(item.toDate).toISOString() : item.toDate
+        }))
+        .sort((a, b) => new Date((b.date || b.fromDate)) - new Date((a.date || a.fromDate)));
     }
 
     function sortAsc(list) {
-      return [...list].sort((a, b) => new Date(a.date) - new Date(b.date));
+      return [...list].sort((a, b) => new Date((a.date || a.fromDate)) - new Date((b.date || b.fromDate)));
     }
 
     function toDatetimeLocal(dateInput) {
@@ -2080,6 +1879,15 @@
       return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}`;
     }
 
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
     function loadJSON(key, fallback) {
       try {
         const raw = localStorage.getItem(key);
@@ -2103,12 +1911,10 @@
     function showToast(message, type = "success") {
       const oldToast = document.querySelector(".toast");
       if (oldToast) oldToast.remove();
-
       const toast = document.createElement("div");
       toast.className = `toast ${type}`;
       toast.textContent = message;
       document.body.appendChild(toast);
-
       setTimeout(() => toast.remove(), 3800);
     }
   </script>
