@@ -1561,18 +1561,31 @@
         return;
       }
 
-      const latest = [...state.fuelEntries].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 3);
+      const latestPerCar = state.cars.map((car) => {
+        const latestEntry = [...state.fuelEntries]
+          .filter((entry) => entry.carId === car.id)
+          .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
 
-      els.fuelStats.innerHTML = latest.map((entry) => {
-        const car = state.cars.find((c) => c.id === entry.carId);
-        return `
-          <div class="stat-box">
-            <div class="stat-label">${escapeHtml(car?.name || "Auto")}</div>
-            <div class="stat-value">${formatCurrency(entry.pricePerLiter)}/l</div>
-            <div class="stat-label">${formatNumber(entry.liters)} l · ${formatNumber(entry.mileage)} km</div>
+        return latestEntry ? { car, entry: latestEntry } : null;
+      }).filter(Boolean);
+
+      if (!latestPerCar.length) {
+        els.fuelStats.innerHTML = '<div class="empty-state">Noch keine Tankdaten pro Auto vorhanden.</div>';
+        return;
+      }
+
+      els.fuelStats.innerHTML = latestPerCar.map(({ car, entry }) => `
+        <div class="stat-box">
+          <div class="stat-label">${escapeHtml(car.name || "Auto")}</div>
+          <div class="stat-value">${formatCurrency(entry.pricePerLiter)}/l</div>
+          <div class="stat-label">
+            ${formatNumber(entry.liters)} l · ${formatNumber(entry.mileage)} km
+            ${Number.isFinite(entry.distanceKm) ? `<br>Strecke ${formatNumber(entry.distanceKm)} km` : ""}
+            ${Number.isFinite(entry.litersPer100km) ? `<br>${formatNumber(entry.litersPer100km)} l/100km` : ""}
+            ${Number.isFinite(entry.costPer100km) ? `<br>${formatCurrency(entry.costPer100km)}/100km` : ""}
           </div>
-        `;
-      }).join("");
+        </div>
+      `).join("");
     }
 
     async function handleCarSubmit(event) {
