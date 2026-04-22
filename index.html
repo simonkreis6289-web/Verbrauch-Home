@@ -1535,8 +1535,17 @@
           kind: "fuelEntries",
           typeLabel: `Tanken · ${carName}`,
           datetime: formatDateTime(entry.date),
-          valueHtml: `${formatNumber(entry.liters)} l · ${formatCurrency(entry.totalPrice)}<br><small class="muted">${formatCurrency(entry.pricePerLiter)}/l · ${formatNumber(entry.mileage)} km</small>`,
-          note: entry.note || "Keine Notiz"
+            valueHtml: `
+              ${formatNumber(entry.liters)} l · ${formatCurrency(entry.totalPrice)}
+              <br>
+              <small class="muted">
+                ${formatCurrency(entry.pricePerLiter)}/l · ${formatNumber(entry.mileage)} km
+                ${Number.isFinite(entry.distanceKm) ? ` · Strecke ${formatNumber(entry.distanceKm)} km` : ""}
+                ${Number.isFinite(entry.litersPer100km) ? ` · ${formatNumber(entry.litersPer100km)} l/100km` : ""}
+                ${Number.isFinite(entry.costPer100km) ? ` · ${formatCurrency(entry.costPer100km)}/100km` : ""}
+              </small>
+            `,
+            note: entry.note || "Keine Notiz"
         });
         els.fuelList.appendChild(node);
       });
@@ -1695,12 +1704,29 @@
         return;
       }
 
+        const previousFuelEntry = getPreviousFuelEntryForCar(carId, isoDate);
+        let distanceKm = null;
+        let litersPer100km = null;
+        let costPer100km = null;
+
+        if (previousFuelEntry) {
+          distanceKm = round2(mileage - previousFuelEntry.mileage);
+
+          if (distanceKm > 0) {
+            litersPer100km = round2((liters / distanceKm) * 100);
+            costPer100km = round2((totalPrice / distanceKm) * 100);
+          }
+        }
+
         await saveRecord("fuelEntries", {
           carId,
           liters,
           totalPrice: round2(totalPrice),
           pricePerLiter,
           mileage,
+          distanceKm,
+          litersPer100km,
+          costPer100km,
           note,
           date: isoDate,
           createdAt: new Date().toISOString()
@@ -1720,6 +1746,12 @@
         .filter((entry) => entry.carId === carId && new Date(entry.date) < new Date(isoDate))
         .sort((a, b) => new Date(b.date) - new Date(a.date))[0]?.mileage ?? null;
     }      
+
+    function getPreviousFuelEntryForCar(carId, isoDate) {
+      return [...state.fuelEntries]
+        .filter((entry) => entry.carId === carId && new Date(entry.date) < new Date(isoDate))
+        .sort((a, b) => new Date(b.date) - new Date(a.date))[0] || null;
+    }
       
     function syncRefillTotal() {
       const total = round2((toNumber(els.refillBags.value) || 0) * (toNumber(els.refillKgPerBag.value) || 0));
