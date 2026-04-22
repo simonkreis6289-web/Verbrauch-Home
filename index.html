@@ -641,6 +641,24 @@
                     
 <section id="carsView" class="view">
   <div class="grid">
+      <section class="card wide glass">
+          <div class="card-head">
+            <div>
+              <p class="section-kicker">Fahrzeugauswahl</p>
+              <h2>Auto auswählen</h2>
+            </div>
+            <span class="badge ok">eine Ansicht pro Auto</span>
+          </div>
+
+          <form class="form-grid" onsubmit="return false;">
+            <label class="span-12">
+              Fahrzeug
+              <select id="analyticsCarSelect"></select>
+              <small>Hier wählst du das Auto aus, für das die Auswertung angezeigt wird.</small>
+            </label>
+          </form>
+        </section>
+      
     <section class="card glass">
       <div class="card-head">
         <div>
@@ -721,6 +739,42 @@
       </div>
       <div id="fuelList" class="list-stack"></div>
     </section>
+      <section class="card wide glass">
+  <div class="card-head">
+    <div>
+      <p class="section-kicker">Auswertung</p>
+      <h2>Verbrauch, Kosten und Hochrechnung</h2>
+    </div>
+  </div>
+  <div id="selectedCarStats" class="summary-grid four"></div>
+</section>
+
+    <section class="card wide">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Verbrauchskurve</p>
+          <h2>Liter pro 100 km</h2>
+        </div>
+      </div>
+      <article class="chart-card">
+        <div class="muted" id="carConsumptionChartMeta"></div>
+        <div id="carConsumptionChart" class="chart clickable"></div>
+      </article>
+    </section>
+
+    <section class="card wide">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Kostenkurve</p>
+          <h2>Kosten pro 100 km</h2>
+        </div>
+      </div>
+      <article class="chart-card">
+        <div class="muted" id="carCostChartMeta"></div>
+        <div id="carCostChart" class="chart clickable"></div>
+      </article>
+    </section>
+      
   </div>
 </section>
       
@@ -1126,6 +1180,7 @@
     const state = {      
       cars: [],
       fuelEntries: [],
+      selectedAnalyticsCarId: null,
       readings: [],
       refills: [],
       purchases: [],
@@ -1259,6 +1314,12 @@
       fuelMileage: document.getElementById("fuelMileage"),
       fuelNote: document.getElementById("fuelNote"),
       fuelList: document.getElementById("fuelList"),
+        analyticsCarSelect: document.getElementById("analyticsCarSelect"),
+        selectedCarStats: document.getElementById("selectedCarStats"),
+        carConsumptionChartMeta: document.getElementById("carConsumptionChartMeta"),
+        carConsumptionChart: document.getElementById("carConsumptionChart"),
+        carCostChartMeta: document.getElementById("carCostChartMeta"),
+        carCostChart: document.getElementById("carCostChart"),
       fuelStats: document.getElementById("fuelStats"),
     };
 
@@ -1378,6 +1439,13 @@
         syncFuelPricePerLiter();
       }, 0));
       
+          els.analyticsCarSelect?.addEventListener("change", () => {
+            state.selectedAnalyticsCarId = els.analyticsCarSelect.value || null;
+          renderSelectedCarAnalytics();
+        });
+      els.carConsumptionChart?.addEventListener("click", () => openCarChartOverlay("consumption"));
+      els.carCostChart?.addEventListener("click", () => openCarChartOverlay("cost"));
+      
       els.chartStrom?.addEventListener("click", () => openChartOverlay("strom"));
       els.chartWasser?.addEventListener("click", () => openChartOverlay("wasser"));
       els.chartPellets?.addEventListener("click", () => openChartOverlay("pellets"));
@@ -1464,7 +1532,8 @@
       if (!els.carList) return;
 
       renderCarOptions();
-
+      renderAnalyticsCarOptions();
+        
       if (!state.cars.length) {
         els.carList.innerHTML = '<div class="empty-state">Noch keine Autos angelegt.</div>';
         return;
@@ -1502,6 +1571,249 @@
         });
             }
 
+function renderAnalyticsCarOptions() {
+  if (!els.analyticsCarSelect) return;
+
+  if (!state.cars.length) {
+    els.analyticsCarSelect.innerHTML = '<option value="">Bitte erst Auto anlegen</option>';
+    state.selectedAnalyticsCarId = null;
+    renderSelectedCarAnalytics();
+    return;
+  }
+
+  if (!state.selectedAnalyticsCarId || !state.cars.some(car => car.id === state.selectedAnalyticsCarId)) {
+    state.selectedAnalyticsCarId = state.cars[0].id;
+  }
+
+  els.analyticsCarSelect.innerHTML = state.cars
+    .map((car) => `
+      <option value="${car.id}" ${car.id === state.selectedAnalyticsCarId ? "selected" : ""}>
+        ${escapeHtml(car.name)}${car.plate ? ` · ${escapeHtml(car.plate)}` : ""}
+      </option>
+    `)
+    .join("");
+
+  renderSelectedCarAnalytics();
+}
+
+function renderSelectedCarAnalytics() {
+  if (!els.selectedCarStats || !els.carConsumptionChart || !els.carCostChart) return;
+
+  if (!state.selectedAnalyticsCarId) {
+    els.selectedCarStats.innerHTML = '<div class="empty-state">Kein Auto ausgewählt.</div>';
+    els.carConsumptionChart.innerHTML = '<div class="empty-state" style="height:100%;display:grid;place-items:center;">Keine Daten</div>';
+    els.carCostChart.innerHTML = '<div class="empty-state" style="height:100%;display:grid;place-items:center;">Keine Daten</div>';
+    if (els.carConsumptionChartMeta) els.carConsumptionChartMeta.textContent = "";
+    if (els.carCostChartMeta) els.carCostChartMeta.textContent = "";
+    return;
+  }
+
+  const car = state.cars.find(c => c.id === state.selectedAnalyticsCarId);
+  const entries = [...state.fuelEntries]
+    .filter(entry => entry.carId === state.selectedAnalyticsCarId)
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  if (!entries.length) {
+    els.selectedCarStats.innerHTML = '<div class="empty-state">Für dieses Auto sind noch keine Tankdaten vorhanden.</div>';
+    els.carConsumptionChart.innerHTML = '<div class="empty-state" style="height:100%;display:grid;place-items:center;">Keine Daten</div>';
+    els.carCostChart.innerHTML = '<div class="empty-state" style="height:100%;display:grid;place-items:center;">Keine Daten</div>';
+    if (els.carConsumptionChartMeta) els.carConsumptionChartMeta.textContent = "";
+    if (els.carCostChartMeta) els.carCostChartMeta.textContent = "";
+    return;
+  }
+
+  const validConsumption = entries.filter(e => Number.isFinite(e.litersPer100km));
+  const validCost = entries.filter(e => Number.isFinite(e.costPer100km));
+
+  const totalLiters = entries.reduce((sum, e) => sum + (toNumber(e.liters) || 0), 0);
+  const totalCost = entries.reduce((sum, e) => sum + (toNumber(e.totalPrice) || 0), 0);
+
+  const avgConsumption = validConsumption.length
+    ? validConsumption.reduce((sum, e) => sum + e.litersPer100km, 0) / validConsumption.length
+    : null;
+
+  const avgCost100 = validCost.length
+    ? validCost.reduce((sum, e) => sum + e.costPer100km, 0) / validCost.length
+    : null;
+
+  const totalDistance = validConsumption.reduce((sum, e) => sum + (toNumber(e.distanceKm) || 0), 0);
+
+  const lastEntry = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+
+  const firstDate = new Date(entries[0].date);
+  const lastDate = new Date(lastEntry.date);
+  const days = Math.max(1, (lastDate - firstDate) / 86400000);
+  const yearFactor = 365 / days;
+
+  const projectedYearDistance = round2(totalDistance * yearFactor);
+  const projectedYearFuelCost = round2(totalCost * yearFactor);
+
+  els.selectedCarStats.innerHTML = `
+    <div class="stat-box">
+      <div class="stat-label">Auto</div>
+      <div class="stat-value">${escapeHtml(car?.name || "Unbekannt")}</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Ø Verbrauch</div>
+      <div class="stat-value">${avgConsumption != null ? `${formatNumber(avgConsumption)} l/100 km` : "–"}</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Ø Kosten</div>
+      <div class="stat-value">${avgCost100 != null ? `${formatCurrency(avgCost100)}/100 km` : "–"}</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Gesamtkosten</div>
+      <div class="stat-value">${formatCurrency(totalCost)}</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Gesamtmenge</div>
+      <div class="stat-value">${formatNumber(totalLiters)} l</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Erfasste Strecke</div>
+      <div class="stat-value">${formatNumber(totalDistance)} km</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Hochrechnung Jahr</div>
+      <div class="stat-value">${formatNumber(projectedYearDistance)} km</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Hochrechnung Kosten/Jahr</div>
+      <div class="stat-value">${formatCurrency(projectedYearFuelCost)}</div>
+    </div>
+  `;
+
+  renderCarMetricChart({
+    entries: validConsumption,
+    container: els.carConsumptionChart,
+    metaContainer: els.carConsumptionChartMeta,
+    metricKey: "litersPer100km",
+    label: "Verbrauch",
+    unit: "l/100 km",
+    color: "#38bdf8"
+  });
+
+  renderCarMetricChart({
+    entries: validCost,
+    container: els.carCostChart,
+    metaContainer: els.carCostChartMeta,
+    metricKey: "costPer100km",
+    label: "Kosten",
+    unit: "€/100 km",
+    color: "#22c55e"
+  });
+}
+
+function renderCarMetricChart({ entries, container, metaContainer, metricKey, label, unit, color, large = false }) {
+  if (!container) return "";
+
+  const avg = entries.length
+    ? entries.reduce((sum, e) => sum + (toNumber(e[metricKey]) || 0), 0) / entries.length
+    : 0;
+
+  const metaText = entries.length
+    ? `${entries.length} Werte · Ø ${formatNumber(avg)} ${unit}`
+    : "Noch keine auswertbaren Daten";
+
+  if (metaContainer) metaContainer.textContent = metaText;
+
+  if (!entries.length) {
+    container.innerHTML = '<div class="empty-state" style="height:100%;display:grid;place-items:center;">Keine Daten</div>';
+    return metaText;
+  }
+
+  const width = large ? 1200 : 500;
+  const height = large ? 620 : 200;
+  const padding = large ? 28 : 18;
+
+  const values = entries.map(e => Number(e[metricKey]) || 0);
+  const maxValue = Math.max(...values, 1);
+  const usableWidth = width - padding * 2;
+  const usableHeight = height - padding * 2;
+
+  const points = entries.map((entry, index) => ({
+    x: padding + (entries.length === 1 ? usableWidth / 2 : (index / (entries.length - 1)) * usableWidth),
+    y: padding + usableHeight - ((Number(entry[metricKey]) || 0) / maxValue) * usableHeight,
+    entry
+  }));
+
+  const polyline = points.map(p => `${p.x},${p.y}`).join(" ");
+  const areaPoints = [
+    `${points[0].x},${height - padding}`,
+    ...points.map(p => `${p.x},${p.y}`),
+    `${points[points.length - 1].x},${height - padding}`
+  ].join(" ");
+
+  const circles = points.map((p) => `
+    <circle cx="${p.x}" cy="${p.y}" r="${large ? 6 : 4.5}" fill="${color}">
+      <title>${formatDateShort(p.entry.date)}: ${formatNumber(p.entry[metricKey])} ${unit}</title>
+    </circle>
+  `).join("");
+
+  const labels = buildChartLabels(entries, width, height, padding, large);
+
+  const gradId = `grad-${metricKey}-${large ? "lg" : "sm"}`;
+
+  container.innerHTML = `
+    <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-label="${label} Chart">
+      <defs>
+        <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${color}" stop-opacity="0.32"></stop>
+          <stop offset="100%" stop-color="${color}" stop-opacity="0.02"></stop>
+        </linearGradient>
+      </defs>
+      <polygon points="${areaPoints}" fill="url(#${gradId})"></polygon>
+      <polyline points="${polyline}" fill="none" stroke="${color}" stroke-width="${large ? 4 : 3}" stroke-linecap="round" stroke-linejoin="round"></polyline>
+      ${circles}
+      ${labels}
+    </svg>
+  `;
+
+  return metaText;
+}
+
+    function openCarChartOverlay(mode) {
+      const entries = [...state.fuelEntries]
+        .filter(entry => entry.carId === state.selectedAnalyticsCarId)
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      if (!entries.length) return;
+
+      if (mode === "consumption") {
+        const filtered = entries.filter(e => Number.isFinite(e.litersPer100km));
+        els.chartOverlayTitle.textContent = "Verbrauch · groß";
+        const meta = renderCarMetricChart({
+          entries: filtered,
+          container: els.chartOverlayContent,
+          metaContainer: null,
+          metricKey: "litersPer100km",
+          label: "Verbrauch",
+          unit: "l/100 km",
+          color: "#38bdf8",
+          large: true
+        });
+        els.chartOverlayMeta.textContent = meta;
+      } else {
+        const filtered = entries.filter(e => Number.isFinite(e.costPer100km));
+        els.chartOverlayTitle.textContent = "Kosten · groß";
+        const meta = renderCarMetricChart({
+          entries: filtered,
+          container: els.chartOverlayContent,
+          metaContainer: null,
+          metricKey: "costPer100km",
+          label: "Kosten",
+          unit: "€/100 km",
+          color: "#22c55e",
+          large: true
+        });
+        els.chartOverlayMeta.textContent = meta;
+      }
+
+      els.chartOverlay.classList.add("active");
+      els.chartOverlay.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    }
+            
     function renderCarOptions() {
       if (!els.fuelCarId) return;
 
@@ -1556,36 +1868,41 @@
     function renderFuelStats() {
       if (!els.fuelStats) return;
 
-      if (!state.fuelEntries.length) {
-        els.fuelStats.innerHTML = '<div class="empty-state">Noch keine Tankdaten vorhanden.</div>';
+      if (!state.selectedAnalyticsCarId) {
+        els.fuelStats.innerHTML = '<div class="empty-state">Kein Auto ausgewählt.</div>';
         return;
       }
 
-      const latestPerCar = state.cars.map((car) => {
-        const latestEntry = [...state.fuelEntries]
-          .filter((entry) => entry.carId === car.id)
-          .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+      const entries = [...state.fuelEntries]
+        .filter((entry) => entry.carId === state.selectedAnalyticsCarId)
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-        return latestEntry ? { car, entry: latestEntry } : null;
-      }).filter(Boolean);
-
-      if (!latestPerCar.length) {
-        els.fuelStats.innerHTML = '<div class="empty-state">Noch keine Tankdaten pro Auto vorhanden.</div>';
+      if (!entries.length) {
+        els.fuelStats.innerHTML = '<div class="empty-state">Noch keine Tankdaten für dieses Auto vorhanden.</div>';
         return;
       }
 
-      els.fuelStats.innerHTML = latestPerCar.map(({ car, entry }) => `
+      const last = entries[0];
+      const car = state.cars.find((c) => c.id === state.selectedAnalyticsCarId);
+
+      els.fuelStats.innerHTML = `
         <div class="stat-box">
-          <div class="stat-label">${escapeHtml(car.name || "Auto")}</div>
-          <div class="stat-value">${formatCurrency(entry.pricePerLiter)}/l</div>
-          <div class="stat-label">
-            ${formatNumber(entry.liters)} l · ${formatNumber(entry.mileage)} km
-            ${Number.isFinite(entry.distanceKm) ? `<br>Strecke ${formatNumber(entry.distanceKm)} km` : ""}
-            ${Number.isFinite(entry.litersPer100km) ? `<br>${formatNumber(entry.litersPer100km)} l/100km` : ""}
-            ${Number.isFinite(entry.costPer100km) ? `<br>${formatCurrency(entry.costPer100km)}/100km` : ""}
-          </div>
+          <div class="stat-label">Auto</div>
+          <div class="stat-value">${escapeHtml(car?.name || "Auto")}</div>
         </div>
-      `).join("");
+        <div class="stat-box">
+          <div class="stat-label">Letzter Preis</div>
+          <div class="stat-value">${formatCurrency(last.pricePerLiter)}/l</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Letzte Tankung</div>
+          <div class="stat-value">${formatNumber(last.liters)} l</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Letzter Kilometerstand</div>
+          <div class="stat-value">${formatNumber(last.mileage)} km</div>
+        </div>
+      `;
     }
 
     async function handleCarSubmit(event) {
