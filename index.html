@@ -573,32 +573,73 @@
       </div>
     </section>
 
-    <section id="refillsView" class="view">
-      <div class="grid">
-        <section class="card glass">
-          <div class="card-head">
-            <div>
-              <p class="section-kicker">Pellets Nachfüllung</p>
-              <h2>Lager separat auffüllen</h2>
-            </div>
-            <span class="badge ok">unabhängig vom Verbrauch</span>
-          </div>
-          <form id="refillForm" class="form-grid">
-            <label>Datum<input id="refillDate" type="date" required /></label>
-            <label>Anzahl Säcke<input id="refillBags" type="number" step="1" min="1" required /></label>
-            <label>Kilogramm pro Sack
-              <select id="refillKgPerBag" required></select>
-            </label>
-            <label>Gesamtgewicht<input id="refillTotalKg" type="number" step="0.01" min="0" readonly /><small>Wird automatisch berechnet.</small></label>
-            <label class="span-12">Notiz<input id="refillNote" type="text" maxlength="160" placeholder="optional" /></label>
-            <div class="form-actions span-12">
-              <button type="submit" class="btn primary">Nachfüllung speichern</button>
-              <button type="reset" class="btn ghost">Leeren</button>
-            </div>
-          </form>
-        </section>
-          
-          <section id="carsView" class="view">
+<section id="refillsView" class="view">
+  <div class="grid">
+    <section class="card glass">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Pellets Nachfüllung</p>
+          <h2>Lager separat auffüllen</h2>
+        </div>
+        <span class="badge ok">unabhängig vom Verbrauch</span>
+      </div>
+      <form id="refillForm" class="form-grid">
+        <label>
+          Datum
+          <input id="refillDate" type="date" required />
+        </label>
+
+        <label>
+          Anzahl Säcke
+          <input id="refillBags" type="number" step="1" min="1" required />
+        </label>
+
+        <label>
+          Kilogramm pro Sack
+          <select id="refillKgPerBag" required></select>
+        </label>
+
+        <label>
+          Gesamtgewicht
+          <input id="refillTotalKg" type="number" step="0.01" min="0" readonly />
+          <small>Wird automatisch berechnet.</small>
+        </label>
+
+        <label class="span-12">
+          Notiz
+          <input id="refillNote" type="text" maxlength="160" placeholder="optional" />
+        </label>
+
+        <div class="form-actions span-12">
+          <button type="submit" class="btn primary">Nachfüllung speichern</button>
+          <button type="reset" class="btn ghost">Leeren</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Lagerblick</p>
+          <h2>Pellets Übersicht</h2>
+        </div>
+      </div>
+      <div id="pelletInventoryStats" class="stats-grid"></div>
+    </section>
+
+    <section class="card wide">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Historie</p>
+          <h2>Nachfüllungen</h2>
+        </div>
+      </div>
+      <div id="refillsList" class="list-stack"></div>
+    </section>
+  </div>
+</section>
+                    
+<section id="carsView" class="view">
   <div class="grid">
     <section class="card glass">
       <div class="card-head">
@@ -682,294 +723,326 @@
     </section>
   </div>
 </section>
-          
-        <section class="card">
-          <div class="card-head">
-            <div>
-              <p class="section-kicker">Lagerblick</p>
-              <h2>Pellets Übersicht</h2>
-            </div>
-          </div>
-          <div id="pelletInventoryStats" class="stats-grid"></div>
-        </section>
-
-        <section class="card wide">
-          <div class="card-head">
-            <div>
-              <p class="section-kicker">Historie</p>
-              <h2>Nachfüllungen</h2>
-            </div>
-          </div>
-          <div id="refillsList" class="list-stack"></div>
-        </section>
+      
+<section id="settingsView" class="view">
+  <div class="grid">
+    <section class="card glass wide">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Firebase</p>
+          <h2>Haushalte wechseln oder anlegen</h2>
+        </div>
+        <span class="badge ok">Projekt fest eingebaut</span>
       </div>
+      <form id="firebaseForm" class="settings-grid">
+        <label>
+          Haushalt auswählen
+          <select id="householdSelect"></select>
+          <small>Alle vorhandenen Haushalte aus Firebase. Mit derselben Auswahl sehen alle Geräte dieselben Daten.</small>
+        </label>
+
+        <label>
+          Neuen Haushalt anlegen
+          <input id="newHouseholdId" type="text" placeholder="z. B. ferienhaus oder zuhause-oben" />
+          <small>Optional. Wenn gefüllt, wird dieser Haushalt angelegt und direkt verbunden.</small>
+        </label>
+
+        <label>
+          Aktiver Haushalt
+          <input id="householdId" type="text" placeholder="z. B. zuhause-haupt" />
+          <small>Wird automatisch gesetzt.</small>
+        </label>
+
+        <label>
+          Firebase Projekt
+          <input id="fbProjectId" type="text" value="verbrauch-zuhause" disabled />
+          <small>Die restliche Firebase-Konfiguration ist bereits fest im Code hinterlegt.</small>
+        </label>
+
+        <div class="form-actions span-12">
+          <button type="submit" class="btn primary">Haushalt speichern & verbinden</button>
+          <button type="button" class="btn ghost" id="disconnectFirebaseBtn">Nur lokale Daten nutzen</button>
+        </div>
+      </form>
     </section>
 
-    <section id="settingsView" class="view">
-      <div class="grid">
-        <section class="card glass wide">
-          <div class="card-head">
-            <div>
-              <p class="section-kicker">Firebase</p>
-              <h2>Haushalte wechseln oder anlegen</h2>
-            </div>
-            <span class="badge ok">Projekt fest eingebaut</span>
-          </div>
-          <form id="firebaseForm" class="settings-grid">
-            <label>Haushalt auswählen
-              <select id="householdSelect"></select>
-              <small>Alle vorhandenen Haushalte aus Firebase. Mit derselben Auswahl sehen alle Geräte dieselben Daten.</small>
-            </label>
-            <label>Neuen Haushalt anlegen
-              <input id="newHouseholdId" type="text" placeholder="z. B. ferienhaus oder zuhause-oben" />
-              <small>Optional. Wenn gefüllt, wird dieser Haushalt angelegt und direkt verbunden.</small>
-            </label>
-            <label>Aktiver Haushalt
-              <input id="householdId" type="text" placeholder="z. B. zuhause-haupt" />
-              <small>Wird automatisch gesetzt.</small>
-            </label>
-            <label>Firebase Projekt
-              <input id="fbProjectId" type="text" value="verbrauch-zuhause" disabled />
-              <small>Die restliche Firebase-Konfiguration ist bereits fest im Code hinterlegt.</small>
-            </label>
-            <div class="form-actions span-12">
-              <button type="submit" class="btn primary">Haushalt speichern & verbinden</button>
-              <button type="button" class="btn ghost" id="disconnectFirebaseBtn">Nur lokale Daten nutzen</button>
-            </div>
-          </form>
-        </section>
-          
-<section class="card glass wide">
-  <div class="card-head">
-    <div>
-      <p class="section-kicker">Autos</p>
-      <h2>Fahrzeuge anlegen</h2>
-    </div>
+    <section class="card glass wide">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Autos</p>
+          <h2>Fahrzeuge anlegen</h2>
+        </div>
+      </div>
+
+      <form id="carForm" class="form-grid">
+        <label>
+          Auto-Name
+          <input id="carName" type="text" maxlength="80" placeholder="z. B. Skoda Octavia" required />
+        </label>
+
+        <label>
+          Kennzeichen
+          <input id="carPlate" type="text" maxlength="20" placeholder="optional" />
+        </label>
+
+        <label>
+          Kraftstoff
+          <select id="carFuelType">
+            <option value="benzin">Benzin</option>
+            <option value="diesel">Diesel</option>
+            <option value="super">Super</option>
+            <option value="super_plus">Super Plus</option>
+            <option value="e10">E10</option>
+            <option value="lpg">LPG</option>
+            <option value="sonstiges">Sonstiges</option>
+          </select>
+        </label>
+
+        <label>
+          Notiz
+          <input id="carNote" type="text" maxlength="120" placeholder="optional" />
+        </label>
+
+        <div class="form-actions span-12">
+          <button type="submit" class="btn primary">Auto speichern</button>
+          <button type="reset" class="btn ghost">Leeren</button>
+        </div>
+      </form>
+
+      <div id="carList" class="list-stack" style="margin-top:14px;"></div>
+    </section>
+
+    <section class="card wide">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Preiszeiträume</p>
+          <h2>Startdatum, Enddatum, Grundpreis und Preis pro Einheit</h2>
+        </div>
+      </div>
+      <form id="pricePeriodForm" class="price-grid">
+        <label>
+          Bereich
+          <select id="pricePeriodType" required>
+            <option value="strom">Strom</option>
+            <option value="wasser">Wasser</option>
+            <option value="pellets">Pellets</option>
+          </select>
+        </label>
+
+        <label>
+          Startdatum
+          <input id="pricePeriodFrom" type="datetime-local" required />
+        </label>
+
+        <label>
+          Enddatum
+          <input id="pricePeriodTo" type="datetime-local" required />
+        </label>
+
+        <label>
+          Grundpreis für den Zeitraum (€)
+          <input id="pricePeriodBase" type="number" step="0.01" min="0" />
+        </label>
+
+        <label>
+          Preis pro Einheit (€)
+          <input id="pricePeriodUnit" type="number" step="0.0001" min="0" required />
+        </label>
+
+        <label>
+          Notiz
+          <input id="pricePeriodNote" type="text" maxlength="160" placeholder="optional" />
+        </label>
+
+        <div class="form-actions span-12">
+          <button type="submit" class="btn primary">Preiszeitraum speichern</button>
+          <button type="reset" class="btn ghost">Leeren</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card wide">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Sackgrößen</p>
+          <h2>Auswahl für Pellets-Säcke</h2>
+        </div>
+      </div>
+      <form id="bagSizeForm" class="form-grid">
+        <label>
+          Neue Sackgröße in kg
+          <input id="bagSizeValue" type="number" step="0.1" min="0.1" placeholder="z. B. 15 oder 12.5" />
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="btn primary">Sackgröße speichern</button>
+        </div>
+      </form>
+      <div id="bagSizeList" class="list-stack" style="margin-top:14px;"></div>
+    </section>
+
+    <section class="card glass">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Aktuelle Basispreise</p>
+          <h2>Fallback, wenn kein Preiszeitraum passt</h2>
+        </div>
+      </div>
+      <form id="settingsForm" class="form-grid">
+        <label>
+          Strom Grundpreis
+          <input id="priceStromBase" type="number" step="0.01" min="0" />
+        </label>
+
+        <label>
+          Strom Preis pro kWh
+          <input id="priceStromUnit" type="number" step="0.0001" min="0" />
+        </label>
+
+        <label>
+          Wasser Grundpreis
+          <input id="priceWasserBase" type="number" step="0.01" min="0" />
+        </label>
+
+        <label>
+          Wasser Preis pro m³
+          <input id="priceWasserUnit" type="number" step="0.0001" min="0" />
+        </label>
+
+        <label>
+          Pellets Grundpreis
+          <input id="pricePelletsBase" type="number" step="0.01" min="0" />
+        </label>
+
+        <label>
+          Pellets Preis pro kg
+          <input id="pricePelletsUnit" type="number" step="0.0001" min="0" />
+        </label>
+
+        <div class="form-actions span-12">
+          <button type="submit" class="btn primary">Basispreise speichern</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card glass">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Zählerwechsel / Reset</p>
+          <h2>Neustart eines Zählers</h2>
+        </div>
+      </div>
+      <form id="resetForm" class="form-grid">
+        <label>
+          Bereich
+          <select id="resetType" required>
+            <option value="strom">Strom</option>
+            <option value="wasser">Wasser</option>
+            <option value="pellets">Pellets Verbrauch</option>
+          </select>
+        </label>
+
+        <label>
+          Datum & Uhrzeit
+          <input id="resetDatetime" type="datetime-local" required />
+        </label>
+
+        <label>
+          Letzter alter Zählerstand
+          <input id="resetPreviousValue" type="number" step="0.01" min="0" required />
+        </label>
+
+        <label>
+          Neuer Startwert
+          <input id="resetNewValue" type="number" step="0.01" min="0" value="0" required />
+        </label>
+
+        <label class="span-12">
+          Notiz
+          <input id="resetNote" type="text" maxlength="160" placeholder="z. B. Wasseruhr getauscht" />
+        </label>
+
+        <div class="form-actions span-12">
+          <button type="submit" class="btn primary">Reset speichern</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card glass">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Pellets Einkauf</p>
+          <h2>Kauf erfassen</h2>
+        </div>
+      </div>
+      <form id="purchaseForm" class="form-grid">
+        <label>
+          Kaufdatum
+          <input id="purchaseDatetime" type="datetime-local" required />
+        </label>
+
+        <label>
+          Anzahl Säcke
+          <input id="purchaseBags" type="number" step="1" min="1" required />
+        </label>
+
+        <label>
+          Kilogramm pro Sack
+          <select id="purchaseKgPerBag" required></select>
+        </label>
+
+        <label>
+          Gesamtpreis (€)
+          <input id="purchasePrice" type="number" step="0.01" min="0" required />
+        </label>
+
+        <label>
+          Gesamtgewicht
+          <input id="purchaseTotalKg" type="number" step="0.01" min="0" readonly />
+        </label>
+
+        <label>
+          Preis pro kg
+          <input id="purchasePricePerKg" type="number" step="0.0001" min="0" readonly />
+        </label>
+
+        <div class="form-actions span-12">
+          <button type="submit" class="btn primary">Kauf speichern</button>
+          <button type="reset" class="btn ghost">Leeren</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Aktive Preislage</p>
+          <h2>Heute gültige Werte</h2>
+        </div>
+      </div>
+      <div id="settingsSummary" class="settings-summary-grid"></div>
+    </section>
+
+    <section class="card wide">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Preis-Historie</p>
+          <h2>Gespeicherte Preiszeiträume</h2>
+        </div>
+      </div>
+      <div id="pricePeriodList" class="list-stack"></div>
+    </section>
+
+    <section class="card wide">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Pellets Käufe</p>
+          <h2>Einkaufshistorie</h2>
+        </div>
+      </div>
+      <div id="purchaseList" class="list-stack"></div>
+    </section>
   </div>
-
-  <form id="carForm" class="form-grid">
-    <label>
-      Auto-Name
-      <input id="carName" type="text" maxlength="80" placeholder="z. B. Skoda Octavia" required />
-    </label>
-
-    <label>
-      Kennzeichen
-      <input id="carPlate" type="text" maxlength="20" placeholder="optional" />
-    </label>
-
-    <label>
-      Kraftstoff
-      <select id="carFuelType">
-        <option value="benzin">Benzin</option>
-        <option value="diesel">Diesel</option>
-        <option value="super">Super</option>
-        <option value="super_plus">Super Plus</option>
-        <option value="e10">E10</option>
-        <option value="lpg">LPG</option>
-        <option value="sonstiges">Sonstiges</option>
-      </select>
-    </label>
-
-    <label>
-      Notiz
-      <input id="carNote" type="text" maxlength="120" placeholder="optional" />
-    </label>
-
-    <div class="form-actions span-12">
-      <button type="submit" class="btn primary">Auto speichern</button>
-      <button type="reset" class="btn ghost">Leeren</button>
-    </div>
-  </form>
-
-  <div id="carList" class="list-stack" style="margin-top:14px;"></div>
 </section>
-          
-        <section class="card wide">
-          <div class="card-head">
-            <div>
-              <p class="section-kicker">Preiszeiträume</p>
-              <h2>Startdatum, Enddatum, Grundpreis und Preis pro Einheit</h2>
-            </div>
-          </div>
-          <form id="pricePeriodForm" class="price-grid">
-            <label>Bereich
-              <select id="pricePeriodType" required>
-                <option value="strom">Strom</option>
-                <option value="wasser">Wasser</option>
-                <option value="pellets">Pellets</option>
-              </select>
-            </label>
-            <label>Startdatum
-              <input id="pricePeriodFrom" type="datetime-local" required />
-            </label>
-            <label>Enddatum
-              <input id="pricePeriodTo" type="datetime-local" required />
-            </label>
-            <label>Grundpreis für den Zeitraum (€)
-              <input id="pricePeriodBase" type="number" step="0.01" min="0" />
-            </label>
-            <label>Preis pro Einheit (€)
-              <input id="pricePeriodUnit" type="number" step="0.0001" min="0" required />
-            </label>
-            <label>Notiz
-              <input id="pricePeriodNote" type="text" maxlength="160" placeholder="optional" />
-            </label>
-            <div class="form-actions span-12">
-              <button type="submit" class="btn primary">Preiszeitraum speichern</button>
-              <button type="reset" class="btn ghost">Leeren</button>
-            </div>
-          </form>
-        </section>
-
-        <section class="card wide">
-          <div class="card-head">
-            <div>
-              <p class="section-kicker">Sackgrößen</p>
-              <h2>Auswahl für Pellets-Säcke</h2>
-            </div>
-          </div>
-          <form id="bagSizeForm" class="form-grid">
-            <label>Neue Sackgröße in kg
-              <input id="bagSizeValue" type="number" step="0.1" min="0.1" placeholder="z. B. 15 oder 12.5" />
-            </label>
-            <div class="form-actions">
-              <button type="submit" class="btn primary">Sackgröße speichern</button>
-            </div>
-          </form>
-          <div id="bagSizeList" class="list-stack" style="margin-top:14px;"></div>
-        </section>
-
-        <section class="card glass">
-          <div class="card-head">
-            <div>
-              <p class="section-kicker">Aktuelle Basispreise</p>
-              <h2>Fallback, wenn kein Preiszeitraum passt</h2>
-            </div>
-          </div>
-          <form id="settingsForm" class="form-grid">
-            <label>Strom Grundpreis
-              <input id="priceStromBase" type="number" step="0.01" min="0" />
-            </label>
-            <label>Strom Preis pro kWh
-              <input id="priceStromUnit" type="number" step="0.0001" min="0" />
-            </label>
-            <label>Wasser Grundpreis
-              <input id="priceWasserBase" type="number" step="0.01" min="0" />
-            </label>
-            <label>Wasser Preis pro m³
-              <input id="priceWasserUnit" type="number" step="0.0001" min="0" />
-            </label>
-            <label>Pellets Grundpreis
-              <input id="pricePelletsBase" type="number" step="0.01" min="0" />
-            </label>
-            <label>Pellets Preis pro kg
-              <input id="pricePelletsUnit" type="number" step="0.0001" min="0" />
-            </label>
-            <div class="form-actions span-12">
-              <button type="submit" class="btn primary">Basispreise speichern</button>
-            </div>
-          </form>
-        </section>
-
-        <section class="card glass">
-          <div class="card-head">
-            <div>
-              <p class="section-kicker">Zählerwechsel / Reset</p>
-              <h2>Neustart eines Zählers</h2>
-            </div>
-          </div>
-          <form id="resetForm" class="form-grid">
-            <label>Bereich
-              <select id="resetType" required>
-                <option value="strom">Strom</option>
-                <option value="wasser">Wasser</option>
-                <option value="pellets">Pellets Verbrauch</option>
-              </select>
-            </label>
-            <label>Datum & Uhrzeit
-              <input id="resetDatetime" type="datetime-local" required />
-            </label>
-            <label>Letzter alter Zählerstand
-              <input id="resetPreviousValue" type="number" step="0.01" min="0" required />
-            </label>
-            <label>Neuer Startwert
-              <input id="resetNewValue" type="number" step="0.01" min="0" value="0" required />
-            </label>
-            <label class="span-12">Notiz
-              <input id="resetNote" type="text" maxlength="160" placeholder="z. B. Wasseruhr getauscht" />
-            </label>
-            <div class="form-actions span-12">
-              <button type="submit" class="btn primary">Reset speichern</button>
-            </div>
-          </form>
-        </section>
-
-        <section class="card glass">
-          <div class="card-head">
-            <div>
-              <p class="section-kicker">Pellets Einkauf</p>
-              <h2>Kauf erfassen</h2>
-            </div>
-          </div>
-          <form id="purchaseForm" class="form-grid">
-            <label>Kaufdatum
-              <input id="purchaseDatetime" type="datetime-local" required />
-            </label>
-            <label>Anzahl Säcke
-              <input id="purchaseBags" type="number" step="1" min="1" required />
-            </label>
-            <label>Kilogramm pro Sack
-              <select id="purchaseKgPerBag" required></select>
-            </label>
-            <label>Gesamtpreis (€)
-              <input id="purchasePrice" type="number" step="0.01" min="0" required />
-            </label>
-            <label>Gesamtgewicht
-              <input id="purchaseTotalKg" type="number" step="0.01" min="0" readonly />
-            </label>
-            <label>Preis pro kg
-              <input id="purchasePricePerKg" type="number" step="0.0001" min="0" readonly />
-            </label>
-            <div class="form-actions span-12">
-              <button type="submit" class="btn primary">Kauf speichern</button>
-              <button type="reset" class="btn ghost">Leeren</button>
-            </div>
-          </form>
-        </section>
-
-        <section class="card">
-          <div class="card-head">
-            <div>
-              <p class="section-kicker">Aktive Preislage</p>
-              <h2>Heute gültige Werte</h2>
-            </div>
-          </div>
-          <div id="settingsSummary" class="settings-summary-grid"></div>
-        </section>
-
-        <section class="card wide">
-          <div class="card-head">
-            <div>
-              <p class="section-kicker">Preis-Historie</p>
-              <h2>Gespeicherte Preiszeiträume</h2>
-            </div>
-          </div>
-          <div id="pricePeriodList" class="list-stack"></div>
-        </section>
-
-        <section class="card wide">
-          <div class="card-head">
-            <div>
-              <p class="section-kicker">Pellets Käufe</p>
-              <h2>Einkaufshistorie</h2>
-            </div>
-          </div>
-          <div id="purchaseList" class="list-stack"></div>
-        </section>
-      </div>
-    </section>
-  </div>
 
   <div id="chartOverlay" class="chart-overlay" aria-hidden="true">
     <div class="chart-overlay-inner">
@@ -1413,22 +1486,21 @@
         </div>
       `).join("");
 
-      els.carList.querySelectorAll("[data-car-delete]").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          const id = btn.dataset.carDelete;
-          const fuelExists = state.fuelEntries.some((e) => e.carId === id);
-          if (fuelExists) {
-            showToast("Auto kann nicht gelöscht werden, solange Tankeinträge dafür existieren.", "error");
-            return;
-          }
+        els.carList.querySelectorAll("[data-car-delete]").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const id = btn.dataset.carDelete;
+            const fuelExists = state.fuelEntries.some((e) => e.carId === id);
 
-          state.cars = state.cars.filter((car) => car.id !== id);
-          persistLocalSnapshot();
-          renderCars();
-          showToast("Auto gelöscht.", "success");
+            if (fuelExists) {
+              showToast("Auto kann nicht gelöscht werden, solange Tankeinträge dafür existieren.", "error");
+              return;
+            }
+
+            await deleteRecord("cars", id);
+            showToast("Auto gelöscht.", "success");
+          });
         });
-      });
-    }
+            }
 
     function renderCarOptions() {
       if (!els.fuelCarId) return;
@@ -1497,10 +1569,10 @@
     async function handleCarSubmit(event) {
       event.preventDefault();
 
-      const name = els.carName.value.trim();
-      const plate = els.carPlate.value.trim();
-      const fuelType = els.carFuelType.value;
-      const note = els.carNote.value.trim();
+      const name = els.carName?.value?.trim() || "";
+      const plate = els.carPlate?.value?.trim() || "";
+      const fuelType = els.carFuelType?.value || "sonstiges";
+      const note = els.carNote?.value?.trim() || "";
 
       if (!name) {
         showToast("Bitte einen Auto-Namen eingeben.", "error");
@@ -1508,8 +1580,8 @@
       }
 
       const exists = state.cars.some((car) =>
-        car.name.trim().toLowerCase() === name.toLowerCase() &&
-        (car.plate || "").trim().toLowerCase() === plate.toLowerCase()
+        (car.name || "").trim().toLowerCase() === name.toLowerCase() &&
+        ((car.plate || "").trim().toLowerCase() === plate.toLowerCase())
       );
 
       if (exists) {
@@ -1517,19 +1589,23 @@
         return;
       }
 
-        await saveRecord("fuelEntries", {
-          carId,
-          liters,
-          totalPrice: round2(totalPrice),
-          pricePerLiter,
-          mileage,
-          note,
-          date: isoDate,
-          createdAt: new Date().toISOString()
-        });
+      const payload = {
+        name,
+        plate,
+        fuelType,
+        note,
+        createdAt: new Date().toISOString(),
+        date: new Date().toISOString()
+      };
 
-      els.carForm.reset();
-      showToast("Auto gespeichert.", "success");
+      try {
+        await saveRecord("cars", payload);
+        els.carForm?.reset();
+        showToast("Auto gespeichert.", "success");
+      } catch (error) {
+        console.error("Fehler beim Speichern des Autos:", error);
+        showToast("Auto konnte nicht gespeichert werden.", "error");
+      }
     }
 
     async function handleFuelSubmit(event) {
@@ -1619,20 +1695,16 @@
         return;
       }
 
-      state.fuelEntries.unshift({
-        id: generateId(),
-        carId,
-        liters,
-        totalPrice: round2(totalPrice),
-        pricePerLiter,
-        mileage,
-        note,
-        date: isoDate,
-        createdAt: new Date().toISOString()
-      });
-
-      persistLocalSnapshot();
-      renderFuelEntries();
+        await saveRecord("fuelEntries", {
+          carId,
+          liters,
+          totalPrice: round2(totalPrice),
+          pricePerLiter,
+          mileage,
+          note,
+          date: isoDate,
+          createdAt: new Date().toISOString()
+        });
 
       els.fuelForm.reset();
       els.fuelUseNow.checked = true;
@@ -2071,6 +2143,7 @@
       const resetsQuery = query(collection(state.db, `${basePath}/resets`), orderBy("date", "desc"));
       const pricePeriodsQuery = query(collection(state.db, `${basePath}/pricePeriods`), orderBy("fromDate", "desc"));
       const settingsDocRef = doc(state.db, `${basePath}/settings/main`);
+      const carsQuery = query(collection(state.db, `${basePath}/cars`), orderBy("name", "asc"));
       const fuelEntriesQuery = query(collection(state.db, `${basePath}/fuelEntries`), orderBy("date", "desc"));
         
       state.unsubscribers.push(onSnapshot(readingsQuery, (s) => {
@@ -2098,6 +2171,13 @@
         persistLocalSnapshot();
         renderAll();
       }));
+        state.unsubscribers.push(onSnapshot(carsQuery, (s) => {
+          state.cars = s.docs.map(mapFirestoreDoc).filter((car) => car && car.name);
+          persistLocalSnapshot();
+          renderAll();
+        }, (error) => {
+          console.error("cars onSnapshot Fehler:", error);
+        }));
       state.unsubscribers.push(onSnapshot(fuelEntriesQuery, (s) => {
         state.fuelEntries = s.docs.map(mapFirestoreDoc);
         persistLocalSnapshot();
@@ -2126,6 +2206,10 @@
     }
 
     async function saveRecord(kind, payload) {
+      if (!state[kind]) {
+        throw new Error(`Unbekannter Datentyp: ${kind}`);
+      }
+
       if (state.firebaseEnabled) {
         const pathMap = {
           readings: `${householdBasePath()}/readings`,
@@ -2133,13 +2217,23 @@
           purchases: `${householdBasePath()}/purchases`,
           resets: `${householdBasePath()}/resets`,
           fuelEntries: `${householdBasePath()}/fuelEntries`,
-          pricePeriods: `${householdBasePath()}/pricePeriods`
+          pricePeriods: `${householdBasePath()}/pricePeriods`,
+          cars: `${householdBasePath()}/cars`
         };
+
+        if (!pathMap[kind]) {
+          throw new Error(`Kein Firestore-Pfad für Datentyp: ${kind}`);
+        }
+
         await addDoc(collection(state.db, pathMap[kind]), {
           ...payload,
           serverCreatedAt: serverTimestamp()
         });
       } else {
+        if (!Array.isArray(state[kind])) {
+          throw new Error(`state.${kind} ist kein Array`);
+        }
+
         state[kind].unshift({ ...payload, id: generateId() });
         persistLocalSnapshot();
         renderAll();
@@ -2154,7 +2248,8 @@
           purchases: `${householdBasePath()}/purchases/${id}`,
           resets: `${householdBasePath()}/resets/${id}`,
           fuelEntries: `${householdBasePath()}/fuelEntries/${id}`,
-          pricePeriods: `${householdBasePath()}/pricePeriods/${id}`
+          pricePeriods: `${householdBasePath()}/pricePeriods/${id}`,
+          cars: `${householdBasePath()}/cars/${id}`
         };
         await deleteDoc(doc(state.db, pathMap[kind]));
       } else {
@@ -2212,19 +2307,19 @@
     }
 
     function renderAll() {
-      fillSettingsForm();
-      hydrateBagSizeSelects();
-      renderReadings();
-      renderRefills();
-      renderPurchases();
-      renderPricePeriods();
-      renderBagSizes();
-      renderDashboard();
-      renderMonthlyOverview();
-      renderSettingsSummary();
-      renderPelletInventoryStats();
-      renderCars();
-      renderFuelEntries();
+      try { fillSettingsForm(); } catch (e) { console.error("fillSettingsForm", e); }
+      try { hydrateBagSizeSelects(); } catch (e) { console.error("hydrateBagSizeSelects", e); }
+      try { renderReadings(); } catch (e) { console.error("renderReadings", e); }
+      try { renderRefills(); } catch (e) { console.error("renderRefills", e); }
+      try { renderPurchases(); } catch (e) { console.error("renderPurchases", e); }
+      try { renderPricePeriods(); } catch (e) { console.error("renderPricePeriods", e); }
+      try { renderBagSizes(); } catch (e) { console.error("renderBagSizes", e); }
+      try { renderDashboard(); } catch (e) { console.error("renderDashboard", e); }
+      try { renderMonthlyOverview(); } catch (e) { console.error("renderMonthlyOverview", e); }
+      try { renderSettingsSummary(); } catch (e) { console.error("renderSettingsSummary", e); }
+      try { renderPelletInventoryStats(); } catch (e) { console.error("renderPelletInventoryStats", e); }
+      try { renderCars(); } catch (e) { console.error("renderCars", e); }
+      try { renderFuelEntries(); } catch (e) { console.error("renderFuelEntries", e); }
     }
 
     function renderReadings() {
@@ -2749,17 +2844,19 @@
     }
 
     function exportBackup() {
-      const payload = {
-        exportedAt: new Date().toISOString(),
-        firebaseEnabled: state.firebaseEnabled,
-        householdId: state.householdId || null,
-        readings: state.readings,
-        refills: state.refills,
-        purchases: state.purchases,
-        resets: state.resets,
-        pricePeriods: state.pricePeriods,
-        settings: state.settings
-      };
+        const payload = {
+          exportedAt: new Date().toISOString(),
+          firebaseEnabled: state.firebaseEnabled,
+          householdId: state.householdId || null,
+          readings: state.readings,
+          refills: state.refills,
+          purchases: state.purchases,
+          resets: state.resets,
+          pricePeriods: state.pricePeriods,
+          settings: state.settings,
+          cars: state.cars,
+          fuelEntries: state.fuelEntries
+        };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
       downloadBlob(blob, `verbrauch-backup-${dateStamp()}.json`);
       showToast("Backup exportiert.", "success");
