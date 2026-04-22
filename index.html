@@ -358,12 +358,105 @@
       min-height: 48px;
     }
 
+      .kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.kpi-card {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(8, 17, 32, 0.88));
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+
+.kpi-card::after {
+  content: "";
+  position: absolute;
+  inset: auto -20% -35% auto;
+  width: 120px;
+  height: 120px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.16), transparent 70%);
+  pointer-events: none;
+}
+
+.kpi-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.kpi-label {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.kpi-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 1.1rem;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.18);
+}
+
+.kpi-value {
+  font-size: clamp(1.2rem, 2vw, 1.7rem);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  margin-bottom: 6px;
+}
+
+.kpi-sub {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.kpi-card.accent-green .kpi-icon {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.kpi-card.accent-amber .kpi-icon {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.kpi-card.accent-red .kpi-icon {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.kpi-card.accent-violet .kpi-icon {
+  background: rgba(168, 85, 247, 0.14);
+  border-color: rgba(168, 85, 247, 0.2);
+}
+      
     @media (max-width: 1100px) {
       .card, .card.wide { grid-column: 1 / -1; }
       .price-grid, .summary-grid, .summary-grid.four, .stats-grid, .settings-summary-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
       .span-4, .span-6 { grid-column: span 12; }
+        
+        .kpi-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        
     }
 
     @media (max-width: 720px) {
@@ -382,7 +475,10 @@
       .tabs { width: 100%; overflow-x: auto; }
       .chart-overlay { padding: 10px; }
       .chart-overlay-inner { height: 92vh; }
+      .kpi-grid {grid-template-columns: 1fr; }
+        
     }
+      
   </style>
 </head>
 <body>
@@ -746,7 +842,7 @@
       <h2>Verbrauch, Kosten und Hochrechnung</h2>
     </div>
   </div>
-  <div id="selectedCarStats" class="summary-grid four"></div>
+<div id="selectedCarStats" class="kpi-grid"></div>
 </section>
 
     <section class="card wide">
@@ -1596,6 +1692,19 @@ function renderAnalyticsCarOptions() {
   renderSelectedCarAnalytics();
 }
 
+function createKpiCard({ label, value, sub = "", icon = "•", accent = "" }) {
+  return `
+    <div class="kpi-card ${accent}">
+      <div class="kpi-top">
+        <div class="kpi-label">${escapeHtml(label)}</div>
+        <div class="kpi-icon">${icon}</div>
+      </div>
+      <div class="kpi-value">${value}</div>
+      <div class="kpi-sub">${sub}</div>
+    </div>
+  `;
+}
+      
 function renderSelectedCarAnalytics() {
   if (!els.selectedCarStats || !els.carConsumptionChart || !els.carCostChart) return;
 
@@ -1648,40 +1757,80 @@ function renderSelectedCarAnalytics() {
   const projectedYearDistance = round2(totalDistance * yearFactor);
   const projectedYearFuelCost = round2(totalCost * yearFactor);
 
-  els.selectedCarStats.innerHTML = `
-    <div class="stat-box">
-      <div class="stat-label">Auto</div>
-      <div class="stat-value">${escapeHtml(car?.name || "Unbekannt")}</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-label">Ø Verbrauch</div>
-      <div class="stat-value">${avgConsumption != null ? `${formatNumber(avgConsumption)} l/100 km` : "–"}</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-label">Ø Kosten</div>
-      <div class="stat-value">${avgCost100 != null ? `${formatCurrency(avgCost100)}/100 km` : "–"}</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-label">Gesamtkosten</div>
-      <div class="stat-value">${formatCurrency(totalCost)}</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-label">Gesamtmenge</div>
-      <div class="stat-value">${formatNumber(totalLiters)} l</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-label">Erfasste Strecke</div>
-      <div class="stat-value">${formatNumber(totalDistance)} km</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-label">Hochrechnung Jahr</div>
-      <div class="stat-value">${formatNumber(projectedYearDistance)} km</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-label">Hochrechnung Kosten/Jahr</div>
-      <div class="stat-value">${formatCurrency(projectedYearFuelCost)}</div>
-    </div>
-  `;
+    const avgConsumptionText = avgConsumption != null ? `${formatNumber(avgConsumption)} l/100 km` : "–";
+    const avgCost100Text = avgCost100 != null ? `${formatCurrency(avgCost100)}/100 km` : "–";
+    const totalCostText = formatCurrency(totalCost);
+    const totalLitersText = `${formatNumber(totalLiters)} l`;
+    const totalDistanceText = `${formatNumber(totalDistance)} km`;
+    const projectedDistanceText = `${formatNumber(projectedYearDistance)} km`;
+    const projectedFuelCostText = formatCurrency(projectedYearFuelCost);
+    const lastPriceText = lastEntry?.pricePerLiter != null ? `${formatCurrency(lastEntry.pricePerLiter)}/l` : "–";
+
+    els.selectedCarStats.innerHTML = [
+      createKpiCard({
+        label: "Fahrzeug",
+        value: escapeHtml(car?.name || "Unbekannt"),
+        sub: car?.plate ? escapeHtml(car.plate) : "ohne Kennzeichen",
+        icon: "🚘",
+        accent: ""
+      }),
+      createKpiCard({
+        label: "Ø Verbrauch",
+        value: avgConsumptionText,
+        sub: "auf Basis der letzten Tankintervalle",
+        icon: "⛽",
+        accent: "accent-green"
+      }),
+      createKpiCard({
+        label: "Ø Kosten",
+        value: avgCost100Text,
+        sub: "durchschnittlich pro 100 km",
+        icon: "💶",
+        accent: "accent-amber"
+      }),
+      createKpiCard({
+        label: "Letzter Preis",
+        value: lastPriceText,
+        sub: lastEntry ? formatDateTime(lastEntry.date) : "kein Eintrag",
+        icon: "🏷️",
+        accent: ""
+      }),
+      createKpiCard({
+        label: "Gesamtkosten",
+        value: totalCostText,
+        sub: "alle gespeicherten Tankvorgänge",
+        icon: "💳",
+        accent: "accent-red"
+      }),
+      createKpiCard({
+        label: "Gesamtmenge",
+        value: totalLitersText,
+        sub: "insgesamt getankte Liter",
+        icon: "🛢️",
+        accent: ""
+      }),
+      createKpiCard({
+        label: "Erfasste Strecke",
+        value: totalDistanceText,
+        sub: "aus berechneten Intervallen",
+        icon: "🛣️",
+        accent: "accent-violet"
+      }),
+      createKpiCard({
+        label: "Jahreshochrechnung",
+        value: projectedDistanceText,
+        sub: `${projectedFuelCostText} Kraftstoffkosten/Jahr`,
+        icon: "📈",
+        accent: "accent-green"
+      })
+    ].join("");
+    
+if (els.carConsumptionChartMeta && car?.name) {
+  els.carConsumptionChartMeta.textContent = `${car.name} · Verbrauchsverlauf`;
+}
+if (els.carCostChartMeta && car?.name) {
+  els.carCostChartMeta.textContent = `${car.name} · Kostenverlauf`;
+}
 
   renderCarMetricChart({
     entries: validConsumption,
@@ -1715,7 +1864,10 @@ function renderCarMetricChart({ entries, container, metaContainer, metricKey, la
     ? `${entries.length} Werte · Ø ${formatNumber(avg)} ${unit}`
     : "Noch keine auswertbaren Daten";
 
-  if (metaContainer) metaContainer.textContent = metaText;
+if (metaContainer) {
+  const prefix = metaContainer.textContent ? `${metaContainer.textContent} · ` : "";
+  metaContainer.textContent = `${prefix}${metaText}`;
+}
 
   if (!entries.length) {
     container.innerHTML = '<div class="empty-state" style="height:100%;display:grid;place-items:center;">Keine Daten</div>';
@@ -1781,7 +1933,8 @@ function renderCarMetricChart({ entries, container, metaContainer, metricKey, la
 
       if (mode === "consumption") {
         const filtered = entries.filter(e => Number.isFinite(e.litersPer100km));
-        els.chartOverlayTitle.textContent = "Verbrauch · groß";
+        const car = state.cars.find(c => c.id === state.selectedAnalyticsCarId);
+            els.chartOverlayTitle.textContent = `${car?.name || "Auto"} · Verbrauch groß`;
         const meta = renderCarMetricChart({
           entries: filtered,
           container: els.chartOverlayContent,
