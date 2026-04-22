@@ -404,6 +404,7 @@
       <button class="tab active" type="button" data-view="dashboardView">Übersicht</button>
       <button class="tab" type="button" data-view="readingsView">Zählerstände</button>
       <button class="tab" type="button" data-view="refillsView">Pellets Nachfüllen</button>
+        <button class="tab" type="button" data-view="carsView">Auto / Tanken</button>
       <button class="tab" type="button" data-view="settingsView">Einstellungen</button>
     </div>
 
@@ -596,7 +597,92 @@
             </div>
           </form>
         </section>
+          
+          <section id="carsView" class="view">
+  <div class="grid">
+    <section class="card glass">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Tanken</p>
+          <h2>Tankvorgang erfassen</h2>
+        </div>
+        <span class="badge ok">Auto auswählen</span>
+      </div>
 
+      <form id="fuelForm" class="form-grid">
+        <label>
+          Auto
+          <select id="fuelCarId" required></select>
+        </label>
+
+        <label>
+          JETZT verwenden
+          <div class="inline-toggle">
+            <input id="fuelUseNow" type="checkbox" checked />
+            <span class="muted">aktueller Zeitpunkt</span>
+          </div>
+        </label>
+
+        <label id="fuelDatetimeWrap" class="hidden">
+          Datum & Uhrzeit
+          <input id="fuelDatetime" type="datetime-local" />
+        </label>
+
+        <label>
+          Liter getankt
+          <input id="fuelLiters" type="number" step="0.01" min="0.01" required />
+        </label>
+
+        <label>
+          Gesamtpreis (€)
+          <input id="fuelTotalPrice" type="number" step="0.01" min="0" required />
+        </label>
+
+        <label>
+          Preis pro Liter (€)
+          <input id="fuelPricePerLiter" type="number" step="0.0001" min="0" readonly />
+          <small>Wird automatisch berechnet.</small>
+        </label>
+
+        <label>
+          Kilometerstand
+          <input id="fuelMileage" type="number" step="1" min="0" required />
+        </label>
+
+        <label class="span-12">
+          Notiz
+          <input id="fuelNote" type="text" maxlength="160" placeholder="optional" />
+        </label>
+
+        <div class="form-actions span-12">
+          <button type="submit" class="btn primary">Tankvorgang speichern</button>
+          <button type="reset" class="btn ghost">Leeren</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Auswertung</p>
+          <h2>Letzte Werte</h2>
+        </div>
+      </div>
+      <div id="fuelStats" class="stats-grid"></div>
+    </section>
+
+    <section class="card wide">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Historie</p>
+          <h2>Tankvorgänge</h2>
+        </div>
+      </div>
+      <div id="fuelList" class="list-stack"></div>
+    </section>
+  </div>
+</section>
+          
         <section class="card">
           <div class="card-head">
             <div>
@@ -652,7 +738,53 @@
             </div>
           </form>
         </section>
+          
+<section class="card glass wide">
+  <div class="card-head">
+    <div>
+      <p class="section-kicker">Autos</p>
+      <h2>Fahrzeuge anlegen</h2>
+    </div>
+  </div>
 
+  <form id="carForm" class="form-grid">
+    <label>
+      Auto-Name
+      <input id="carName" type="text" maxlength="80" placeholder="z. B. Skoda Octavia" required />
+    </label>
+
+    <label>
+      Kennzeichen
+      <input id="carPlate" type="text" maxlength="20" placeholder="optional" />
+    </label>
+
+    <label>
+      Kraftstoff
+      <select id="carFuelType">
+        <option value="benzin">Benzin</option>
+        <option value="diesel">Diesel</option>
+        <option value="super">Super</option>
+        <option value="super_plus">Super Plus</option>
+        <option value="e10">E10</option>
+        <option value="lpg">LPG</option>
+        <option value="sonstiges">Sonstiges</option>
+      </select>
+    </label>
+
+    <label>
+      Notiz
+      <input id="carNote" type="text" maxlength="120" placeholder="optional" />
+    </label>
+
+    <div class="form-actions span-12">
+      <button type="submit" class="btn primary">Auto speichern</button>
+      <button type="reset" class="btn ghost">Leeren</button>
+    </div>
+  </form>
+
+  <div id="carList" class="list-stack" style="margin-top:14px;"></div>
+</section>
+          
         <section class="card wide">
           <div class="card-head">
             <div>
@@ -918,7 +1050,9 @@
 
     const defaultBagSizes = [15, 12.5];
 
-    const state = {
+    const state = {      
+      cars: [],
+      fuelEntries: [],
       readings: [],
       refills: [],
       purchases: [],
@@ -1032,7 +1166,27 @@
       chartOverlayContent: document.getElementById("chartOverlayContent"),
       chartOverlayClose: document.getElementById("chartOverlayClose"),
 
-      entryTemplate: document.getElementById("entryTemplate")
+      entryTemplate: document.getElementById("entryTemplate"),
+    
+      carForm: document.getElementById("carForm"),
+      carName: document.getElementById("carName"),
+      carPlate: document.getElementById("carPlate"),
+      carFuelType: document.getElementById("carFuelType"),
+      carNote: document.getElementById("carNote"),
+      carList: document.getElementById("carList"),
+
+      fuelForm: document.getElementById("fuelForm"),
+      fuelCarId: document.getElementById("fuelCarId"),
+      fuelUseNow: document.getElementById("fuelUseNow"),
+      fuelDatetime: document.getElementById("fuelDatetime"),
+      fuelDatetimeWrap: document.getElementById("fuelDatetimeWrap"),
+      fuelLiters: document.getElementById("fuelLiters"),
+      fuelTotalPrice: document.getElementById("fuelTotalPrice"),
+      fuelPricePerLiter: document.getElementById("fuelPricePerLiter"),
+      fuelMileage: document.getElementById("fuelMileage"),
+      fuelNote: document.getElementById("fuelNote"),
+      fuelList: document.getElementById("fuelList"),
+      fuelStats: document.getElementById("fuelStats"),
     };
 
     init();
@@ -1066,6 +1220,7 @@
       els.pricePeriodTo.value = now;
       els.refillDate.value = now.slice(0, 10);
       els.resetNewValue.value = 0;
+          if (els.fuelDatetime) els.fuelDatetime.value = now;
     }
 
     function restoreLocalData() {
@@ -1080,6 +1235,8 @@
       state.resets = normalizeDateArray(local.resets || []);
       state.pricePeriods = normalizeDateArray(local.pricePeriods || []);
       state.settings = mergeSettings(local.settings || defaultSettings);
+      state.cars = local.cars || [];
+      state.fuelEntries = normalizeDateArray(local.fuelEntries || []);
       state.bagSizes = normalizeBagSizes(local.bagSizes || defaultBagSizes);
       fillSettingsForm();
       hydrateBagSizeSelects();
@@ -1134,7 +1291,20 @@
       els.householdSelect?.addEventListener("change", () => {
         if (els.householdSelect.value) els.householdId.value = els.householdSelect.value;
       });
+      
+      els.carForm?.addEventListener("submit", handleCarSubmit);
 
+      els.fuelUseNow?.addEventListener("change", syncFuelNowUi);
+      els.fuelLiters?.addEventListener("input", syncFuelPricePerLiter);
+      els.fuelTotalPrice?.addEventListener("input", syncFuelPricePerLiter);
+      els.fuelForm?.addEventListener("submit", handleFuelSubmit);
+      els.fuelForm?.addEventListener("reset", () => setTimeout(() => {
+        if (els.fuelUseNow) els.fuelUseNow.checked = true;
+        if (els.fuelDatetime) els.fuelDatetime.value = toDatetimeLocal(new Date());
+        syncFuelNowUi();
+        syncFuelPricePerLiter();
+      }, 0));
+      
       els.chartStrom?.addEventListener("click", () => openChartOverlay("strom"));
       els.chartWasser?.addEventListener("click", () => openChartOverlay("wasser"));
       els.chartPellets?.addEventListener("click", () => openChartOverlay("pellets"));
@@ -1195,7 +1365,290 @@
       els.quickReadingDatetime.required = !useNow;
       if (useNow) els.quickReadingDatetime.value = toDatetimeLocal(new Date());
     }
+      
+    function syncFuelNowUi() {
+      const useNow = !!els.fuelUseNow?.checked;
+      els.fuelDatetimeWrap?.classList.toggle("hidden", useNow);
 
+      if (els.fuelDatetime) {
+        els.fuelDatetime.required = !useNow;
+        if (useNow) {
+          els.fuelDatetime.value = toDatetimeLocal(new Date());
+        }
+      }
+    }
+
+    function syncFuelPricePerLiter() {
+      const liters = toNumber(els.fuelLiters?.value);
+      const total = toNumber(els.fuelTotalPrice?.value);
+      const value = liters > 0 && Number.isFinite(total) ? round4(total / liters) : 0;
+      if (els.fuelPricePerLiter) {
+        els.fuelPricePerLiter.value = value || "";
+      }
+    }
+
+    function renderCars() {
+      if (!els.carList) return;
+
+      renderCarOptions();
+
+      if (!state.cars.length) {
+        els.carList.innerHTML = '<div class="empty-state">Noch keine Autos angelegt.</div>';
+        return;
+      }
+
+      els.carList.innerHTML = state.cars.map((car) => `
+        <div class="entry-item">
+          <div class="entry-main">
+            <div class="entry-topline">
+              <span class="entry-type">${escapeHtml(car.name)}</span>
+              <span class="entry-datetime">${escapeHtml(car.fuelType || "")}</span>
+            </div>
+            <div class="entry-value">${car.plate ? escapeHtml(car.plate) : "Kein Kennzeichen"}</div>
+            <div class="entry-note">${car.note ? escapeHtml(car.note) : "Keine Notiz"}</div>
+          </div>
+          <div class="entry-actions">
+            <button class="icon-btn" type="button" data-car-delete="${car.id}" title="Löschen">🗑️</button>
+          </div>
+        </div>
+      `).join("");
+
+      els.carList.querySelectorAll("[data-car-delete]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const id = btn.dataset.carDelete;
+          const fuelExists = state.fuelEntries.some((e) => e.carId === id);
+          if (fuelExists) {
+            showToast("Auto kann nicht gelöscht werden, solange Tankeinträge dafür existieren.", "error");
+            return;
+          }
+
+          state.cars = state.cars.filter((car) => car.id !== id);
+          persistLocalSnapshot();
+          renderCars();
+          showToast("Auto gelöscht.", "success");
+        });
+      });
+    }
+
+    function renderCarOptions() {
+      if (!els.fuelCarId) return;
+
+      if (!state.cars.length) {
+        els.fuelCarId.innerHTML = '<option value="">Bitte erst Auto anlegen</option>';
+        return;
+      }
+
+      els.fuelCarId.innerHTML = state.cars
+        .map((car) => `<option value="${car.id}">${escapeHtml(car.name)}${car.plate ? ` · ${escapeHtml(car.plate)}` : ""}</option>`)
+        .join("");
+    }
+
+    function renderFuelEntries() {
+      if (!els.fuelList) return;
+
+      const entries = [...state.fuelEntries].sort((a, b) => new Date(b.date) - new Date(a.date));
+      els.fuelList.innerHTML = "";
+
+      if (!entries.length) {
+        els.fuelList.innerHTML = '<div class="empty-state">Noch keine Tankvorgänge gespeichert.</div>';
+        renderFuelStats();
+        return;
+      }
+
+      entries.forEach((entry) => {
+        const car = state.cars.find((c) => c.id === entry.carId);
+        const carName = car ? car.name : "Unbekanntes Auto";
+        const node = createEntryNode({
+          id: entry.id,
+          kind: "fuelEntries",
+          typeLabel: `Tanken · ${carName}`,
+          datetime: formatDateTime(entry.date),
+          valueHtml: `${formatNumber(entry.liters)} l · ${formatCurrency(entry.totalPrice)}<br><small class="muted">${formatCurrency(entry.pricePerLiter)}/l · ${formatNumber(entry.mileage)} km</small>`,
+          note: entry.note || "Keine Notiz"
+        });
+        els.fuelList.appendChild(node);
+      });
+
+      renderFuelStats();
+    }
+
+    function renderFuelStats() {
+      if (!els.fuelStats) return;
+
+      if (!state.fuelEntries.length) {
+        els.fuelStats.innerHTML = '<div class="empty-state">Noch keine Tankdaten vorhanden.</div>';
+        return;
+      }
+
+      const latest = [...state.fuelEntries].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 3);
+
+      els.fuelStats.innerHTML = latest.map((entry) => {
+        const car = state.cars.find((c) => c.id === entry.carId);
+        return `
+          <div class="stat-box">
+            <div class="stat-label">${escapeHtml(car?.name || "Auto")}</div>
+            <div class="stat-value">${formatCurrency(entry.pricePerLiter)}/l</div>
+            <div class="stat-label">${formatNumber(entry.liters)} l · ${formatNumber(entry.mileage)} km</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function handleCarSubmit(event) {
+      event.preventDefault();
+
+      const name = els.carName.value.trim();
+      const plate = els.carPlate.value.trim();
+      const fuelType = els.carFuelType.value;
+      const note = els.carNote.value.trim();
+
+      if (!name) {
+        showToast("Bitte einen Auto-Namen eingeben.", "error");
+        return;
+      }
+
+      const exists = state.cars.some((car) =>
+        car.name.trim().toLowerCase() === name.toLowerCase() &&
+        (car.plate || "").trim().toLowerCase() === plate.toLowerCase()
+      );
+
+      if (exists) {
+        showToast("Dieses Auto ist bereits vorhanden.", "error");
+        return;
+      }
+
+        await saveRecord("fuelEntries", {
+          carId,
+          liters,
+          totalPrice: round2(totalPrice),
+          pricePerLiter,
+          mileage,
+          note,
+          date: isoDate,
+          createdAt: new Date().toISOString()
+        });
+
+      els.carForm.reset();
+      showToast("Auto gespeichert.", "success");
+    }
+
+    async function handleFuelSubmit(event) {
+      event.preventDefault();
+
+      if (!state.cars.length) {
+        showToast("Bitte zuerst ein Auto anlegen.", "error");
+        return;
+      }
+
+      const useNow = !!els.fuelUseNow.checked;
+      let isoDate;
+
+      if (useNow) {
+        isoDate = new Date().toISOString();
+      } else {
+        if (!els.fuelDatetime.value) {
+          showToast("Bitte Datum und Uhrzeit eingeben.", "error");
+          return;
+        }
+        const dt = new Date(els.fuelDatetime.value);
+        if (Number.isNaN(dt.getTime())) {
+          showToast("Datum ist ungültig.", "error");
+          return;
+        }
+        isoDate = dt.toISOString();
+      }
+
+      const carId = els.fuelCarId.value;
+      const liters = toNumber(els.fuelLiters.value);
+      const totalPrice = toNumber(els.fuelTotalPrice.value);
+      const mileage = toNumber(els.fuelMileage.value);
+      const note = els.fuelNote.value.trim();
+      const pricePerLiter = liters > 0 ? round4(totalPrice / liters) : 0;
+
+      if (!carId) {
+        showToast("Bitte ein Auto auswählen.", "error");
+        return;
+      }
+
+      if (!Number.isFinite(liters) || liters <= 0) {
+        showToast("Bitte gültige Liter eingeben.", "error");
+        return;
+      }
+
+      if (!Number.isFinite(totalPrice) || totalPrice < 0) {
+        showToast("Bitte gültigen Gesamtpreis eingeben.", "error");
+        return;
+      }
+
+      if (!Number.isFinite(mileage) || mileage < 0) {
+        showToast("Bitte gültigen Kilometerstand eingeben.", "error");
+        return;
+      }
+
+      const duplicate = state.fuelEntries.find((entry) =>
+        entry.carId === carId &&
+        entry.date === isoDate &&
+        Number(entry.liters) === Number(liters) &&
+        Number(entry.totalPrice) === Number(totalPrice) &&
+        Number(entry.mileage) === Number(mileage)
+      );
+
+      if (duplicate) {
+        showToast("Dieser Tankvorgang ist bereits vorhanden.", "error");
+        return;
+      }
+
+      const sameTimeOtherValue = state.fuelEntries.find((entry) =>
+        entry.carId === carId &&
+        entry.date === isoDate &&
+        (
+          Number(entry.liters) !== Number(liters) ||
+          Number(entry.totalPrice) !== Number(totalPrice) ||
+          Number(entry.mileage) !== Number(mileage)
+        )
+      );
+
+      if (sameTimeOtherValue) {
+        showToast("Für dieses Auto gibt es zu diesem Zeitpunkt schon einen anderen Tankeintrag.", "error");
+        return;
+      }
+
+      const latestMileage = getLatestMileageForCar(carId, isoDate);
+      if (Number.isFinite(latestMileage) && mileage < latestMileage) {
+        showToast(`Kilometerstand darf nicht kleiner als ${formatNumber(latestMileage)} km sein.`, "error");
+        return;
+      }
+
+      state.fuelEntries.unshift({
+        id: generateId(),
+        carId,
+        liters,
+        totalPrice: round2(totalPrice),
+        pricePerLiter,
+        mileage,
+        note,
+        date: isoDate,
+        createdAt: new Date().toISOString()
+      });
+
+      persistLocalSnapshot();
+      renderFuelEntries();
+
+      els.fuelForm.reset();
+      els.fuelUseNow.checked = true;
+      els.fuelDatetime.value = toDatetimeLocal(new Date());
+      syncFuelNowUi();
+      syncFuelPricePerLiter();
+
+      showToast("Tankvorgang gespeichert.", "success");
+    }
+
+    function getLatestMileageForCar(carId, isoDate) {
+      return [...state.fuelEntries]
+        .filter((entry) => entry.carId === carId && new Date(entry.date) < new Date(isoDate))
+        .sort((a, b) => new Date(b.date) - new Date(a.date))[0]?.mileage ?? null;
+    }      
+      
     function syncRefillTotal() {
       const total = round2((toNumber(els.refillBags.value) || 0) * (toNumber(els.refillKgPerBag.value) || 0));
       els.refillTotalKg.value = total || "";
@@ -1618,7 +2071,8 @@
       const resetsQuery = query(collection(state.db, `${basePath}/resets`), orderBy("date", "desc"));
       const pricePeriodsQuery = query(collection(state.db, `${basePath}/pricePeriods`), orderBy("fromDate", "desc"));
       const settingsDocRef = doc(state.db, `${basePath}/settings/main`);
-
+      const fuelEntriesQuery = query(collection(state.db, `${basePath}/fuelEntries`), orderBy("date", "desc"));
+        
       state.unsubscribers.push(onSnapshot(readingsQuery, (s) => {
         state.readings = s.docs.map(mapFirestoreDoc);
         persistLocalSnapshot();
@@ -1641,6 +2095,11 @@
       }));
       state.unsubscribers.push(onSnapshot(pricePeriodsQuery, (s) => {
         state.pricePeriods = s.docs.map(mapFirestoreDoc);
+        persistLocalSnapshot();
+        renderAll();
+      }));
+      state.unsubscribers.push(onSnapshot(fuelEntriesQuery, (s) => {
+        state.fuelEntries = s.docs.map(mapFirestoreDoc);
         persistLocalSnapshot();
         renderAll();
       }));
@@ -1673,6 +2132,7 @@
           refills: `${householdBasePath()}/refills`,
           purchases: `${householdBasePath()}/purchases`,
           resets: `${householdBasePath()}/resets`,
+          fuelEntries: `${householdBasePath()}/fuelEntries`,
           pricePeriods: `${householdBasePath()}/pricePeriods`
         };
         await addDoc(collection(state.db, pathMap[kind]), {
@@ -1693,6 +2153,7 @@
           refills: `${householdBasePath()}/refills/${id}`,
           purchases: `${householdBasePath()}/purchases/${id}`,
           resets: `${householdBasePath()}/resets/${id}`,
+          fuelEntries: `${householdBasePath()}/fuelEntries/${id}`,
           pricePeriods: `${householdBasePath()}/pricePeriods/${id}`
         };
         await deleteDoc(doc(state.db, pathMap[kind]));
@@ -1744,6 +2205,8 @@
         resets: state.resets,
         pricePeriods: state.pricePeriods,
         settings: state.settings,
+        cars: state.cars,
+        fuelEntries: state.fuelEntries,
         bagSizes: state.bagSizes
       }));
     }
@@ -1760,6 +2223,8 @@
       renderMonthlyOverview();
       renderSettingsSummary();
       renderPelletInventoryStats();
+      renderCars();
+      renderFuelEntries();
     }
 
     function renderReadings() {
