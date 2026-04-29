@@ -2162,6 +2162,11 @@ if (metaContainer) {
       }
 
       const carId = els.fuelCarId.value;
+        state.selectedAnalyticsCarId = carId;
+
+        if (els.analyticsCarSelect) {
+          els.analyticsCarSelect.value = carId;
+        }
       const liters = toNumber(els.fuelLiters.value);
       const totalPrice = toNumber(els.fuelTotalPrice.value);
       const mileage = toNumber(els.fuelMileage.value);
@@ -2272,6 +2277,9 @@ if (metaContainer) {
       els.fuelDatetime.value = toDatetimeLocal(new Date());
       syncFuelNowUi();
       syncFuelPricePerLiter();
+
+        renderSelectedCarAnalytics();
+        renderFuelStats();
 
       showToast("Tankvorgang gespeichert.", "success");
     }
