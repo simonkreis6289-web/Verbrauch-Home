@@ -769,6 +769,19 @@
           Auto
           <select id="fuelCarId" required></select>
         </label>
+        
+        <label>
+          Standort speichern
+          <div class="inline-toggle">
+            <input id="fuelUseGps" type="checkbox" checked />
+            <span class="muted">GPS beim Speichern erfassen</span>
+          </div>
+        </label>
+
+        <label>
+          Standort
+          <input id="fuelLocationText" type="text" maxlength="160" placeholder="optional, z. B. Aral Musterstadt" />
+        </label>
 
         <label>
           JETZT verwenden
@@ -1417,6 +1430,8 @@
         carCostChartMeta: document.getElementById("carCostChartMeta"),
         carCostChart: document.getElementById("carCostChart"),
       fuelStats: document.getElementById("fuelStats"),
+      fuelUseGps: document.getElementById("fuelUseGps"),
+      fuelLocationText: document.getElementById("fuelLocationText"),
     };
 
     init();
@@ -1613,6 +1628,32 @@
           els.fuelDatetime.value = toDatetimeLocal(new Date());
         }
       }
+    }
+    
+    function getCurrentPositionSafe() {
+      return new Promise((resolve) => {
+        if (!navigator.geolocation) {
+          resolve(null);
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            resolve({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              accuracy: position.coords.accuracy,
+              capturedAt: new Date().toISOString()
+            });
+          },
+          () => resolve(null),
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 60000
+          }
+        );
+      });
     }
 
     function syncFuelPricePerLiter() {
@@ -2010,7 +2051,11 @@ if (metaContainer) {
                 ${Number.isFinite(entry.costPer100km) ? ` · ${formatCurrency(entry.costPer100km)}/100km` : ""}
               </small>
             `,
-            note: entry.note || "Keine Notiz"
+            note: [
+              entry.locationText ? `Ort: ${entry.locationText}` : "",
+              entry.gps ? `GPS: ${formatNumber(entry.gps.latitude)}, ${formatNumber(entry.gps.longitude)}` : "",
+              entry.note || ""
+            ].filter(Boolean).join(" · ") || "Keine Notiz"
         });
         els.fuelList.appendChild(node);
       });
@@ -2065,6 +2110,13 @@ if (metaContainer) {
       const plate = els.carPlate?.value?.trim() || "";
       const fuelType = els.carFuelType?.value || "sonstiges";
       const note = els.carNote?.value?.trim() || "";
+        const locationText = els.fuelLocationText?.value?.trim() || "";
+        let gps = null;
+
+        if (els.fuelUseGps?.checked) {
+          showToast("Standort wird erfasst ...", "success");
+          gps = await getCurrentPositionSafe();
+        }
 
       if (!name) {
         showToast("Bitte einen Auto-Namen eingeben.", "error");
@@ -2209,13 +2261,17 @@ if (metaContainer) {
           mileage,
           distanceKm,
           litersPer100km,
-          costPer100km,
+          costPer100km,  
+            locationText,
+            gps,
           note,
           date: isoDate,
           createdAt: new Date().toISOString()
         });
 
       els.fuelForm.reset();
+        if (els.fuelUseGps) els.fuelUseGps.checked = true;
+        if (els.fuelLocationText) els.fuelLocationText.value = "";
       els.fuelUseNow.checked = true;
       els.fuelDatetime.value = toDatetimeLocal(new Date());
       syncFuelNowUi();
