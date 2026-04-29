@@ -723,7 +723,7 @@
       <div id="pelletInventoryStats" class="stats-grid"></div>
     </section>
 
-    <section class="card wide">
+      <section class="card wide">
       <div class="card-head">
         <div>
           <p class="section-kicker">Historie</p>
@@ -838,51 +838,41 @@
       </div>
       <div id="fuelStats" class="stats-grid"></div>
     </section>
-
-    <section class="card wide">
-      <div class="card-head">
-        <div>
-          <p class="section-kicker">Historie</p>
-          <h2>Tankvorgänge</h2>
-        </div>
-      </div>
-      <div id="fuelList" class="list-stack"></div>
-    </section>
-      <section class="card wide glass">
+  <section class="card wide glass">
   <div class="card-head">
     <div>
-      <p class="section-kicker">Auswertung</p>
-      <h2>Verbrauch, Kosten und Hochrechnung</h2>
+      <p class="section-kicker">Auto-Auswertung</p>
+      <h2>Verbrauch, Kosten und Jahreshochrechnung</h2>
     </div>
+    <span class="badge ok">pro Auto</span>
   </div>
-<div id="selectedCarStats" class="kpi-grid"></div>
+
+  <div id="selectedCarStats" class="kpi-grid"></div>
+
+  <div class="split-grid" style="margin-top:18px;">
+    <article class="chart-card span-6">
+      <h3>Verbrauch auf 100 km</h3>
+      <div class="muted" id="carConsumptionChartMeta"></div>
+      <div id="carConsumptionChart" class="chart clickable"></div>
+    </article>
+
+    <article class="chart-card span-6">
+      <h3>Kosten auf 100 km</h3>
+      <div class="muted" id="carCostChartMeta"></div>
+      <div id="carCostChart" class="chart clickable"></div>
+    </article>
+  </div>
 </section>
 
-    <section class="card wide">
-      <div class="card-head">
-        <div>
-          <p class="section-kicker">Verbrauchskurve</p>
-          <h2>Liter pro 100 km</h2>
-        </div>
-      </div>
-      <article class="chart-card">
-        <div class="muted" id="carConsumptionChartMeta"></div>
-        <div id="carConsumptionChart" class="chart clickable"></div>
-      </article>
-    </section>
-
-    <section class="card wide">
-      <div class="card-head">
-        <div>
-          <p class="section-kicker">Kostenkurve</p>
-          <h2>Kosten pro 100 km</h2>
-        </div>
-      </div>
-      <article class="chart-card">
-        <div class="muted" id="carCostChartMeta"></div>
-        <div id="carCostChart" class="chart clickable"></div>
-      </article>
-    </section>
+<section class="card wide">
+  <div class="card-head">
+    <div>
+      <p class="section-kicker">Historie</p>
+      <h2>Tankvorgänge</h2>
+    </div>
+  </div>
+  <div id="fuelList" class="list-stack"></div>
+</section>
       
   </div>
 </section>
@@ -2253,6 +2243,9 @@ if (metaContainer) {
           }
         }
 
+        state.selectedAnalyticsCarId = carId;
+        if (els.analyticsCarSelect) els.analyticsCarSelect.value = carId;
+
         await saveRecord("fuelEntries", {
           carId,
           liters,
@@ -2261,13 +2254,16 @@ if (metaContainer) {
           mileage,
           distanceKm,
           litersPer100km,
-          costPer100km,  
-            locationText,
-            gps,
+          costPer100km,
+          locationText,
+          gps,
           note,
           date: isoDate,
           createdAt: new Date().toISOString()
         });
+
+        renderFuelEntries();
+        renderSelectedCarAnalytics();
 
       els.fuelForm.reset();
         if (els.fuelUseGps) els.fuelUseGps.checked = true;
