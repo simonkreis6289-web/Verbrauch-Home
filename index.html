@@ -9,6 +9,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png" />
   <link rel="apple-touch-icon" href="icon-192.png" />
+     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     :root {
       --bg: #081120;
@@ -479,6 +480,18 @@
         
     }
       
+.map-box {
+  height: 360px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: rgba(8, 17, 32, 0.7);
+}
+
+.leaflet-container {
+  background: #0f172a;
+}
+      
   </style>
 </head>
 <body>
@@ -863,7 +876,18 @@
     </article>
   </div>
 </section>
-
+      
+<section class="card wide">
+  <div class="card-head">
+    <div>
+      <p class="section-kicker">Tankorte</p>
+      <h2>Gespeicherte Standorte auf der Karte</h2>
+    </div>
+    <span class="badge ok">GPS</span>
+  </div>
+  <div id="fuelMap" class="map-box"></div>
+</section>
+      
 <section class="card wide">
   <div class="card-head">
     <div>
@@ -1226,6 +1250,8 @@
       </div>
     </article>
   </template>
+      
+      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
@@ -1296,6 +1322,8 @@
     };
 
     let deferredPrompt = null;
+      let fuelMapInstance = null;
+      let fuelMapMarkers = [];
 
     const els = {
       mainTabs: document.getElementById("mainTabs"),
@@ -1422,6 +1450,7 @@
       fuelStats: document.getElementById("fuelStats"),
       fuelUseGps: document.getElementById("fuelUseGps"),
       fuelLocationText: document.getElementById("fuelLocationText"),
+        fuelMap: document.getElementById("fuelMap"),
     };
 
     init();
@@ -1954,7 +1983,60 @@ if (metaContainer) {
 
   return metaText;
 }
+function renderFuelMap() {
+  if (!els.fuelMap || typeof L === "undefined") return;
 
+  const entries = state.fuelEntries
+    .filter(entry =>
+      entry.carId === state.selectedAnalyticsCarId &&
+      entry.gps &&
+      Number.isFinite(entry.gps.latitude) &&
+      Number.isFinite(entry.gps.longitude)
+    );
+
+  if (!fuelMapInstance) {
+    fuelMapInstance = L.map(els.fuelMap).setView([51.1657, 10.4515], 6);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap"
+    }).addTo(fuelMapInstance);
+  }
+
+  fuelMapMarkers.forEach(marker => marker.remove());
+  fuelMapMarkers = [];
+
+  if (!entries.length) {
+    fuelMapInstance.setView([51.1657, 10.4515], 6);
+    return;
+  }
+
+  const bounds = [];
+
+  entries.forEach(entry => {
+    const lat = entry.gps.latitude;
+    const lng = entry.gps.longitude;
+    const car = state.cars.find(c => c.id === entry.carId);
+
+    const marker = L.marker([lat, lng])
+      .addTo(fuelMapInstance)
+      .bindPopup(`
+        <strong>${escapeHtml(car?.name || "Auto")}</strong><br>
+        ${formatDateTime(entry.date)}<br>
+        ${formatNumber(entry.liters)} l · ${formatCurrency(entry.totalPrice)}<br>
+        ${entry.locationText ? escapeHtml(entry.locationText) : "Kein Ortsname"}
+      `);
+
+    fuelMapMarkers.push(marker);
+    bounds.push([lat, lng]);
+  });
+
+  fuelMapInstance.fitBounds(bounds, { padding: [30, 30] });
+
+  setTimeout(() => {
+    fuelMapInstance.invalidateSize();
+  }, 200);
+}
     function openCarChartOverlay(mode) {
       const entries = [...state.fuelEntries]
         .filter(entry => entry.carId === state.selectedAnalyticsCarId)
@@ -2895,6 +2977,7 @@ if (metaContainer) {
       try { renderPelletInventoryStats(); } catch (e) { console.error("renderPelletInventoryStats", e); }
       try { renderCars(); } catch (e) { console.error("renderCars", e); }
       try { renderFuelEntries(); } catch (e) { console.error("renderFuelEntries", e); }
+      try { renderFuelMap(); } catch (e) { console.error("renderFuelMap", e); }
     }
 
     function renderReadings() {
