@@ -2110,13 +2110,6 @@ if (metaContainer) {
       const plate = els.carPlate?.value?.trim() || "";
       const fuelType = els.carFuelType?.value || "sonstiges";
       const note = els.carNote?.value?.trim() || "";
-        const locationText = els.fuelLocationText?.value?.trim() || "";
-        let gps = null;
-
-        if (els.fuelUseGps?.checked) {
-          showToast("Standort wird erfasst ...", "success");
-          gps = await getCurrentPositionSafe();
-        }
 
       if (!name) {
         showToast("Bitte einen Auto-Namen eingeben.", "error");
@@ -2182,7 +2175,14 @@ if (metaContainer) {
       const liters = toNumber(els.fuelLiters.value);
       const totalPrice = toNumber(els.fuelTotalPrice.value);
       const mileage = toNumber(els.fuelMileage.value);
-      const note = els.fuelNote.value.trim();
+      const note = els.fuelNote.value.trim();        
+        const locationText = els.fuelLocationText?.value?.trim() || "";
+        let gps = null;
+
+        if (els.fuelUseGps?.checked) {
+          showToast("Standort wird erfasst ...", "success");
+          gps = await getCurrentPositionSafe();
+        }
       const pricePerLiter = liters > 0 ? round4(totalPrice / liters) : 0;
 
       if (!carId) {
