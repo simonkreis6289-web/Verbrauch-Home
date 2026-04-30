@@ -885,6 +885,11 @@
     </div>
     <span class="badge ok">GPS</span>
   </div>
+    <div class="form-actions" style="margin-bottom:12px;">
+  <button id="showLiveLocationBtn" class="btn secondary" type="button">
+    Live-Standort anzeigen
+  </button>
+</div>
   <div id="fuelMap" class="map-box"></div>
 </section>
       
@@ -1321,10 +1326,11 @@
       unsubscribers: []
     };
 
-    let deferredPrompt = null;
+      let deferredPrompt = null;
       let fuelMapInstance = null;
       let fuelMapMarkers = [];
-
+      let fuelMapUserMarker = null;
+      
     const els = {
       mainTabs: document.getElementById("mainTabs"),
       views: document.querySelectorAll(".view"),
@@ -1451,6 +1457,7 @@
       fuelUseGps: document.getElementById("fuelUseGps"),
       fuelLocationText: document.getElementById("fuelLocationText"),
         fuelMap: document.getElementById("fuelMap"),
+        showLiveLocationBtn: document.getElementById("showLiveLocationBtn"),
     };
 
     init();
@@ -1575,6 +1582,7 @@
         });
       els.carConsumptionChart?.addEventListener("click", () => openCarChartOverlay("consumption"));
       els.carCostChart?.addEventListener("click", () => openCarChartOverlay("cost"));
+      els.showLiveLocationBtn?.addEventListener("click", showLiveLocationOnMap);
       
       els.chartStrom?.addEventListener("click", () => openChartOverlay("strom"));
       els.chartWasser?.addEventListener("click", () => openChartOverlay("wasser"));
@@ -1628,6 +1636,13 @@
       const targetView = button.dataset.view;
       document.querySelectorAll(".tab").forEach((tab) => tab.classList.toggle("active", tab === button));
       els.views.forEach((view) => view.classList.toggle("active", view.id === targetView));
+        if (targetView === "carsView") {
+          setTimeout(() => {
+            renderFuelMap();
+            if (fuelMapInstance) fuelMapInstance.invalidateSize();
+          }, 250);
+        }
+        
     }
 
     function syncQuickNowUi() {
@@ -2036,7 +2051,51 @@ function renderFuelMap() {
   setTimeout(() => {
     fuelMapInstance.invalidateSize();
   }, 200);
-}
+    setTimeout(() => {
+      fuelMapInstance.invalidateSize();
+
+      if (fuelMapMarkers.length) {
+        const group = L.featureGroup([
+          ...fuelMapMarkers,
+          ...(fuelMapUserMarker ? [fuelMapUserMarker] : [])
+        ]);
+        fuelMapInstance.fitBounds(group.getBounds(), { padding: [40, 40] });
+      }
+    }, 300);
+    }
+
+    async function showLiveLocationOnMap() {
+      if (!els.fuelMap || typeof L === "undefined") return;
+
+      const gps = await getCurrentPositionSafe();
+
+      if (!gps) {
+        showToast("Live-Standort konnte nicht erfasst werden.", "error");
+        return;
+      }
+
+      if (!fuelMapInstance) {
+        renderFuelMap();
+      }
+
+      if (fuelMapUserMarker) {
+        fuelMapUserMarker.remove();
+      }
+
+      fuelMapUserMarker = L.circleMarker([gps.latitude, gps.longitude], {
+        radius: 9,
+        color: "#38bdf8",
+        fillColor: "#38bdf8",
+        fillOpacity: 0.9
+      })
+        .addTo(fuelMapInstance)
+        .bindPopup("📍 Dein aktueller Standort");
+
+      fuelMapInstance.setView([gps.latitude, gps.longitude], 15);
+
+      setTimeout(() => fuelMapInstance.invalidateSize(), 200);
+    }
+
     function openCarChartOverlay(mode) {
       const entries = [...state.fuelEntries]
         .filter(entry => entry.carId === state.selectedAnalyticsCarId)
