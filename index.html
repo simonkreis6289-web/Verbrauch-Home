@@ -839,6 +839,12 @@
           <input id="fuelMileage" type="number" step="1" min="0" required />
         </label>
 
+<label>
+  Restreichweite vor dem Tanken
+  <input id="fuelRemainingRange" type="number" step="1" min="0" placeholder="optional, z. B. 60" />
+  <small>Optional. Wird sonst automatisch geschätzt.</small>
+</label>
+
         <label class="span-12">
           Notiz
           <input id="fuelNote" type="text" maxlength="160" placeholder="optional" />
@@ -1361,7 +1367,7 @@
       firebaseStatus: document.getElementById("firebaseStatus"),
       syncBadge: document.getElementById("syncBadge"),
       enablePushBtn: document.getElementById("enablePushBtn"),
-        
+        fuelRemainingRange: document.getElementById("fuelRemainingRange"),
       batchReadingForm: document.getElementById("batchReadingForm"),
       batchReadingDatetime: document.getElementById("batchReadingDatetime"),
       batchReadingNote: document.getElementById("batchReadingNote"),
@@ -1625,6 +1631,17 @@
         if (event.key === "Escape") closeChartOverlay();
       });
     }
+
+function getAverageRemainingRangeForCar(carId) {
+  const values = state.fuelEntries
+    .filter((entry) => entry.carId === carId)
+    .map((entry) => toNumber(entry.remainingRange))
+    .filter((value) => Number.isFinite(value) && value >= 0);
+
+  if (!values.length) return null;
+
+  return round2(values.reduce((sum, value) => sum + value, 0) / values.length);
+}
 
     function registerInstallHandling() {
       window.addEventListener("beforeinstallprompt", (event) => {
@@ -2332,48 +2349,55 @@ async function upsertStationFromFuelEntry({ station, locationText, gps }) {
         .join("");
     }
 
-    function renderFuelEntries() {
-      if (!els.fuelList) return;
+function renderFuelEntries() {
+  if (!els.fuelList) return;
 
-      const entries = [...state.fuelEntries].sort((a, b) => new Date(b.date) - new Date(a.date));
-      els.fuelList.innerHTML = "";
+  const entries = [...state.fuelEntries].sort((a, b) => new Date(b.date) - new Date(a.date));
+  els.fuelList.innerHTML = "";
 
-      if (!entries.length) {
-        els.fuelList.innerHTML = '<div class="empty-state">Noch keine Tankvorgänge gespeichert.</div>';
-        renderFuelStats();
-        return;
-      }
+  if (!entries.length) {
+    els.fuelList.innerHTML = '<div class="empty-state">Noch keine Tankvorgänge gespeichert.</div>';
+    renderFuelStats();
+    return;
+  }
 
-      entries.forEach((entry) => {
-        const car = state.cars.find((c) => c.id === entry.carId);
-        const carName = car ? car.name : "Unbekanntes Auto";
-        const node = createEntryNode({
-          id: entry.id,
-          kind: "fuelEntries",
-          typeLabel: `Tanken · ${carName}`,
-          datetime: formatDateTime(entry.date),
-            valueHtml: `
-              ${formatNumber(entry.liters)} l · ${formatCurrency(entry.totalPrice)}
-              <br>
-              <small class="muted">
-                ${formatCurrency(entry.pricePerLiter)}/l · ${formatNumber(entry.mileage)} km
-                ${Number.isFinite(entry.distanceKm) ? ` · Strecke ${formatNumber(entry.distanceKm)} km` : ""}
-                ${Number.isFinite(entry.litersPer100km) ? ` · ${formatNumber(entry.litersPer100km)} l/100km` : ""}
-                ${Number.isFinite(entry.costPer100km) ? ` · ${formatCurrency(entry.costPer100km)}/100km` : ""}
-              </small>
-            `,
-        note: [
-          entry.station?.name ? `Tankstelle: ${entry.station.name}` : "",
-          entry.station?.address ? entry.station.address : "",
-          !entry.station?.name && entry.locationText ? `Ort: ${entry.locationText}` : "",
-          entry.note || ""
-        ].filter(Boolean).join(" · ") || "Keine Notiz"
-        });
-        els.fuelList.appendChild(node);
-      });
+  entries.forEach((entry) => {
+    const car = state.cars.find((c) => c.id === entry.carId);
+    const carName = car ? car.name : "Unbekanntes Auto";
 
-      renderFuelStats();
-    }
+    const remainingRangeText = Number.isFinite(entry.remainingRange)
+      ? ` · Rest ${formatNumber(entry.remainingRange)} km${entry.remainingRangeSource === "average" ? " (geschätzt)" : ""}`
+      : "";
+
+    const node = createEntryNode({
+      id: entry.id,
+      kind: "fuelEntries",
+      typeLabel: `Tanken · ${carName}`,
+      datetime: formatDateTime(entry.date),
+      valueHtml: `
+        ${formatNumber(entry.liters)} l · ${formatCurrency(entry.totalPrice)}
+        <br>
+        <small class="muted">
+          ${formatCurrency(entry.pricePerLiter)}/l · ${formatNumber(entry.mileage)} km
+          ${remainingRangeText}
+          ${Number.isFinite(entry.distanceKm) ? ` · Strecke ${formatNumber(entry.distanceKm)} km` : ""}
+          ${Number.isFinite(entry.litersPer100km) ? ` · ${formatNumber(entry.litersPer100km)} l/100km` : ""}
+          ${Number.isFinite(entry.costPer100km) ? ` · ${formatCurrency(entry.costPer100km)}/100km` : ""}
+        </small>
+      `,
+      note: [
+        entry.station?.name ? `Tankstelle: ${entry.station.name}` : "",
+        entry.station?.address ? entry.station.address : "",
+        !entry.station?.name && entry.locationText ? `Ort: ${entry.locationText}` : "",
+        entry.note || ""
+      ].filter(Boolean).join(" · ") || "Keine Notiz"
+    });
+
+    els.fuelList.appendChild(node);
+  });
+
+  renderFuelStats();
+}
 
     function renderFuelStats() {
       if (!els.fuelStats) return;
@@ -2533,7 +2557,8 @@ async function upsertStationFromFuelEntry({ station, locationText, gps }) {
         }
 
       const pricePerLiter = liters > 0 ? round4(totalPrice / liters) : 0;
-
+const enteredRemainingRange = toNumber(els.fuelRemainingRange?.value);
+const averageRemainingRange = getAverageRemainingRangeForCar(carId);
       if (!carId) {
         showToast("Bitte ein Auto auswählen.", "error");
         return;
@@ -2566,6 +2591,15 @@ async function upsertStationFromFuelEntry({ station, locationText, gps }) {
         showToast("Dieser Tankvorgang ist bereits vorhanden.", "error");
         return;
       }
+const remainingRange = Number.isFinite(enteredRemainingRange)
+  ? enteredRemainingRange
+  : averageRemainingRange;
+
+const remainingRangeSource = Number.isFinite(enteredRemainingRange)
+  ? "manual"
+  : Number.isFinite(averageRemainingRange)
+    ? "average"
+    : "unknown";
 
       const sameTimeOtherValue = state.fuelEntries.find((entry) =>
         entry.carId === carId &&
@@ -2617,22 +2651,24 @@ async function upsertStationFromFuelEntry({ station, locationText, gps }) {
           };
         }
 
-        await saveRecord("fuelEntries", {
-          carId,
-          liters,
-          totalPrice: round2(totalPrice),
-          pricePerLiter,
-          mileage,
-          distanceKm,
-          litersPer100km,
-          costPer100km,
-          locationText,
-            station,
-          gps,
-          note,
-          date: isoDate,
-          createdAt: new Date().toISOString()
-        });
+  await saveRecord("fuelEntries", {
+  carId,
+  liters,
+  totalPrice: round2(totalPrice),
+  pricePerLiter,
+  mileage,
+  remainingRange,
+  remainingRangeSource,
+  distanceKm,
+  litersPer100km,
+  costPer100km,
+  locationText,
+  station,
+  gps,
+  note,
+  date: isoDate,
+  createdAt: new Date().toISOString()
+});
 
         renderFuelEntries();
         renderSelectedCarAnalytics();
