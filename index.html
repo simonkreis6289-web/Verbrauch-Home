@@ -808,6 +808,12 @@
           Datum & Uhrzeit
           <input id="fuelDatetime" type="datetime-local" />
         </label>
+          
+          <label id="fuelStationSelectWrap" class="hidden">
+              Tankstelle auswählen
+              <select id="fuelStationSelect"></select>
+              <small>Wird nur beim Nachtragen angezeigt. GPS-Daten kommen aus der gespeicherten Tankstelle.</small>
+            </label>
 
         <label>
           Liter getankt
@@ -1289,7 +1295,7 @@
     const DEFAULT_HOUSEHOLD_ID = "zuhause-haupt";
     const LOCAL_KEYS = {
       householdId: "verbrauch-household-id-v1",
-      localData: "verbrauch-local-data-v8",
+      localData: "verbrauch-local-data-v9",
       lastBagSize: "verbrauch-last-bag-size-v1"
     };
 
@@ -1310,6 +1316,7 @@
     const state = {      
       cars: [],
       fuelEntries: [],
+        stations: [],        
       selectedAnalyticsCarId: null,
       readings: [],
       refills: [],
@@ -1327,6 +1334,7 @@
     };
 
       let deferredPrompt = null;
+      const GOOGLE_MAPS_API_KEY = "DEIN_GOOGLE_MAPS_API_KEY";
       let fuelMapInstance = null;
       let fuelMapMarkers = [];
       let fuelMapUserMarker = null;
@@ -1458,6 +1466,8 @@
       fuelLocationText: document.getElementById("fuelLocationText"),
         fuelMap: document.getElementById("fuelMap"),
         showLiveLocationBtn: document.getElementById("showLiveLocationBtn"),
+        fuelStationSelect: document.getElementById("fuelStationSelect"),
+        fuelStationSelectWrap: document.getElementById("fuelStationSelectWrap"),
     };
 
     init();
@@ -1483,6 +1493,7 @@
 
     function setDefaultDatetimes() {
       const now = toDatetimeLocal(new Date());
+        syncFuelStationUi();
       els.batchReadingDatetime.value = now;
       els.quickReadingDatetime.value = now;
       els.purchaseDatetime.value = now;
@@ -1507,6 +1518,7 @@
       state.pricePeriods = normalizeDateArray(local.pricePeriods || []);
       state.settings = mergeSettings(local.settings || defaultSettings);
       state.cars = local.cars || [];
+        state.stations = local.stations || [];
       state.fuelEntries = normalizeDateArray(local.fuelEntries || []);
       state.bagSizes = normalizeBagSizes(local.bagSizes || defaultBagSizes);
       fillSettingsForm();
@@ -1565,7 +1577,6 @@
       
       els.carForm?.addEventListener("submit", handleCarSubmit);
 
-      els.fuelUseNow?.addEventListener("change", syncFuelNowUi);
       els.fuelLiters?.addEventListener("input", syncFuelPricePerLiter);
       els.fuelTotalPrice?.addEventListener("input", syncFuelPricePerLiter);
       els.fuelForm?.addEventListener("submit", handleFuelSubmit);
@@ -1573,9 +1584,13 @@
         if (els.fuelUseNow) els.fuelUseNow.checked = true;
         if (els.fuelDatetime) els.fuelDatetime.value = toDatetimeLocal(new Date());
         syncFuelNowUi();
+        syncFuelStationUi();
         syncFuelPricePerLiter();
       }, 0));
-      
+          els.fuelUseNow?.addEventListener("change", () => {
+              syncFuelNowUi();
+              syncFuelStationUi();
+            });
           els.analyticsCarSelect?.addEventListener("change", () => {
             state.selectedAnalyticsCarId = els.analyticsCarSelect.value || null;
           renderSelectedCarAnalytics();
@@ -1689,6 +1704,66 @@
         );
       });
     }
+    
+function loadGoogleMapsPlaces() {
+  return new Promise((resolve, reject) => {
+    if (window.google?.maps?.importLibrary) {
+      resolve();
+      return;
+    }
+
+    const existing = document.querySelector("#googleMapsScript");
+    if (existing) {
+      existing.addEventListener("load", resolve);
+      existing.addEventListener("error", reject);
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = "googleMapsScript";
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&v=weekly&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+async function findNearbyFuelStationGoogle(latitude, longitude) {
+  try {
+    await loadGoogleMapsPlaces();
+
+    const { Place, SearchNearbyRankPreference } =
+      await google.maps.importLibrary("places");
+
+    const { places } = await Place.searchNearby({
+      fields: ["displayName", "formattedAddress", "location", "googleMapsURI"],
+      locationRestriction: {
+        center: { lat: latitude, lng: longitude },
+        radius: 250
+      },
+      includedPrimaryTypes: ["gas_station"],
+      maxResultCount: 3,
+      rankPreference: SearchNearbyRankPreference.DISTANCE
+    });
+
+    if (!places?.length) return null;
+
+    const place = places[0];
+
+    return {
+      name: place.displayName || "Tankstelle unbekannt",
+      address: place.formattedAddress || "",
+      googleMapsURI: place.googleMapsURI || "",
+      latitude: place.location?.lat?.() ?? latitude,
+      longitude: place.location?.lng?.() ?? longitude
+    };
+  } catch (error) {
+    console.error("Google Places Tankstellen-Suche fehlgeschlagen:", error);
+    return null;
+  }
+}
 
     function syncFuelPricePerLiter() {
       const liters = toNumber(els.fuelLiters?.value);
@@ -1998,6 +2073,7 @@ if (metaContainer) {
 
   return metaText;
 }
+
 function renderFuelMap() {
   if (!els.fuelMap || typeof L === "undefined") return;
 
@@ -2064,6 +2140,64 @@ function renderFuelMap() {
     }, 300);
     }
 
+function renderStationOptions() {
+  if (!els.fuelStationSelect) return;
+
+  if (!state.stations.length) {
+    els.fuelStationSelect.innerHTML = '<option value="">Noch keine Tankstelle gespeichert</option>';
+    return;
+  }
+
+  els.fuelStationSelect.innerHTML = [
+    '<option value="">Keine / manuell</option>',
+    ...state.stations.map((station) => `
+      <option value="${station.id}">
+        ${escapeHtml(station.name)}${station.address ? ` · ${escapeHtml(station.address)}` : ""}
+      </option>
+    `)
+  ].join("");
+}
+
+function syncFuelStationUi() {
+  const useNow = !!els.fuelUseNow?.checked;
+  els.fuelStationSelectWrap?.classList.toggle("hidden", useNow);
+  renderStationOptions();
+}
+
+function findStationById(id) {
+  return state.stations.find((station) => station.id === id) || null;
+}
+
+function upsertStationFromFuelEntry({ station, locationText, gps }) {
+  const name = station?.name || locationText || "";
+  const latitude = station?.latitude ?? gps?.latitude ?? null;
+  const longitude = station?.longitude ?? gps?.longitude ?? null;
+
+  if (!name || latitude == null || longitude == null) return null;
+
+  const existing = state.stations.find((item) =>
+    item.name.trim().toLowerCase() === name.trim().toLowerCase()
+  );
+
+  if (existing) return existing;
+
+  const payload = {
+    id: generateId(),
+    name,
+    address: station?.address || "",
+    googleMapsURI: station?.googleMapsURI || "",
+    latitude,
+    longitude,
+    createdAt: new Date().toISOString()
+  };
+
+  state.stations.push(payload);
+  persistLocalSnapshot();
+  renderStationOptions();
+
+  return payload;
+}
+
     async function showLiveLocationOnMap() {
       if (!els.fuelMap || typeof L === "undefined") return;
 
@@ -2083,10 +2217,10 @@ function renderFuelMap() {
       }
 
       fuelMapUserMarker = L.circleMarker([gps.latitude, gps.longitude], {
-        radius: 9,
-        color: "#38bdf8",
-        fillColor: "#38bdf8",
-        fillOpacity: 0.9
+        radius: 7,
+        color: "#02029e",
+        fillColor: "#02029e",
+        fillOpacity: 0.95
       })
         .addTo(fuelMapInstance)
         .bindPopup("📍 Dein aktueller Standort");
@@ -2182,11 +2316,12 @@ function renderFuelMap() {
                 ${Number.isFinite(entry.costPer100km) ? ` · ${formatCurrency(entry.costPer100km)}/100km` : ""}
               </small>
             `,
-            note: [
-              entry.locationText ? `Ort: ${entry.locationText}` : "",
-              entry.gps ? `GPS: ${formatNumber(entry.gps.latitude)}, ${formatNumber(entry.gps.longitude)}` : "",
-              entry.note || ""
-            ].filter(Boolean).join(" · ") || "Keine Notiz"
+        note: [
+          entry.station?.name ? `Tankstelle: ${entry.station.name}` : "",
+          entry.station?.address ? entry.station.address : "",
+          !entry.station?.name && entry.locationText ? `Ort: ${entry.locationText}` : "",
+          entry.note || ""
+        ].filter(Boolean).join(" · ") || "Keine Notiz"
         });
         els.fuelList.appendChild(node);
       });
@@ -2311,14 +2446,46 @@ function renderFuelMap() {
       const liters = toNumber(els.fuelLiters.value);
       const totalPrice = toNumber(els.fuelTotalPrice.value);
       const mileage = toNumber(els.fuelMileage.value);
-      const note = els.fuelNote.value.trim();        
-        const locationText = els.fuelLocationText?.value?.trim() || "";
+        const note = els.fuelNote.value.trim();        
+        let locationText = els.fuelLocationText?.value?.trim() || "";
         let gps = null;
+        let station = null;
+        const selectedStation = findStationById(els.fuelStationSelect?.value || "");
 
-        if (els.fuelUseGps?.checked) {
+        if (!useNow && selectedStation) {
+          station = {
+            name: selectedStation.name,
+            address: selectedStation.address || "",
+            googleMapsURI: selectedStation.googleMapsURI || "",
+            latitude: selectedStation.latitude,
+            longitude: selectedStation.longitude
+          };
+
+          gps = {
+            latitude: selectedStation.latitude,
+            longitude: selectedStation.longitude,
+            accuracy: null,
+            capturedAt: new Date().toISOString(),
+            source: "saved-station"
+          };
+
+          locationText = selectedStation.name;
+        }
+
+        if (useNow && els.fuelUseGps?.checked) {
           showToast("Standort wird erfasst ...", "success");
           gps = await getCurrentPositionSafe();
+
+          if (gps) {
+            showToast("Tankstelle wird gesucht ...", "success");
+            station = await findNearbyFuelStationGoogle(gps.latitude, gps.longitude);
+
+            if (station && !locationText) {
+              locationText = station.name;
+            }
+          }
         }
+
       const pricePerLiter = liters > 0 ? round4(totalPrice / liters) : 0;
 
       if (!carId) {
@@ -2392,6 +2559,18 @@ function renderFuelMap() {
         state.selectedAnalyticsCarId = carId;
         if (els.analyticsCarSelect) els.analyticsCarSelect.value = carId;
 
+        const savedStation = upsertStationFromFuelEntry({ station, locationText, gps });
+
+        if (savedStation) {
+          station = {
+            name: savedStation.name,
+            address: savedStation.address,
+            googleMapsURI: savedStation.googleMapsURI,
+            latitude: savedStation.latitude,
+            longitude: savedStation.longitude
+          };
+        }
+
         await saveRecord("fuelEntries", {
           carId,
           liters,
@@ -2402,6 +2581,7 @@ function renderFuelMap() {
           litersPer100km,
           costPer100km,
           locationText,
+            station,
           gps,
           note,
           date: isoDate,
@@ -2417,6 +2597,7 @@ function renderFuelMap() {
       els.fuelUseNow.checked = true;
       els.fuelDatetime.value = toDatetimeLocal(new Date());
       syncFuelNowUi();
+        syncFuelStationUi();
       syncFuelPricePerLiter();
 
         renderSelectedCarAnalytics();
@@ -3016,6 +3197,7 @@ function renderFuelMap() {
         resets: state.resets,
         pricePeriods: state.pricePeriods,
         settings: state.settings,
+        stations: state.stations,
         cars: state.cars,
         fuelEntries: state.fuelEntries,
         bagSizes: state.bagSizes
@@ -3037,6 +3219,7 @@ function renderFuelMap() {
       try { renderCars(); } catch (e) { console.error("renderCars", e); }
       try { renderFuelEntries(); } catch (e) { console.error("renderFuelEntries", e); }
       try { renderFuelMap(); } catch (e) { console.error("renderFuelMap", e); }
+      try { renderStationOptions(); } catch (e) { console.error("renderStationOptions", e); }
     }
 
     function renderReadings() {
@@ -3571,6 +3754,7 @@ function renderFuelMap() {
           resets: state.resets,
           pricePeriods: state.pricePeriods,
           settings: state.settings,
+            stations: state.stations,
           cars: state.cars,
           fuelEntries: state.fuelEntries
         };
