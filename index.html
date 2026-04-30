@@ -507,6 +507,7 @@
       </div>
       <div class="hero-actions">
         <button id="installBtn" class="btn secondary hidden" type="button">App installieren</button>
+        <button id="enablePushBtn" class="btn secondary" type="button">Push aktivieren</button>
         <button id="exportBackupBtn" class="btn ghost" type="button">Backup exportieren</button>
       </div>
     </header>
@@ -1284,6 +1285,12 @@
       getDocs
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
+      import {
+          getMessaging,
+          getToken,
+          onMessage
+        } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-messaging.js";
+      
     const FIREBASE_CONFIG = {
       apiKey: "AIzaSyBrKjajSNPgmFUwjMghkox1kM8NjbCWZ_Y",
       authDomain: "verbrauch-zuhause.firebaseapp.com",
@@ -1294,6 +1301,8 @@
       measurementId: "G-L0GQQ8V785"
     };
 
+    const FCM_VAPID_KEY = "BCifuRnuLzoDL5f7jnfgv-cWdtHNAeN4QD5BaAYtHAcBgYn69JGvksIaOsZX-daVnL7bC_vRFP2pSvzqKpWxR3I";
+      
     const DEFAULT_HOUSEHOLD_ID = "zuhause-haupt";
     const LOCAL_KEYS = {
       householdId: "verbrauch-household-id-v1",
@@ -1332,6 +1341,8 @@
       firebaseEnabled: false,
       app: null,
       db: null,
+      messaging: null,
+      pushToken: null,
       unsubscribers: []
     };
 
@@ -1347,7 +1358,8 @@
       exportBackupBtn: document.getElementById("exportBackupBtn"),
       firebaseStatus: document.getElementById("firebaseStatus"),
       syncBadge: document.getElementById("syncBadge"),
-
+      enablePushBtn: document.getElementById("enablePushBtn"),
+        
       batchReadingForm: document.getElementById("batchReadingForm"),
       batchReadingDatetime: document.getElementById("batchReadingDatetime"),
       batchReadingNote: document.getElementById("batchReadingNote"),
@@ -1529,7 +1541,7 @@
     function registerEvents() {
       els.mainTabs?.addEventListener("click", handleTabClick);
       els.exportBackupBtn?.addEventListener("click", exportBackup);
-
+      els.enablePushBtn?.addEventListener("click", enablePushNotifications);
       els.quickUseNow?.addEventListener("change", syncQuickNowUi);
 
       els.batchReadingForm?.addEventListener("submit", handleBatchReadingSubmit);
@@ -3159,6 +3171,7 @@ async function upsertStationFromFuelEntry({ station, locationText, gps }) {
           fuelEntries: `${householdBasePath()}/fuelEntries`,
           pricePeriods: `${householdBasePath()}/pricePeriods`,
           cars: `${householdBasePath()}/cars`,
+            pushTokens: `${householdBasePath()}/pushTokens`,
             stations: `${householdBasePath()}/stations`
         };
 
@@ -3201,6 +3214,71 @@ async function upsertStationFromFuelEntry({ station, locationText, gps }) {
       }
     }
 
+    async function enablePushNotifications() {
+  try {
+    if (!state.firebaseEnabled || !state.app || !state.db) {
+      showToast("Bitte zuerst Firebase verbinden.", "error");
+      return;
+    }
+
+    const supported = await isSupported();
+
+    if (!supported || !("Notification" in window) || !("serviceWorker" in navigator)) {
+      showToast("Push wird von diesem Browser nicht unterstützt.", "error");
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+
+    if (permission !== "granted") {
+      showToast("Push wurde nicht erlaubt.", "error");
+      return;
+    }
+
+    const swRegistration = await navigator.serviceWorker.register("./sw.js");
+
+    const messaging = getMessaging(state.app);
+    state.messaging = messaging;
+
+    const token = await getToken(messaging, {
+      vapidKey: FCM_VAPID_KEY,
+      serviceWorkerRegistration: swRegistration
+    });
+
+    if (!token) {
+      showToast("Kein Push-Token erhalten.", "error");
+      return;
+    }
+
+    state.pushToken = token;
+
+    const alreadyExists = loadJSON("verbrauch-push-token-v1", null);
+
+    if (alreadyExists !== token) {
+      await saveRecord("pushTokens", {
+        token,
+        householdId: state.householdId,
+        userAgent: navigator.userAgent,
+        createdAt: new Date().toISOString(),
+        date: new Date().toISOString()
+      });
+
+      localStorage.setItem("verbrauch-push-token-v1", JSON.stringify(token));
+    }
+
+    onMessage(messaging, (payload) => {
+      const title = payload?.notification?.title || "Verbrauch Zuhause";
+      const body = payload?.notification?.body || "Neue Daten eingetragen.";
+      showToast(`${title}: ${body}`, "success");
+    });
+
+    showToast("Push ist aktiviert.", "success");
+  } catch (error) {
+    console.error("Push Fehler:", error);
+    showToast(`Push konnte nicht aktiviert werden: ${error.message || error}`, "error");
+  }
+}
+    
     function updateFirebaseStatus(error = null) {
       if (state.firebaseEnabled) {
         els.firebaseStatus.textContent = `Firestore aktiv. Haushalt: ${state.householdId}`;
