@@ -89,6 +89,7 @@
       grid-template-columns: repeat(12, 1fr);
       gap: 20px;
     }
+      
     .card {
       grid-column: span 6;
       background: var(--card-solid);
@@ -97,6 +98,7 @@
       padding: 22px;
       box-shadow: var(--shadow);
     }
+      
     .card.wide { grid-column: 1 / -1; }
     .card.glass { background: var(--card); backdrop-filter: blur(20px); }
 
@@ -2095,13 +2097,13 @@ if (metaContainer) {
 function renderFuelMap() {
   if (!els.fuelMap || typeof L === "undefined") return;
 
-  const entries = state.fuelEntries
-    .filter(entry =>
-      entry.carId === state.selectedAnalyticsCarId &&
-      entry.gps &&
-      Number.isFinite(entry.gps.latitude) &&
-      Number.isFinite(entry.gps.longitude)
-    );
+    const entries = state.fuelEntries
+      .filter(entry =>
+        (!state.selectedAnalyticsCarId || entry.carId === state.selectedAnalyticsCarId) &&
+        entry.gps &&
+        Number.isFinite(entry.gps.latitude) &&
+        Number.isFinite(entry.gps.longitude)
+      );
 
   if (!fuelMapInstance) {
     fuelMapInstance = L.map(els.fuelMap).setView([51.1657, 10.4515], 6);
@@ -2186,32 +2188,45 @@ function findStationById(id) {
   return state.stations.find((station) => station.id === id) || null;
 }
 
-function upsertStationFromFuelEntry({ station, locationText, gps }) {
+async function upsertStationFromFuelEntry({ station, locationText, gps }) {
   const name = station?.name || locationText || "";
   const latitude = station?.latitude ?? gps?.latitude ?? null;
   const longitude = station?.longitude ?? gps?.longitude ?? null;
 
   if (!name || latitude == null || longitude == null) return null;
 
+  const normalizedName = name.trim().toLowerCase();
+
   const existing = state.stations.find((item) =>
-    item.name.trim().toLowerCase() === name.trim().toLowerCase()
+    item.name?.trim().toLowerCase() === normalizedName
   );
 
   if (existing) return existing;
 
   const payload = {
-    id: generateId(),
     name,
     address: station?.address || "",
     googleMapsURI: station?.googleMapsURI || "",
     latitude,
     longitude,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    date: new Date().toISOString()
   };
 
-  state.stations.push(payload);
-  persistLocalSnapshot();
-  renderStationOptions();
+  if (state.firebaseEnabled) {
+    await saveRecord("stations", payload);
+  } else {
+    const localStation = {
+      ...payload,
+      id: generateId()
+    };
+
+    state.stations.push(localStation);
+    persistLocalSnapshot();
+    renderStationOptions();
+
+    return localStation;
+  }
 
   return payload;
 }
@@ -2577,7 +2592,7 @@ function upsertStationFromFuelEntry({ station, locationText, gps }) {
         state.selectedAnalyticsCarId = carId;
         if (els.analyticsCarSelect) els.analyticsCarSelect.value = carId;
 
-        const savedStation = upsertStationFromFuelEntry({ station, locationText, gps });
+        const savedStation = await upsertStationFromFuelEntry({ station, locationText, gps });
 
         if (savedStation) {
           station = {
@@ -3060,6 +3075,7 @@ function upsertStationFromFuelEntry({ station, locationText, gps }) {
       const settingsDocRef = doc(state.db, `${basePath}/settings/main`);
       const carsQuery = query(collection(state.db, `${basePath}/cars`), orderBy("name", "asc"));
       const fuelEntriesQuery = query(collection(state.db, `${basePath}/fuelEntries`), orderBy("date", "desc"));
+        const stationsQuery = query(collection(state.db, `${basePath}/stations`), orderBy("name", "asc"));
         
       state.unsubscribers.push(onSnapshot(readingsQuery, (s) => {
         state.readings = s.docs.map(mapFirestoreDoc);
@@ -3098,6 +3114,13 @@ function upsertStationFromFuelEntry({ station, locationText, gps }) {
         persistLocalSnapshot();
         renderAll();
       }));
+        state.unsubscribers.push(onSnapshot(stationsQuery, (s) => {
+          state.stations = s.docs.map(mapFirestoreDoc);
+          persistLocalSnapshot();
+          renderAll();
+        }, (error) => {
+          console.error("stations onSnapshot Fehler:", error);
+        }));
       state.unsubscribers.push(onSnapshot(settingsDocRef, (snapshot) => {
         if (snapshot.exists()) {
           state.settings = mergeSettings(snapshot.data());
@@ -3133,7 +3156,8 @@ function upsertStationFromFuelEntry({ station, locationText, gps }) {
           resets: `${householdBasePath()}/resets`,
           fuelEntries: `${householdBasePath()}/fuelEntries`,
           pricePeriods: `${householdBasePath()}/pricePeriods`,
-          cars: `${householdBasePath()}/cars`
+          cars: `${householdBasePath()}/cars`,
+            stations: `${householdBasePath()}/stations`
         };
 
         if (!pathMap[kind]) {
@@ -3164,7 +3188,8 @@ function upsertStationFromFuelEntry({ station, locationText, gps }) {
           resets: `${householdBasePath()}/resets/${id}`,
           fuelEntries: `${householdBasePath()}/fuelEntries/${id}`,
           pricePeriods: `${householdBasePath()}/pricePeriods/${id}`,
-          cars: `${householdBasePath()}/cars/${id}`
+          cars: `${householdBasePath()}/cars/${id}`,
+          stations: `${householdBasePath()}/stations/${id}`
         };
         await deleteDoc(doc(state.db, pathMap[kind]));
       } else {
@@ -3773,6 +3798,7 @@ function upsertStationFromFuelEntry({ station, locationText, gps }) {
           pricePeriods: state.pricePeriods,
           settings: state.settings,
             stations: state.stations,
+            bagSizes: state.bagSizes,
           cars: state.cars,
           fuelEntries: state.fuelEntries
         };
