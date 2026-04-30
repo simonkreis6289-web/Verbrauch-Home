@@ -2213,13 +2213,15 @@ async function upsertStationFromFuelEntry({ station, locationText, gps }) {
     date: new Date().toISOString()
   };
 
-  if (state.firebaseEnabled) {
-    await saveRecord("stations", payload);
-  } else {
-    const localStation = {
-      ...payload,
-      id: generateId()
-    };
+    if (state.firebaseEnabled) {
+      const savedStation = {
+        ...payload,
+        id: generateId()
+      };
+
+      await saveRecord("stations", savedStation);
+      return savedStation;
+    }
 
     state.stations.push(localStation);
     persistLocalSnapshot();
