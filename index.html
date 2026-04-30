@@ -1334,7 +1334,6 @@
     };
 
       let deferredPrompt = null;
-      const GOOGLE_MAPS_API_KEY = "DEIN_GOOGLE_MAPS_API_KEY";
       let fuelMapInstance = null;
       let fuelMapMarkers = [];
       let fuelMapUserMarker = null;
@@ -1705,66 +1704,6 @@
       });
     }
     
-function loadGoogleMapsPlaces() {
-  return new Promise((resolve, reject) => {
-    if (window.google?.maps?.importLibrary) {
-      resolve();
-      return;
-    }
-
-    const existing = document.querySelector("#googleMapsScript");
-    if (existing) {
-      existing.addEventListener("load", resolve);
-      existing.addEventListener("error", reject);
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.id = "googleMapsScript";
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&v=weekly&libraries=places`;
-    script.async = true;
-    script.defer = true;
-    script.onload = resolve;
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
-}
-
-async function findNearbyFuelStationGoogle(latitude, longitude) {
-  try {
-    await loadGoogleMapsPlaces();
-
-    const { Place, SearchNearbyRankPreference } =
-      await google.maps.importLibrary("places");
-
-    const { places } = await Place.searchNearby({
-      fields: ["displayName", "formattedAddress", "location", "googleMapsURI"],
-      locationRestriction: {
-        center: { lat: latitude, lng: longitude },
-        radius: 250
-      },
-      includedPrimaryTypes: ["gas_station"],
-      maxResultCount: 3,
-      rankPreference: SearchNearbyRankPreference.DISTANCE
-    });
-
-    if (!places?.length) return null;
-
-    const place = places[0];
-
-    return {
-      name: place.displayName || "Tankstelle unbekannt",
-      address: place.formattedAddress || "",
-      googleMapsURI: place.googleMapsURI || "",
-      latitude: place.location?.lat?.() ?? latitude,
-      longitude: place.location?.lng?.() ?? longitude
-    };
-  } catch (error) {
-    console.error("Google Places Tankstellen-Suche fehlgeschlagen:", error);
-    return null;
-  }
-}
-
     function syncFuelPricePerLiter() {
       const liters = toNumber(els.fuelLiters?.value);
       const total = toNumber(els.fuelTotalPrice?.value);
@@ -1774,6 +1713,85 @@ async function findNearbyFuelStationGoogle(latitude, longitude) {
       }
     }
 
+async function findNearbyFuelStationOSM(latitude, longitude) {
+  try {
+    const radius = 250;
+    const query = `
+      [out:json][timeout:10];
+      (
+        node["amenity"="fuel"](around:${radius},${latitude},${longitude});
+        way["amenity"="fuel"](around:${radius},${latitude},${longitude});
+        relation["amenity"="fuel"](around:${radius},${latitude},${longitude});
+      );
+      out center tags;
+    `;
+
+    const response = await fetch("https://overpass-api.de/api/interpreter", {
+      method: "POST",
+      body: query
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const stations = data.elements || [];
+
+    if (!stations.length) return null;
+
+    const nearest = stations
+      .map((item) => {
+        const lat = item.lat ?? item.center?.lat;
+        const lon = item.lon ?? item.center?.lon;
+
+        return {
+          raw: item,
+          latitude: lat,
+          longitude: lon,
+          distance: getDistanceMeters(latitude, longitude, lat, lon)
+        };
+      })
+      .filter((item) => Number.isFinite(item.latitude) && Number.isFinite(item.longitude))
+      .sort((a, b) => a.distance - b.distance)[0];
+
+    if (!nearest) return null;
+
+    const tags = nearest.raw.tags || {};
+    const name = tags.name || tags.brand || "Tankstelle unbekannt";
+
+    return {
+      name,
+      address: [
+        tags["addr:street"],
+        tags["addr:housenumber"],
+        tags["addr:postcode"],
+        tags["addr:city"]
+      ].filter(Boolean).join(" "),
+      googleMapsURI: "",
+      latitude: nearest.latitude,
+      longitude: nearest.longitude
+    };
+  } catch (error) {
+    console.error("OSM Tankstellen-Suche fehlgeschlagen:", error);
+    return null;
+  }
+}
+
+function getDistanceMeters(lat1, lon1, lat2, lon2) {
+  const earthRadius = 6371000;
+  const toRad = (value) => value * Math.PI / 180;
+
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) *
+    Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) ** 2;
+
+  return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+      
     function renderCars() {
       if (!els.carList) return;
 
@@ -2478,7 +2496,7 @@ function upsertStationFromFuelEntry({ station, locationText, gps }) {
 
           if (gps) {
             showToast("Tankstelle wird gesucht ...", "success");
-            station = await findNearbyFuelStationGoogle(gps.latitude, gps.longitude);
+            station = await findNearbyFuelStationOSM(gps.latitude, gps.longitude);
 
             if (station && !locationText) {
               locationText = station.name;
