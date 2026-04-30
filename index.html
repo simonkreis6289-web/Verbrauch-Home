@@ -1288,7 +1288,8 @@
       import {
           getMessaging,
           getToken,
-          onMessage
+          onMessage,
+          isSupported
         } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-messaging.js";
       
     const FIREBASE_CONFIG = {
@@ -1343,6 +1344,7 @@
       db: null,
       messaging: null,
       pushToken: null,
+        pushTokens: [],
       unsubscribers: []
     };
 
@@ -2225,22 +2227,21 @@ async function upsertStationFromFuelEntry({ station, locationText, gps }) {
     date: new Date().toISOString()
   };
 
-    if (state.firebaseEnabled) {
-      const savedStation = {
-        ...payload,
-        id: generateId()
-      };
+  const localStation = {
+    ...payload,
+    id: generateId()
+  };
 
-      await saveRecord("stations", savedStation);
-      return savedStation;
-    }
-
+  if (state.firebaseEnabled) {
+    await saveRecord("stations", localStation);
+  } else {
     state.stations.push(localStation);
     persistLocalSnapshot();
     renderStationOptions();
-
-    return localStation;
   }
+
+  return localStation;
+}
 
   return payload;
 }
