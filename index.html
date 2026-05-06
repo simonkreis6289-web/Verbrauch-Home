@@ -502,7 +502,7 @@
         <h1>Zählerstände, Pellets und Kosten im Blick</h1>
         <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
         <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du den Haushalt wechseln oder neu anlegen.</p>
-        <p class="hero-copy">Version 1.0.0.1</p>
+        <p class="hero-copy">Version 1.0.0.2</p>
       </div>
       <div class="hero-actions">
         <button id="installBtn" class="btn secondary hidden" type="button">App installieren</button>
@@ -1774,12 +1774,11 @@ fuelStationSelect: document.getElementById("fuelStationSelect"),
         view.classList.toggle("active", view.id === targetView)
       );
 
-      if (targetView === "carsView") {
-        setTimeout(() => {
-          renderFuelMap();
-          fuelMapInstance?.invalidateSize();
-        }, 120);
-      }
+    if (targetView === "carsView") {
+      setTimeout(() => {
+        renderFuelMap();
+        refreshFuelMapSize();
+      }, 150);
     }
 
     function syncQuickNowUi() {
@@ -1950,6 +1949,7 @@ fuelStationSelect: document.getElementById("fuelStationSelect"),
 
   showToast("Ladevorgang gespeichert.", "success");
 }
+
 function initFuelMap() {
   if (!els.fuelMap || fuelMapInstance) return;
 
@@ -1965,6 +1965,7 @@ function initFuelMap() {
 
 function renderFuelMap() {
   if (!els.fuelMap || typeof L === "undefined") return;
+  if (!isCarsViewVisible()) return;
 
   initFuelMap();
 
@@ -2003,6 +2004,28 @@ function renderFuelMap() {
   setTimeout(() => fuelMapInstance.invalidateSize(), 80);
 }
 
+function isCarsViewVisible() {
+  return document.getElementById("carsView")?.classList.contains("active");
+}
+
+function refreshFuelMapSize() {
+  if (!fuelMapInstance) return;
+
+  setTimeout(() => {
+    fuelMapInstance.invalidateSize();
+
+    const entriesWithGps = state.fuelEntries.filter((entry) =>
+      Number.isFinite(entry.latitude) && Number.isFinite(entry.longitude)
+    );
+
+    if (entriesWithGps.length) {
+      fuelMapInstance.fitBounds(
+        entriesWithGps.map((entry) => [entry.latitude, entry.longitude]),
+        { padding: [28, 28], maxZoom: 15 }
+      );
+    }
+  }, 150);
+}
 
 function renderChargeEntries() {
   if (!els.chargeList) return;
