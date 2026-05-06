@@ -502,7 +502,7 @@
         <h1>Zählerstände, Pellets und Kosten im Blick</h1>
         <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
         <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du den Haushalt wechseln oder neu anlegen.</p>
-        <p class="hero-copy">Version 1.5.0.0</p>
+        <p class="hero-copy">Version 1.1.0.0</p>
       </div>
       <div class="hero-actions">
         <button id="installBtn" class="btn secondary hidden" type="button">App installieren</button>
@@ -2525,13 +2525,23 @@ if (metaContainer) {
     function renderCarOptions() {
       if (!els.fuelCarId) return;
 
-      if (!state.cars.length) {
-        els.fuelCarId.innerHTML = '<option value="">Bitte erst Auto anlegen</option>';
+      const fuelCars = state.cars.filter((car) =>
+        !["electric"].includes(car.fuelType)
+      );
+
+      if (!fuelCars.length) {
+        els.fuelCarId.innerHTML =
+          '<option value="">Bitte erst Verbrenner oder Hybrid anlegen</option>';
         return;
       }
 
-      els.fuelCarId.innerHTML = state.cars
-        .map((car) => `<option value="${car.id}">${escapeHtml(car.name)}${car.plate ? ` · ${escapeHtml(car.plate)}` : ""}</option>`)
+      els.fuelCarId.innerHTML = fuelCars
+        .map((car) => `
+          <option value="${car.id}">
+            ${escapeHtml(car.name)}
+            ${car.plate ? ` · ${escapeHtml(car.plate)}` : ""}
+          </option>
+        `)
         .join("");
     }
 
