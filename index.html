@@ -1795,12 +1795,13 @@
         els.carList.querySelectorAll("[data-car-delete]").forEach((btn) => {
           btn.addEventListener("click", async () => {
             const id = btn.dataset.carDelete;
-            const fuelExists = state.fuelEntries.some((e) => e.carId === id);
+        const fuelExists = state.fuelEntries.some((e) => e.carId === id);
+        const chargeExists = state.chargeEntries.some((e) => e.carId === id);
 
-            if (fuelExists) {
-              showToast("Auto kann nicht gelöscht werden, solange Tankeinträge dafür existieren.", "error");
-              return;
-            }
+        if (fuelExists || chargeExists) {
+          showToast("Auto kann nicht gelöscht werden, solange Tank- oder Ladeeinträge dafür existieren.", "error");
+          return;
+        }
 
             await deleteRecord("cars", id);
             showToast("Auto gelöscht.", "success");
@@ -1977,7 +1978,9 @@ function renderSelectedCarAnalytics() {
     .filter(entry => entry.carId === state.selectedAnalyticsCarId)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-  if (!entries.length) {
+    const chargeStats = getChargeCostStatsForCar(state.selectedAnalyticsCarId);
+
+if (!entries.length && !chargeStats.totalKwh) {
     els.selectedCarStats.innerHTML = '<div class="empty-state">Für dieses Auto sind noch keine Tankdaten vorhanden.</div>';
     els.carConsumptionChart.innerHTML = '<div class="empty-state" style="height:100%;display:grid;place-items:center;">Keine Daten</div>';
     els.carCostChart.innerHTML = '<div class="empty-state" style="height:100%;display:grid;place-items:center;">Keine Daten</div>';
@@ -2008,7 +2011,6 @@ function renderSelectedCarAnalytics() {
   const lastDate = new Date(lastEntry.date);
   const days = Math.max(1, (lastDate - firstDate) / 86400000);
   const yearFactor = 365 / days;
-  const chargeStats = getChargeCostStatsForCar(state.selectedAnalyticsCarId);
   const projectedYearDistance = round2(totalDistance * yearFactor);
   const projectedYearFuelCost = round2(totalCost * yearFactor);
 
@@ -3138,26 +3140,42 @@ if (metaContainer) {
     function renderReadings() {
       const computed = buildComputedReadings();
       els.readingsList.innerHTML = "";
+
       if (!computed.length) {
         els.readingsList.innerHTML = '<div class="empty-state">Noch keine Zählerstände gespeichert.</div>';
         return;
       }
+
       computed.forEach((entry) => {
+        const stromNettoHtml =
+          entry.type === "strom" && Number.isFinite(entry.evChargeKwh) && entry.evChargeKwh > 0
+            ? `<br><small class="muted">Hausstrom netto: ${formatNumber(entry.netDelta)} kWh · E-Auto Laden: ${formatNumber(entry.evChargeKwh)} kWh</small>`
+            : "";
+
         els.readingsList.appendChild(createEntryNode({
           id: entry.id,
           kind: "readings",
           typeLabel: typeConfig[entry.type].label,
           datetime: formatDateTime(entry.date),
-          valueHtml: `${formatNumber(entry.value)} ${typeConfig[entry.type].unit}<br><small class="muted">Verbrauch gesamt: ${formatSigned(entry.delta)} ${typeConfig[entry.type].unit} · pro Tag: ${formatNumber(entry.dailyDelta)} ${typeConfig[entry.type].unit}/Tag · Jahr: ${formatNumber(entry.yearProjection)} ${typeConfig[entry.type].unit}${entry.cost !== null ? ` · ${formatCurrency(entry.cost)}` : ""}${entry.resetApplied ? " · Reset aktiv" : ""}</small>`,
-          note: entry.note || (entry.previousDate ? `Vorheriger Stand: ${formatNumber(entry.previousValue)} am ${formatDateTime(entry.previousDate)}` : "Erster gespeicherter Stand")
-          Verbrauch gesamt: ${formatSigned(entry.delta)} ${typeConfig[entry.type].unit}
-          ${entry.type === "strom" && Number.isFinite(entry.evChargeKwh) && entry.evChargeKwh > 0
-          ? `<br><small class="muted">Hausstrom netto: ${formatNumber(entry.netDelta)} kWh · E-Auto Laden: ${formatNumber(entry.evChargeKwh)} kWh</small>`
-          : ""}
+          valueHtml: `
+            ${formatNumber(entry.value)} ${typeConfig[entry.type].unit}
+            <br>
+            <small class="muted">
+              Verbrauch gesamt: ${formatSigned(entry.delta)} ${typeConfig[entry.type].unit}
+              · pro Tag: ${formatNumber(entry.dailyDelta)} ${typeConfig[entry.type].unit}/Tag
+              · Jahr: ${formatNumber(entry.yearProjection)} ${typeConfig[entry.type].unit}
+              ${entry.cost !== null ? ` · ${formatCurrency(entry.cost)}` : ""}
+              ${entry.resetApplied ? " · Reset aktiv" : ""}
+            </small>
+            ${stromNettoHtml}
+          `,
+          note: entry.note || (entry.previousDate
+            ? `Vorheriger Stand: ${formatNumber(entry.previousValue)} am ${formatDateTime(entry.previousDate)}`
+            : "Erster gespeicherter Stand")
         }));
       });
     }
-    
+
         function getChargeCostStatsForCar(carId) {
           const entries = state.chargeEntries.filter((entry) => entry.carId === carId);
 
@@ -3504,12 +3522,7 @@ if (metaContainer) {
           let cost = null;
           let priceSource = null;
           let evChargeKwh = 0;
-            let netDelta = delta;
-
-            if (type === "strom" && previous) {
-              evChargeKwh = totalHomeChargingKwhBetween(previous.date, entry.date);
-              netDelta = Math.max(0, round2(delta - evChargeKwh));
-            }
+          let netDelta = null;
 
           if (previous) {
             const prevTime = new Date(previous.date).getTime();
@@ -3530,6 +3543,13 @@ if (metaContainer) {
             }
 
             delta = Math.max(0, delta);
+                evChargeKwh = 0;
+                netDelta = delta;
+
+                if (type === "strom") {
+                  evChargeKwh = totalHomeChargingKwhBetween(previous.date, entry.date);
+                  netDelta = Math.max(0, round2(delta - evChargeKwh));
+                }
             dailyDelta = round4(delta / daysBetween);
             yearProjection = round2(dailyDelta * 365);
 
