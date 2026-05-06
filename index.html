@@ -9,7 +9,6 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png" />
   <link rel="apple-touch-icon" href="icon-192.png" />
-     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     :root {
       --bg: #081120;
@@ -89,7 +88,6 @@
       grid-template-columns: repeat(12, 1fr);
       gap: 20px;
     }
-      
     .card {
       grid-column: span 6;
       background: var(--card-solid);
@@ -98,7 +96,6 @@
       padding: 22px;
       box-shadow: var(--shadow);
     }
-      
     .card.wide { grid-column: 1 / -1; }
     .card.glass { background: var(--card); backdrop-filter: blur(20px); }
 
@@ -482,18 +479,6 @@
         
     }
       
-.map-box {
-  height: 360px;
-  border-radius: 18px;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  background: rgba(8, 17, 32, 0.7);
-}
-
-.leaflet-container {
-  background: #0f172a;
-}
-      
   </style>
 </head>
 <body>
@@ -507,7 +492,6 @@
       </div>
       <div class="hero-actions">
         <button id="installBtn" class="btn secondary hidden" type="button">App installieren</button>
-        <button id="enablePushBtn" class="btn secondary" type="button">Push aktivieren</button>
         <button id="exportBackupBtn" class="btn ghost" type="button">Backup exportieren</button>
       </div>
     </header>
@@ -739,7 +723,7 @@
       <div id="pelletInventoryStats" class="stats-grid"></div>
     </section>
 
-      <section class="card wide">
+    <section class="card wide">
       <div class="card-head">
         <div>
           <p class="section-kicker">Historie</p>
@@ -811,12 +795,6 @@
           Datum & Uhrzeit
           <input id="fuelDatetime" type="datetime-local" />
         </label>
-          
-          <label id="fuelStationSelectWrap" class="hidden">
-              Tankstelle auswählen
-              <select id="fuelStationSelect"></select>
-              <small>Wird nur beim Nachtragen angezeigt. GPS-Daten kommen aus der gespeicherten Tankstelle.</small>
-            </label>
 
         <label>
           Liter getankt
@@ -839,12 +817,6 @@
           <input id="fuelMileage" type="number" step="1" min="0" required />
         </label>
 
-<label>
-  Restreichweite vor dem Tanken
-  <input id="fuelRemainingRange" type="number" step="1" min="0" placeholder="optional, z. B. 60" />
-  <small>Optional. Wird sonst automatisch geschätzt.</small>
-</label>
-
         <label class="span-12">
           Notiz
           <input id="fuelNote" type="text" maxlength="160" placeholder="optional" />
@@ -856,6 +828,67 @@
         </div>
       </form>
     </section>
+    
+    <section class="card glass">
+  <div class="card-head">
+    <div>
+      <p class="section-kicker">E-Auto laden</p>
+      <h2>Ladevorgang zu Hause erfassen</h2>
+    </div>
+    <span class="badge ok">wird vom Hausstrom abgezogen</span>
+  </div>
+
+  <form id="chargeForm" class="form-grid">
+    <label>
+      E-Auto
+      <select id="chargeCarId" required></select>
+    </label>
+
+    <label>
+      Eingabeart
+      <select id="chargeMode">
+        <option value="single">Einzelner Ladevorgang</option>
+        <option value="period">Zeitraum / Summe</option>
+      </select>
+    </label>
+
+    <label>
+      Von
+      <input id="chargeFrom" type="datetime-local" required />
+    </label>
+
+    <label>
+      Bis
+      <input id="chargeTo" type="datetime-local" required />
+    </label>
+
+    <label>
+      Geladene kWh
+      <input id="chargeKwh" type="number" step="0.01" min="0.01" required />
+    </label>
+
+    <label class="span-12">
+      Notiz
+      <input id="chargeNote" type="text" maxlength="160" placeholder="optional" />
+    </label>
+
+    <div class="form-actions span-12">
+      <button type="submit" class="btn primary">Ladevorgang speichern</button>
+      <button type="reset" class="btn ghost">Leeren</button>
+    </div>
+  </form>
+</section>
+
+<section class="card wide">
+  <div class="card-head">
+    <div>
+      <p class="section-kicker">Ladehistorie</p>
+      <h2>E-Auto Ladevorgänge</h2>
+    </div>
+  </div>
+  <div id="chargeList" class="list-stack"></div>
+</section>
+
 
     <section class="card">
       <div class="card-head">
@@ -866,57 +899,51 @@
       </div>
       <div id="fuelStats" class="stats-grid"></div>
     </section>
-  <section class="card wide glass">
+
+    <section class="card wide">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Historie</p>
+          <h2>Tankvorgänge</h2>
+        </div>
+      </div>
+      <div id="fuelList" class="list-stack"></div>
+    </section>
+      <section class="card wide glass">
   <div class="card-head">
     <div>
-      <p class="section-kicker">Auto-Auswertung</p>
-      <h2>Verbrauch, Kosten und Jahreshochrechnung</h2>
-    </div>
-    <span class="badge ok">pro Auto</span>
-  </div>
-
-  <div id="selectedCarStats" class="kpi-grid"></div>
-
-  <div class="split-grid" style="margin-top:18px;">
-    <article class="chart-card span-6">
-      <h3>Verbrauch auf 100 km</h3>
-      <div class="muted" id="carConsumptionChartMeta"></div>
-      <div id="carConsumptionChart" class="chart clickable"></div>
-    </article>
-
-    <article class="chart-card span-6">
-      <h3>Kosten auf 100 km</h3>
-      <div class="muted" id="carCostChartMeta"></div>
-      <div id="carCostChart" class="chart clickable"></div>
-    </article>
-  </div>
-</section>
-      
-<section class="card wide">
-  <div class="card-head">
-    <div>
-      <p class="section-kicker">Tankorte</p>
-      <h2>Gespeicherte Standorte auf der Karte</h2>
-    </div>
-    <span class="badge ok">GPS</span>
-  </div>
-    <div class="form-actions" style="margin-bottom:12px;">
-  <button id="showLiveLocationBtn" class="btn secondary" type="button">
-    Live-Standort anzeigen
-  </button>
-</div>
-  <div id="fuelMap" class="map-box"></div>
-</section>
-      
-<section class="card wide">
-  <div class="card-head">
-    <div>
-      <p class="section-kicker">Historie</p>
-      <h2>Tankvorgänge</h2>
+      <p class="section-kicker">Auswertung</p>
+      <h2>Verbrauch, Kosten und Hochrechnung</h2>
     </div>
   </div>
-  <div id="fuelList" class="list-stack"></div>
+<div id="selectedCarStats" class="kpi-grid"></div>
 </section>
+
+    <section class="card wide">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Verbrauchskurve</p>
+          <h2>Liter pro 100 km</h2>
+        </div>
+      </div>
+      <article class="chart-card">
+        <div class="muted" id="carConsumptionChartMeta"></div>
+        <div id="carConsumptionChart" class="chart clickable"></div>
+      </article>
+    </section>
+
+    <section class="card wide">
+      <div class="card-head">
+        <div>
+          <p class="section-kicker">Kostenkurve</p>
+          <h2>Kosten pro 100 km</h2>
+        </div>
+      </div>
+      <article class="chart-card">
+        <div class="muted" id="carCostChartMeta"></div>
+        <div id="carCostChart" class="chart clickable"></div>
+      </article>
+    </section>
       
   </div>
 </section>
@@ -991,8 +1018,24 @@
             <option value="super_plus">Super Plus</option>
             <option value="e10">E10</option>
             <option value="lpg">LPG</option>
+            <option value="electric">Elektro</option>
+            <option value="hybrid">Hybrid</option>
+            <option value="plug_in_hybrid">Plug-in-Hybrid</option>
             <option value="sonstiges">Sonstiges</option>
           </select>
+        </label>
+        
+        <label>
+          Nutzung
+          <select id="carOwnership">
+            <option value="private">Privateigentum</option>
+            <option value="company">Firmenwagen</option>
+          </select>
+        </label>
+
+        <label>
+          Firma
+          <input id="carCompanyName" type="text" maxlength="120" placeholder="optional, z. B. Muster GmbH" />
         </label>
 
         <label>
@@ -1270,8 +1313,6 @@
       </div>
     </article>
   </template>
-      
-      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
@@ -1291,13 +1332,6 @@
       getDocs
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-      import {
-          getMessaging,
-          getToken,
-          onMessage,
-          isSupported
-        } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-messaging.js";
-      
     const FIREBASE_CONFIG = {
       apiKey: "AIzaSyBrKjajSNPgmFUwjMghkox1kM8NjbCWZ_Y",
       authDomain: "verbrauch-zuhause.firebaseapp.com",
@@ -1308,12 +1342,10 @@
       measurementId: "G-L0GQQ8V785"
     };
 
-    const FCM_VAPID_KEY = "BCifuRnuLzoDL5f7jnfgv-cWdtHNAeN4QD5BaAYtHAcBgYn69JGvksIaOsZX-daVnL7bC_vRFP2pSvzqKpWxR3I";
-      
     const DEFAULT_HOUSEHOLD_ID = "zuhause-haupt";
     const LOCAL_KEYS = {
       householdId: "verbrauch-household-id-v1",
-      localData: "verbrauch-local-data-v9",
+      localData: "verbrauch-local-data-v8",
       lastBagSize: "verbrauch-last-bag-size-v1"
     };
 
@@ -1334,7 +1366,6 @@
     const state = {      
       cars: [],
       fuelEntries: [],
-        stations: [],        
       selectedAnalyticsCarId: null,
       readings: [],
       refills: [],
@@ -1344,21 +1375,16 @@
       settings: structuredClone(defaultSettings),
       householdId: localStorage.getItem(LOCAL_KEYS.householdId) || DEFAULT_HOUSEHOLD_ID,
       availableHouseholds: [],
+      chargeEntries: [],
       bagSizes: [...defaultBagSizes],
       firebaseEnabled: false,
       app: null,
       db: null,
-      messaging: null,
-      pushToken: null,
-        pushTokens: [],
       unsubscribers: []
     };
 
-      let deferredPrompt = null;
-      let fuelMapInstance = null;
-      let fuelMapMarkers = [];
-      let fuelMapUserMarker = null;
-      
+    let deferredPrompt = null;
+
     const els = {
       mainTabs: document.getElementById("mainTabs"),
       views: document.querySelectorAll(".view"),
@@ -1366,8 +1392,7 @@
       exportBackupBtn: document.getElementById("exportBackupBtn"),
       firebaseStatus: document.getElementById("firebaseStatus"),
       syncBadge: document.getElementById("syncBadge"),
-      enablePushBtn: document.getElementById("enablePushBtn"),
-        fuelRemainingRange: document.getElementById("fuelRemainingRange"),
+
       batchReadingForm: document.getElementById("batchReadingForm"),
       batchReadingDatetime: document.getElementById("batchReadingDatetime"),
       batchReadingNote: document.getElementById("batchReadingNote"),
@@ -1485,10 +1510,17 @@
       fuelStats: document.getElementById("fuelStats"),
       fuelUseGps: document.getElementById("fuelUseGps"),
       fuelLocationText: document.getElementById("fuelLocationText"),
-        fuelMap: document.getElementById("fuelMap"),
-        showLiveLocationBtn: document.getElementById("showLiveLocationBtn"),
-        fuelStationSelect: document.getElementById("fuelStationSelect"),
-        fuelStationSelectWrap: document.getElementById("fuelStationSelectWrap"),
+      carOwnership: document.getElementById("carOwnership"),
+        carCompanyName: document.getElementById("carCompanyName"),
+
+        chargeForm: document.getElementById("chargeForm"),
+        chargeCarId: document.getElementById("chargeCarId"),
+        chargeMode: document.getElementById("chargeMode"),
+        chargeFrom: document.getElementById("chargeFrom"),
+        chargeTo: document.getElementById("chargeTo"),
+        chargeKwh: document.getElementById("chargeKwh"),
+        chargeNote: document.getElementById("chargeNote"),
+        chargeList: document.getElementById("chargeList"),
     };
 
     init();
@@ -1514,7 +1546,6 @@
 
     function setDefaultDatetimes() {
       const now = toDatetimeLocal(new Date());
-        syncFuelStationUi();
       els.batchReadingDatetime.value = now;
       els.quickReadingDatetime.value = now;
       els.purchaseDatetime.value = now;
@@ -1524,6 +1555,8 @@
       els.refillDate.value = now.slice(0, 10);
       els.resetNewValue.value = 0;
           if (els.fuelDatetime) els.fuelDatetime.value = now;
+          if (els.chargeFrom) els.chargeFrom.value = now;
+          if (els.chargeTo) els.chargeTo.value = now;
     }
 
     function restoreLocalData() {
@@ -1539,7 +1572,7 @@
       state.pricePeriods = normalizeDateArray(local.pricePeriods || []);
       state.settings = mergeSettings(local.settings || defaultSettings);
       state.cars = local.cars || [];
-        state.stations = local.stations || [];
+      state.chargeEntries = normalizeDateArray(local.chargeEntries || []);
       state.fuelEntries = normalizeDateArray(local.fuelEntries || []);
       state.bagSizes = normalizeBagSizes(local.bagSizes || defaultBagSizes);
       fillSettingsForm();
@@ -1549,7 +1582,7 @@
     function registerEvents() {
       els.mainTabs?.addEventListener("click", handleTabClick);
       els.exportBackupBtn?.addEventListener("click", exportBackup);
-      els.enablePushBtn?.addEventListener("click", enablePushNotifications);
+
       els.quickUseNow?.addEventListener("change", syncQuickNowUi);
 
       els.batchReadingForm?.addEventListener("submit", handleBatchReadingSubmit);
@@ -1598,6 +1631,7 @@
       
       els.carForm?.addEventListener("submit", handleCarSubmit);
 
+      els.fuelUseNow?.addEventListener("change", syncFuelNowUi);
       els.fuelLiters?.addEventListener("input", syncFuelPricePerLiter);
       els.fuelTotalPrice?.addEventListener("input", syncFuelPricePerLiter);
       els.fuelForm?.addEventListener("submit", handleFuelSubmit);
@@ -1605,20 +1639,22 @@
         if (els.fuelUseNow) els.fuelUseNow.checked = true;
         if (els.fuelDatetime) els.fuelDatetime.value = toDatetimeLocal(new Date());
         syncFuelNowUi();
-        syncFuelStationUi();
         syncFuelPricePerLiter();
       }, 0));
-          els.fuelUseNow?.addEventListener("change", () => {
-              syncFuelNowUi();
-              syncFuelStationUi();
-            });
+      
           els.analyticsCarSelect?.addEventListener("change", () => {
             state.selectedAnalyticsCarId = els.analyticsCarSelect.value || null;
           renderSelectedCarAnalytics();
         });
       els.carConsumptionChart?.addEventListener("click", () => openCarChartOverlay("consumption"));
       els.carCostChart?.addEventListener("click", () => openCarChartOverlay("cost"));
-      els.showLiveLocationBtn?.addEventListener("click", showLiveLocationOnMap);
+      els.chargeForm?.addEventListener("submit", handleChargeSubmit);
+
+    els.chargeForm?.addEventListener("reset", () => setTimeout(() => {
+      const now = toDatetimeLocal(new Date());
+      els.chargeFrom.value = now;
+      els.chargeTo.value = now;
+    }, 0));
       
       els.chartStrom?.addEventListener("click", () => openChartOverlay("strom"));
       els.chartWasser?.addEventListener("click", () => openChartOverlay("wasser"));
@@ -1631,17 +1667,6 @@
         if (event.key === "Escape") closeChartOverlay();
       });
     }
-
-function getAverageRemainingRangeForCar(carId) {
-  const values = state.fuelEntries
-    .filter((entry) => entry.carId === carId)
-    .map((entry) => toNumber(entry.remainingRange))
-    .filter((value) => Number.isFinite(value) && value >= 0);
-
-  if (!values.length) return null;
-
-  return round2(values.reduce((sum, value) => sum + value, 0) / values.length);
-}
 
     function registerInstallHandling() {
       window.addEventListener("beforeinstallprompt", (event) => {
@@ -1683,13 +1708,6 @@ function getAverageRemainingRangeForCar(carId) {
       const targetView = button.dataset.view;
       document.querySelectorAll(".tab").forEach((tab) => tab.classList.toggle("active", tab === button));
       els.views.forEach((view) => view.classList.toggle("active", view.id === targetView));
-        if (targetView === "carsView") {
-          setTimeout(() => {
-            renderFuelMap();
-            if (fuelMapInstance) fuelMapInstance.invalidateSize();
-          }, 250);
-        }
-        
     }
 
     function syncQuickNowUi() {
@@ -1736,7 +1754,7 @@ function getAverageRemainingRangeForCar(carId) {
         );
       });
     }
-    
+
     function syncFuelPricePerLiter() {
       const liters = toNumber(els.fuelLiters?.value);
       const total = toNumber(els.fuelTotalPrice?.value);
@@ -1746,91 +1764,13 @@ function getAverageRemainingRangeForCar(carId) {
       }
     }
 
-async function findNearbyFuelStationOSM(latitude, longitude) {
-  try {
-    const radius = 250;
-    const query = `
-      [out:json][timeout:10];
-      (
-        node["amenity"="fuel"](around:${radius},${latitude},${longitude});
-        way["amenity"="fuel"](around:${radius},${latitude},${longitude});
-        relation["amenity"="fuel"](around:${radius},${latitude},${longitude});
-      );
-      out center tags;
-    `;
-
-    const response = await fetch("https://overpass-api.de/api/interpreter", {
-      method: "POST",
-      body: query
-    });
-
-    if (!response.ok) return null;
-
-    const data = await response.json();
-    const stations = data.elements || [];
-
-    if (!stations.length) return null;
-
-    const nearest = stations
-      .map((item) => {
-        const lat = item.lat ?? item.center?.lat;
-        const lon = item.lon ?? item.center?.lon;
-
-        return {
-          raw: item,
-          latitude: lat,
-          longitude: lon,
-          distance: getDistanceMeters(latitude, longitude, lat, lon)
-        };
-      })
-      .filter((item) => Number.isFinite(item.latitude) && Number.isFinite(item.longitude))
-      .sort((a, b) => a.distance - b.distance)[0];
-
-    if (!nearest) return null;
-
-    const tags = nearest.raw.tags || {};
-    const name = tags.name || tags.brand || "Tankstelle unbekannt";
-
-    return {
-      name,
-      address: [
-        tags["addr:street"],
-        tags["addr:housenumber"],
-        tags["addr:postcode"],
-        tags["addr:city"]
-      ].filter(Boolean).join(" "),
-      googleMapsURI: "",
-      latitude: nearest.latitude,
-      longitude: nearest.longitude
-    };
-  } catch (error) {
-    console.error("OSM Tankstellen-Suche fehlgeschlagen:", error);
-    return null;
-  }
-}
-
-function getDistanceMeters(lat1, lon1, lat2, lon2) {
-  const earthRadius = 6371000;
-  const toRad = (value) => value * Math.PI / 180;
-
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) *
-    Math.cos(toRad(lat2)) *
-    Math.sin(dLon / 2) ** 2;
-
-  return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-      
     function renderCars() {
       if (!els.carList) return;
 
       renderCarOptions();
       renderAnalyticsCarOptions();
-        
+        renderChargeCarOptions();
+    
       if (!state.cars.length) {
         els.carList.innerHTML = '<div class="empty-state">Noch keine Autos angelegt.</div>';
         return;
@@ -1867,6 +1807,120 @@ function getDistanceMeters(lat1, lon1, lat2, lon2) {
           });
         });
             }
+            
+    function calculateElectricityCostForKwh(startIso, endIso, kwh) {
+      if (!Number.isFinite(kwh) || kwh <= 0) return 0;
+
+      const daysBetween = Math.max(
+        1 / 24,
+        (new Date(endIso).getTime() - new Date(startIso).getTime()) / 86400000
+      );
+
+      const pricing = calculateCostForInterval("strom", startIso, endIso, kwh, daysBetween);
+
+      return round2(pricing.cost || 0);
+    }
+    
+    async function handleChargeSubmit(event) {
+  event.preventDefault();
+
+  const carId = els.chargeCarId.value;
+  const car = state.cars.find((c) => c.id === carId);
+
+  const mode = els.chargeMode?.value || "single";
+  const from = new Date(els.chargeFrom.value);
+  const to = new Date(els.chargeTo.value);
+  const kwh = toNumber(els.chargeKwh.value);
+  const note = els.chargeNote?.value?.trim() || "";
+
+  if (!carId || !car) return showToast("Bitte ein E-Auto auswählen.", "error");
+  if (Number.isNaN(from.getTime())) return showToast("Bitte gültiges Startdatum eingeben.", "error");
+  if (Number.isNaN(to.getTime())) return showToast("Bitte gültiges Enddatum eingeben.", "error");
+  if (to < from) return showToast("Bis darf nicht vor Von liegen.", "error");
+  if (!Number.isFinite(kwh) || kwh <= 0) return showToast("Bitte gültige kWh eingeben.", "error");
+
+  const ownership = car.ownership || "private";
+  const companyName = car.companyName || "";
+  const isCompany = ownership === "company";
+
+  const electricityCost = calculateElectricityCostForKwh(
+    from.toISOString(),
+    to.toISOString(),
+    round2(kwh)
+  );
+
+  await saveRecord("chargeEntries", {
+    carId,
+    mode,
+    kwh: round2(kwh),
+    fromDate: from.toISOString(),
+    toDate: to.toISOString(),
+    date: to.toISOString(),
+    location: "home",
+
+    ownership,
+    companyName,
+    isReimbursable: isCompany,
+    electricityCost: round2(electricityCost),
+    reimbursementAmount: isCompany ? round2(electricityCost) : 0,
+    netElectricityCost: isCompany ? 0 : round2(electricityCost),
+
+    note,
+    createdAt: new Date().toISOString()
+  });
+
+  els.chargeForm.reset();
+
+  const now = toDatetimeLocal(new Date());
+  els.chargeFrom.value = now;
+  els.chargeTo.value = now;
+
+  showToast("Ladevorgang gespeichert.", "success");
+}
+
+function renderChargeEntries() {
+  if (!els.chargeList) return;
+
+  const entries = [...state.chargeEntries].sort((a, b) => new Date(b.date) - new Date(a.date));
+  els.chargeList.innerHTML = "";
+
+  if (!entries.length) {
+    els.chargeList.innerHTML = '<div class="empty-state">Noch keine Ladevorgänge gespeichert.</div>';
+    return;
+  }
+
+  entries.forEach((entry) => {
+    const car = state.cars.find((c) => c.id === entry.carId);
+    const carName = car ? car.name : "Unbekanntes E-Auto";
+
+    const reimbursementText = entry.isReimbursable
+      ? ` · Erstattung ${formatCurrency(entry.reimbursementAmount)} · netto ${formatCurrency(entry.netElectricityCost)}`
+      : ` · Kosten ${formatCurrency(entry.netElectricityCost)}`;
+
+    const node = createEntryNode({
+      id: entry.id,
+      kind: "chargeEntries",
+      typeLabel: `Laden · ${carName}`,
+      datetime: `${formatDateTime(entry.fromDate)} → ${formatDateTime(entry.toDate)}`,
+      valueHtml: `
+        ${formatNumber(entry.kwh)} kWh
+        <br>
+        <small class="muted">
+          ${entry.mode === "period" ? "Zeitraum / Summe" : "Einzelladung"}
+          · ${entry.ownership === "company" ? "Firmenwagen" : "Privateigentum"}
+          · brutto ${formatCurrency(entry.electricityCost)}
+          ${reimbursementText}
+        </small>
+      `,
+      note: [
+        entry.companyName ? `Firma: ${entry.companyName}` : "",
+        entry.note || ""
+      ].filter(Boolean).join(" · ") || "Keine Notiz"
+    });
+
+    els.chargeList.appendChild(node);
+  });
+}
 
 function renderAnalyticsCarOptions() {
   if (!els.analyticsCarSelect) return;
@@ -1954,7 +2008,7 @@ function renderSelectedCarAnalytics() {
   const lastDate = new Date(lastEntry.date);
   const days = Math.max(1, (lastDate - firstDate) / 86400000);
   const yearFactor = 365 / days;
-
+  const chargeStats = getChargeCostStatsForCar(state.selectedAnalyticsCarId);
   const projectedYearDistance = round2(totalDistance * yearFactor);
   const projectedYearFuelCost = round2(totalCost * yearFactor);
 
@@ -2023,7 +2077,14 @@ function renderSelectedCarAnalytics() {
         sub: `${projectedFuelCostText} Kraftstoffkosten/Jahr`,
         icon: "📈",
         accent: "accent-green"
-      })
+      }),
+      createKpiCard({
+          label: "Ladestrom",
+          value: `${formatNumber(chargeStats.totalKwh)} kWh`,
+          sub: `brutto ${formatCurrency(chargeStats.grossCost)} · Erstattung ${formatCurrency(chargeStats.reimbursedCost)} · netto ${formatCurrency(chargeStats.netCost)}`,
+          icon: "🔌",
+          accent: "accent-violet"
+        })
     ].join("");
     
 if (els.carConsumptionChartMeta && car?.name) {
@@ -2125,174 +2186,6 @@ if (metaContainer) {
   return metaText;
 }
 
-function renderFuelMap() {
-  if (!els.fuelMap || typeof L === "undefined") return;
-
-    const entries = state.fuelEntries
-      .filter(entry =>
-        (!state.selectedAnalyticsCarId || entry.carId === state.selectedAnalyticsCarId) &&
-        entry.gps &&
-        Number.isFinite(entry.gps.latitude) &&
-        Number.isFinite(entry.gps.longitude)
-      );
-
-  if (!fuelMapInstance) {
-    fuelMapInstance = L.map(els.fuelMap).setView([51.1657, 10.4515], 6);
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: "&copy; OpenStreetMap"
-    }).addTo(fuelMapInstance);
-  }
-
-  fuelMapMarkers.forEach(marker => marker.remove());
-  fuelMapMarkers = [];
-
-  if (!entries.length) {
-    fuelMapInstance.setView([51.1657, 10.4515], 6);
-    return;
-  }
-
-  const bounds = [];
-
-  entries.forEach(entry => {
-    const lat = entry.gps.latitude;
-    const lng = entry.gps.longitude;
-    const car = state.cars.find(c => c.id === entry.carId);
-
-    const marker = L.marker([lat, lng])
-      .addTo(fuelMapInstance)
-      .bindPopup(`
-        <strong>${escapeHtml(car?.name || "Auto")}</strong><br>
-        ${formatDateTime(entry.date)}<br>
-        ${formatNumber(entry.liters)} l · ${formatCurrency(entry.totalPrice)}<br>
-        ${entry.locationText ? escapeHtml(entry.locationText) : "Kein Ortsname"}
-      `);
-
-    fuelMapMarkers.push(marker);
-    bounds.push([lat, lng]);
-  });
-
-  fuelMapInstance.fitBounds(bounds, { padding: [30, 30] });
-
-  setTimeout(() => {
-    fuelMapInstance.invalidateSize();
-  }, 200);
-    setTimeout(() => {
-      fuelMapInstance.invalidateSize();
-
-      if (fuelMapMarkers.length) {
-        const group = L.featureGroup([
-          ...fuelMapMarkers,
-          ...(fuelMapUserMarker ? [fuelMapUserMarker] : [])
-        ]);
-        fuelMapInstance.fitBounds(group.getBounds(), { padding: [40, 40] });
-      }
-    }, 300);
-    }
-
-function renderStationOptions() {
-  if (!els.fuelStationSelect) return;
-
-  if (!state.stations.length) {
-    els.fuelStationSelect.innerHTML = '<option value="">Noch keine Tankstelle gespeichert</option>';
-    return;
-  }
-
-  els.fuelStationSelect.innerHTML = [
-    '<option value="">Keine / manuell</option>',
-    ...state.stations.map((station) => `
-      <option value="${station.id}">
-        ${escapeHtml(station.name)}${station.address ? ` · ${escapeHtml(station.address)}` : ""}
-      </option>
-    `)
-  ].join("");
-}
-
-function syncFuelStationUi() {
-  const useNow = !!els.fuelUseNow?.checked;
-  els.fuelStationSelectWrap?.classList.toggle("hidden", useNow);
-  renderStationOptions();
-}
-
-function findStationById(id) {
-  return state.stations.find((station) => station.id === id) || null;
-}
-
-async function upsertStationFromFuelEntry({ station, locationText, gps }) {
-  const name = station?.name || locationText || "";
-  const latitude = station?.latitude ?? gps?.latitude ?? null;
-  const longitude = station?.longitude ?? gps?.longitude ?? null;
-
-  if (!name || latitude == null || longitude == null) return null;
-
-  const normalizedName = name.trim().toLowerCase();
-
-  const existing = state.stations.find((item) =>
-    item.name?.trim().toLowerCase() === normalizedName
-  );
-
-  if (existing) return existing;
-
-  const payload = {
-    name,
-    address: station?.address || "",
-    googleMapsURI: station?.googleMapsURI || "",
-    latitude,
-    longitude,
-    createdAt: new Date().toISOString(),
-    date: new Date().toISOString()
-  };
-
-  const localStation = {
-    ...payload,
-    id: generateId()
-  };
-
-  if (state.firebaseEnabled) {
-    await saveRecord("stations", localStation);
-  } else {
-    state.stations.push(localStation);
-    persistLocalSnapshot();
-    renderStationOptions();
-  }
-
-  return localStation;
-}
-  
-
-    async function showLiveLocationOnMap() {
-      if (!els.fuelMap || typeof L === "undefined") return;
-
-      const gps = await getCurrentPositionSafe();
-
-      if (!gps) {
-        showToast("Live-Standort konnte nicht erfasst werden.", "error");
-        return;
-      }
-
-      if (!fuelMapInstance) {
-        renderFuelMap();
-      }
-
-      if (fuelMapUserMarker) {
-        fuelMapUserMarker.remove();
-      }
-
-      fuelMapUserMarker = L.circleMarker([gps.latitude, gps.longitude], {
-        radius: 7,
-        color: "#02029e",
-        fillColor: "#02029e",
-        fillOpacity: 0.95
-      })
-        .addTo(fuelMapInstance)
-        .bindPopup("📍 Dein aktueller Standort");
-
-      fuelMapInstance.setView([gps.latitude, gps.longitude], 15);
-
-      setTimeout(() => fuelMapInstance.invalidateSize(), 200);
-    }
-
     function openCarChartOverlay(mode) {
       const entries = [...state.fuelEntries]
         .filter(entry => entry.carId === state.selectedAnalyticsCarId)
@@ -2349,55 +2242,43 @@ async function upsertStationFromFuelEntry({ station, locationText, gps }) {
         .join("");
     }
 
-function renderFuelEntries() {
-  if (!els.fuelList) return;
+    function renderFuelEntries() {
+      if (!els.fuelList) return;
 
-  const entries = [...state.fuelEntries].sort((a, b) => new Date(b.date) - new Date(a.date));
-  els.fuelList.innerHTML = "";
+      const entries = [...state.fuelEntries].sort((a, b) => new Date(b.date) - new Date(a.date));
+      els.fuelList.innerHTML = "";
 
-  if (!entries.length) {
-    els.fuelList.innerHTML = '<div class="empty-state">Noch keine Tankvorgänge gespeichert.</div>';
-    renderFuelStats();
-    return;
-  }
+      if (!entries.length) {
+        els.fuelList.innerHTML = '<div class="empty-state">Noch keine Tankvorgänge gespeichert.</div>';
+        renderFuelStats();
+        return;
+      }
 
-  entries.forEach((entry) => {
-    const car = state.cars.find((c) => c.id === entry.carId);
-    const carName = car ? car.name : "Unbekanntes Auto";
+      entries.forEach((entry) => {
+        const car = state.cars.find((c) => c.id === entry.carId);
+        const carName = car ? car.name : "Unbekanntes Auto";
+        const node = createEntryNode({
+          id: entry.id,
+          kind: "fuelEntries",
+          typeLabel: `Tanken · ${carName}`,
+          datetime: formatDateTime(entry.date),
+            valueHtml: `
+              ${formatNumber(entry.liters)} l · ${formatCurrency(entry.totalPrice)}
+              <br>
+              <small class="muted">
+                ${formatCurrency(entry.pricePerLiter)}/l · ${formatNumber(entry.mileage)} km
+                ${Number.isFinite(entry.distanceKm) ? ` · Strecke ${formatNumber(entry.distanceKm)} km` : ""}
+                ${Number.isFinite(entry.litersPer100km) ? ` · ${formatNumber(entry.litersPer100km)} l/100km` : ""}
+                ${Number.isFinite(entry.costPer100km) ? ` · ${formatCurrency(entry.costPer100km)}/100km` : ""}
+              </small>
+            `,
+            note: entry.note || "Keine Notiz"
+        });
+        els.fuelList.appendChild(node);
+      });
 
-    const remainingRangeText = Number.isFinite(entry.remainingRange)
-      ? ` · Rest ${formatNumber(entry.remainingRange)} km${entry.remainingRangeSource === "average" ? " (geschätzt)" : ""}`
-      : "";
-
-    const node = createEntryNode({
-      id: entry.id,
-      kind: "fuelEntries",
-      typeLabel: `Tanken · ${carName}`,
-      datetime: formatDateTime(entry.date),
-      valueHtml: `
-        ${formatNumber(entry.liters)} l · ${formatCurrency(entry.totalPrice)}
-        <br>
-        <small class="muted">
-          ${formatCurrency(entry.pricePerLiter)}/l · ${formatNumber(entry.mileage)} km
-          ${remainingRangeText}
-          ${Number.isFinite(entry.distanceKm) ? ` · Strecke ${formatNumber(entry.distanceKm)} km` : ""}
-          ${Number.isFinite(entry.litersPer100km) ? ` · ${formatNumber(entry.litersPer100km)} l/100km` : ""}
-          ${Number.isFinite(entry.costPer100km) ? ` · ${formatCurrency(entry.costPer100km)}/100km` : ""}
-        </small>
-      `,
-      note: [
-        entry.station?.name ? `Tankstelle: ${entry.station.name}` : "",
-        entry.station?.address ? entry.station.address : "",
-        !entry.station?.name && entry.locationText ? `Ort: ${entry.locationText}` : "",
-        entry.note || ""
-      ].filter(Boolean).join(" · ") || "Keine Notiz"
-    });
-
-    els.fuelList.appendChild(node);
-  });
-
-  renderFuelStats();
-}
+      renderFuelStats();
+    }
 
     function renderFuelStats() {
       if (!els.fuelStats) return;
@@ -2446,6 +2327,8 @@ function renderFuelEntries() {
       const plate = els.carPlate?.value?.trim() || "";
       const fuelType = els.carFuelType?.value || "sonstiges";
       const note = els.carNote?.value?.trim() || "";
+        const ownership = els.carOwnership?.value || "private";
+        const companyName = els.carCompanyName?.value?.trim() || "";
 
       if (!name) {
         showToast("Bitte einen Auto-Namen eingeben.", "error");
@@ -2466,6 +2349,8 @@ function renderFuelEntries() {
         name,
         plate,
         fuelType,
+        ownership,
+        companyName,
         note,
         createdAt: new Date().toISOString(),
         date: new Date().toISOString()
@@ -2508,57 +2393,12 @@ function renderFuelEntries() {
       }
 
       const carId = els.fuelCarId.value;
-        state.selectedAnalyticsCarId = carId;
-
-        if (els.analyticsCarSelect) {
-          els.analyticsCarSelect.value = carId;
-        }
       const liters = toNumber(els.fuelLiters.value);
       const totalPrice = toNumber(els.fuelTotalPrice.value);
       const mileage = toNumber(els.fuelMileage.value);
-        const note = els.fuelNote.value.trim();        
-        let locationText = els.fuelLocationText?.value?.trim() || "";
-        let gps = null;
-        let station = null;
-        const selectedStation = findStationById(els.fuelStationSelect?.value || "");
-
-        if (!useNow && selectedStation) {
-          station = {
-            name: selectedStation.name,
-            address: selectedStation.address || "",
-            googleMapsURI: selectedStation.googleMapsURI || "",
-            latitude: selectedStation.latitude,
-            longitude: selectedStation.longitude
-          };
-
-          gps = {
-            latitude: selectedStation.latitude,
-            longitude: selectedStation.longitude,
-            accuracy: null,
-            capturedAt: new Date().toISOString(),
-            source: "saved-station"
-          };
-
-          locationText = selectedStation.name;
-        }
-
-        if (useNow && els.fuelUseGps?.checked) {
-          showToast("Standort wird erfasst ...", "success");
-          gps = await getCurrentPositionSafe();
-
-          if (gps) {
-            showToast("Tankstelle wird gesucht ...", "success");
-            station = await findNearbyFuelStationOSM(gps.latitude, gps.longitude);
-
-            if (station && !locationText) {
-              locationText = station.name;
-            }
-          }
-        }
-
+      const note = els.fuelNote.value.trim();
       const pricePerLiter = liters > 0 ? round4(totalPrice / liters) : 0;
-const enteredRemainingRange = toNumber(els.fuelRemainingRange?.value);
-const averageRemainingRange = getAverageRemainingRangeForCar(carId);
+
       if (!carId) {
         showToast("Bitte ein Auto auswählen.", "error");
         return;
@@ -2591,15 +2431,6 @@ const averageRemainingRange = getAverageRemainingRangeForCar(carId);
         showToast("Dieser Tankvorgang ist bereits vorhanden.", "error");
         return;
       }
-const remainingRange = Number.isFinite(enteredRemainingRange)
-  ? enteredRemainingRange
-  : averageRemainingRange;
-
-const remainingRangeSource = Number.isFinite(enteredRemainingRange)
-  ? "manual"
-  : Number.isFinite(averageRemainingRange)
-    ? "average"
-    : "unknown";
 
       const sameTimeOtherValue = state.fuelEntries.find((entry) =>
         entry.carId === carId &&
@@ -2636,54 +2467,25 @@ const remainingRangeSource = Number.isFinite(enteredRemainingRange)
           }
         }
 
-        state.selectedAnalyticsCarId = carId;
-        if (els.analyticsCarSelect) els.analyticsCarSelect.value = carId;
-
-        const savedStation = await upsertStationFromFuelEntry({ station, locationText, gps });
-
-        if (savedStation) {
-          station = {
-            name: savedStation.name,
-            address: savedStation.address,
-            googleMapsURI: savedStation.googleMapsURI,
-            latitude: savedStation.latitude,
-            longitude: savedStation.longitude
-          };
-        }
-
-  await saveRecord("fuelEntries", {
-  carId,
-  liters,
-  totalPrice: round2(totalPrice),
-  pricePerLiter,
-  mileage,
-  remainingRange,
-  remainingRangeSource,
-  distanceKm,
-  litersPer100km,
-  costPer100km,
-  locationText,
-  station,
-  gps,
-  note,
-  date: isoDate,
-  createdAt: new Date().toISOString()
-});
-
-        renderFuelEntries();
-        renderSelectedCarAnalytics();
+        await saveRecord("fuelEntries", {
+          carId,
+          liters,
+          totalPrice: round2(totalPrice),
+          pricePerLiter,
+          mileage,
+          distanceKm,
+          litersPer100km,
+          costPer100km,
+          note,
+          date: isoDate,
+          createdAt: new Date().toISOString()
+        });
 
       els.fuelForm.reset();
-        if (els.fuelUseGps) els.fuelUseGps.checked = true;
-        if (els.fuelLocationText) els.fuelLocationText.value = "";
       els.fuelUseNow.checked = true;
       els.fuelDatetime.value = toDatetimeLocal(new Date());
       syncFuelNowUi();
-        syncFuelStationUi();
       syncFuelPricePerLiter();
-
-        renderSelectedCarAnalytics();
-        renderFuelStats();
 
       showToast("Tankvorgang gespeichert.", "success");
     }
@@ -3124,7 +2926,7 @@ const remainingRangeSource = Number.isFinite(enteredRemainingRange)
       const settingsDocRef = doc(state.db, `${basePath}/settings/main`);
       const carsQuery = query(collection(state.db, `${basePath}/cars`), orderBy("name", "asc"));
       const fuelEntriesQuery = query(collection(state.db, `${basePath}/fuelEntries`), orderBy("date", "desc"));
-        const stationsQuery = query(collection(state.db, `${basePath}/stations`), orderBy("name", "asc"));
+      const chargeEntriesQuery = query(collection(state.db, `${basePath}/chargeEntries`), orderBy("date", "desc"));
         
       state.unsubscribers.push(onSnapshot(readingsQuery, (s) => {
         state.readings = s.docs.map(mapFirestoreDoc);
@@ -3163,12 +2965,12 @@ const remainingRangeSource = Number.isFinite(enteredRemainingRange)
         persistLocalSnapshot();
         renderAll();
       }));
-        state.unsubscribers.push(onSnapshot(stationsQuery, (s) => {
-          state.stations = s.docs.map(mapFirestoreDoc);
+      state.unsubscribers.push(onSnapshot(chargeEntriesQuery, (s) => {
+          state.chargeEntries = s.docs.map(mapFirestoreDoc);
           persistLocalSnapshot();
           renderAll();
         }, (error) => {
-          console.error("stations onSnapshot Fehler:", error);
+          console.error("chargeEntries onSnapshot Fehler:", error);
         }));
       state.unsubscribers.push(onSnapshot(settingsDocRef, (snapshot) => {
         if (snapshot.exists()) {
@@ -3205,9 +3007,8 @@ const remainingRangeSource = Number.isFinite(enteredRemainingRange)
           resets: `${householdBasePath()}/resets`,
           fuelEntries: `${householdBasePath()}/fuelEntries`,
           pricePeriods: `${householdBasePath()}/pricePeriods`,
-          cars: `${householdBasePath()}/cars`,
-            pushTokens: `${householdBasePath()}/pushTokens`,
-            stations: `${householdBasePath()}/stations`
+          chargeEntries: `${householdBasePath()}/chargeEntries`,
+          cars: `${householdBasePath()}/cars`
         };
 
         if (!pathMap[kind]) {
@@ -3238,8 +3039,8 @@ const remainingRangeSource = Number.isFinite(enteredRemainingRange)
           resets: `${householdBasePath()}/resets/${id}`,
           fuelEntries: `${householdBasePath()}/fuelEntries/${id}`,
           pricePeriods: `${householdBasePath()}/pricePeriods/${id}`,
-          cars: `${householdBasePath()}/cars/${id}`,
-          stations: `${householdBasePath()}/stations/${id}`
+          chargeEntries: `${householdBasePath()}/chargeEntries/${id}`,
+          cars: `${householdBasePath()}/cars/${id}`
         };
         await deleteDoc(doc(state.db, pathMap[kind]));
       } else {
@@ -3249,71 +3050,6 @@ const remainingRangeSource = Number.isFinite(enteredRemainingRange)
       }
     }
 
-    async function enablePushNotifications() {
-  try {
-    if (!state.firebaseEnabled || !state.app || !state.db) {
-      showToast("Bitte zuerst Firebase verbinden.", "error");
-      return;
-    }
-
-    const supported = await isSupported();
-
-    if (!supported || !("Notification" in window) || !("serviceWorker" in navigator)) {
-      showToast("Push wird von diesem Browser nicht unterstützt.", "error");
-      return;
-    }
-
-    const permission = await Notification.requestPermission();
-
-    if (permission !== "granted") {
-      showToast("Push wurde nicht erlaubt.", "error");
-      return;
-    }
-
-    const swRegistration = await navigator.serviceWorker.register("./sw.js");
-
-    const messaging = getMessaging(state.app);
-    state.messaging = messaging;
-
-    const token = await getToken(messaging, {
-      vapidKey: FCM_VAPID_KEY,
-      serviceWorkerRegistration: swRegistration
-    });
-
-    if (!token) {
-      showToast("Kein Push-Token erhalten.", "error");
-      return;
-    }
-
-    state.pushToken = token;
-
-    const alreadyExists = loadJSON("verbrauch-push-token-v1", null);
-
-    if (alreadyExists !== token) {
-      await saveRecord("pushTokens", {
-        token,
-        householdId: state.householdId,
-        userAgent: navigator.userAgent,
-        createdAt: new Date().toISOString(),
-        date: new Date().toISOString()
-      });
-
-      localStorage.setItem("verbrauch-push-token-v1", JSON.stringify(token));
-    }
-
-    onMessage(messaging, (payload) => {
-      const title = payload?.notification?.title || "Verbrauch Zuhause";
-      const body = payload?.notification?.body || "Neue Daten eingetragen.";
-      showToast(`${title}: ${body}`, "success");
-    });
-
-    showToast("Push ist aktiviert.", "success");
-  } catch (error) {
-    console.error("Push Fehler:", error);
-    showToast(`Push konnte nicht aktiviert werden: ${error.message || error}`, "error");
-  }
-}
-    
     function updateFirebaseStatus(error = null) {
       if (state.firebaseEnabled) {
         els.firebaseStatus.textContent = `Firestore aktiv. Haushalt: ${state.householdId}`;
@@ -3355,11 +3091,31 @@ const remainingRangeSource = Number.isFinite(enteredRemainingRange)
         resets: state.resets,
         pricePeriods: state.pricePeriods,
         settings: state.settings,
-        stations: state.stations,
         cars: state.cars,
         fuelEntries: state.fuelEntries,
+        chargeEntries: state.chargeEntries,
         bagSizes: state.bagSizes
       }));
+    }
+    
+    function totalHomeChargingKwhBetween(startIso, endIso) {
+      const start = new Date(startIso).getTime();
+      const end = new Date(endIso).getTime();
+
+      return round2(state.chargeEntries.reduce((sum, entry) => {
+        const from = new Date(entry.fromDate || entry.date).getTime();
+        const to = new Date(entry.toDate || entry.date).getTime();
+
+        if (to < start || from > end) return sum;
+
+        const entryDuration = Math.max(1, to - from);
+        const overlapStart = Math.max(start, from);
+        const overlapEnd = Math.min(end, to);
+        const overlapDuration = Math.max(0, overlapEnd - overlapStart);
+
+        const share = overlapDuration / entryDuration;
+        return sum + ((toNumber(entry.kwh) || 0) * share);
+      }, 0));
     }
 
     function renderAll() {
@@ -3373,11 +3129,10 @@ const remainingRangeSource = Number.isFinite(enteredRemainingRange)
       try { renderDashboard(); } catch (e) { console.error("renderDashboard", e); }
       try { renderMonthlyOverview(); } catch (e) { console.error("renderMonthlyOverview", e); }
       try { renderSettingsSummary(); } catch (e) { console.error("renderSettingsSummary", e); }
+      try { renderChargeEntries(); } catch (e) { console.error("renderChargeEntries", e); }
       try { renderPelletInventoryStats(); } catch (e) { console.error("renderPelletInventoryStats", e); }
       try { renderCars(); } catch (e) { console.error("renderCars", e); }
       try { renderFuelEntries(); } catch (e) { console.error("renderFuelEntries", e); }
-      try { renderFuelMap(); } catch (e) { console.error("renderFuelMap", e); }
-      try { renderStationOptions(); } catch (e) { console.error("renderStationOptions", e); }
     }
 
     function renderReadings() {
@@ -3395,9 +3150,40 @@ const remainingRangeSource = Number.isFinite(enteredRemainingRange)
           datetime: formatDateTime(entry.date),
           valueHtml: `${formatNumber(entry.value)} ${typeConfig[entry.type].unit}<br><small class="muted">Verbrauch gesamt: ${formatSigned(entry.delta)} ${typeConfig[entry.type].unit} · pro Tag: ${formatNumber(entry.dailyDelta)} ${typeConfig[entry.type].unit}/Tag · Jahr: ${formatNumber(entry.yearProjection)} ${typeConfig[entry.type].unit}${entry.cost !== null ? ` · ${formatCurrency(entry.cost)}` : ""}${entry.resetApplied ? " · Reset aktiv" : ""}</small>`,
           note: entry.note || (entry.previousDate ? `Vorheriger Stand: ${formatNumber(entry.previousValue)} am ${formatDateTime(entry.previousDate)}` : "Erster gespeicherter Stand")
+          Verbrauch gesamt: ${formatSigned(entry.delta)} ${typeConfig[entry.type].unit}
+          ${entry.type === "strom" && Number.isFinite(entry.evChargeKwh) && entry.evChargeKwh > 0
+          ? `<br><small class="muted">Hausstrom netto: ${formatNumber(entry.netDelta)} kWh · E-Auto Laden: ${formatNumber(entry.evChargeKwh)} kWh</small>`
+          : ""}
         }));
       });
     }
+    
+        function getChargeCostStatsForCar(carId) {
+          const entries = state.chargeEntries.filter((entry) => entry.carId === carId);
+
+          const totalKwh = round2(entries.reduce((sum, entry) =>
+            sum + (toNumber(entry.kwh) || 0), 0
+          ));
+
+          const grossCost = round2(entries.reduce((sum, entry) =>
+            sum + (toNumber(entry.electricityCost) || 0), 0
+          ));
+
+          const reimbursedCost = round2(entries.reduce((sum, entry) =>
+            sum + (toNumber(entry.reimbursementAmount) || 0), 0
+          ));
+
+          const netCost = round2(entries.reduce((sum, entry) =>
+            sum + (toNumber(entry.netElectricityCost) || 0), 0
+          ));
+
+          return {
+            totalKwh,
+            grossCost,
+            reimbursedCost,
+            netCost
+          };
+        }
 
     function renderRefills() {
       els.refillsList.innerHTML = "";
@@ -3454,6 +3240,27 @@ const remainingRangeSource = Number.isFinite(enteredRemainingRange)
             note: entry.note || "Kein Hinweis"
           }));
         });
+    }
+    
+    function renderChargeCarOptions() {
+      if (!els.chargeCarId) return;
+
+      const electricCars = state.cars.filter((car) =>
+        ["electric", "hybrid", "plug_in_hybrid"].includes(car.fuelType)
+      );
+
+      if (!electricCars.length) {
+        els.chargeCarId.innerHTML = '<option value="">Bitte erst E-Auto anlegen</option>';
+        return;
+      }
+
+      els.chargeCarId.innerHTML = electricCars
+        .map((car) => `
+          <option value="${car.id}">
+            ${escapeHtml(car.name)}${car.plate ? ` · ${escapeHtml(car.plate)}` : ""}${car.ownership === "company" ? " · Firma" : " · Privat"}
+          </option>
+        `)
+        .join("");
     }
 
     function renderDashboard() {
@@ -3696,6 +3503,13 @@ const remainingRangeSource = Number.isFinite(enteredRemainingRange)
           let yearProjection = null;
           let cost = null;
           let priceSource = null;
+          let evChargeKwh = 0;
+            let netDelta = delta;
+
+            if (type === "strom" && previous) {
+              evChargeKwh = totalHomeChargingKwhBetween(previous.date, entry.date);
+              netDelta = Math.max(0, round2(delta - evChargeKwh));
+            }
 
           if (previous) {
             const prevTime = new Date(previous.date).getTime();
@@ -3735,6 +3549,8 @@ const remainingRangeSource = Number.isFinite(enteredRemainingRange)
             daysBetween,
             dailyDelta,
             yearProjection,
+            evChargeKwh,
+            netDelta,
             priceSource
           });
         });
@@ -3910,10 +3726,9 @@ const remainingRangeSource = Number.isFinite(enteredRemainingRange)
           refills: state.refills,
           purchases: state.purchases,
           resets: state.resets,
+          chargeEntries: state.chargeEntries,
           pricePeriods: state.pricePeriods,
           settings: state.settings,
-            stations: state.stations,
-            bagSizes: state.bagSizes,
           cars: state.cars,
           fuelEntries: state.fuelEntries
         };
