@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     :root {
-      --bg: #081120;
+      --bg: #f3fd7a;
       --card: rgba(15, 23, 42, 0.72);
       --card-solid: #111c33;
       --text: #e5eefc;
@@ -24,7 +24,7 @@
       --warn: #f59e0b;
       --danger: #ef4444;
       --shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
-      --radius: 22px;
+      --radius: 5px;
       --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
@@ -502,7 +502,7 @@
         <h1>Zählerstände, Pellets und Kosten im Blick</h1>
         <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
         <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du den Haushalt wechseln oder neu anlegen.</p>
-        <p class="hero-copy">Version 1.1.0.0</p>
+        <p class="hero-copy">Version 1.2.0.0</p>
       </div>
       <div class="hero-actions">
         <button id="installBtn" class="btn secondary hidden" type="button">App installieren</button>
@@ -791,6 +791,20 @@
             <span class="muted">GPS beim Speichern erfassen</span>
           </div>
         </label>
+          
+          <label>
+          Tankstelle in der Nähe
+          <select id="fuelStationSelect">
+            <option value="">GPS ermitteln, dann Tankstelle wählen</option>
+          </select>
+          <small>Wird über den aktuellen GPS-Standort gesucht.</small>
+        </label>
+
+        <div class="form-actions">
+          <button id="findFuelStationsBtn" class="btn secondary" type="button">
+            Tankstellen in der Nähe suchen
+          </button>
+        </div>
 
         <label>
           Standort
@@ -1410,6 +1424,7 @@
       householdId: localStorage.getItem(LOCAL_KEYS.householdId) || DEFAULT_HOUSEHOLD_ID,
       availableHouseholds: [],
       chargeEntries: [],
+    nearbyFuelStations: [],
       bagSizes: [...defaultBagSizes],
       firebaseEnabled: false,
       app: null,
@@ -1529,6 +1544,7 @@
 fuelMap: document.getElementById("fuelMap"),
 showLiveLocationBtn: document.getElementById("showLiveLocationBtn"),
 fuelStationSelect: document.getElementById("fuelStationSelect"),
+findFuelStationsBtn: document.getElementById("findFuelStationsBtn"),
 
       fuelForm: document.getElementById("fuelForm"),
       fuelCarId: document.getElementById("fuelCarId"),
@@ -1688,6 +1704,17 @@ fuelStationSelect: document.getElementById("fuelStationSelect"),
           fuelMapInstance.setView([gps.latitude, gps.longitude], 15);
           setTimeout(() => fuelMapInstance.invalidateSize(), 80);
         });
+      els.findFuelStationsBtn?.addEventListener("click", findNearbyFuelStations);
+
+        els.fuelStationSelect?.addEventListener("change", () => {
+          const station = state.nearbyFuelStations.find(
+            (item) => item.id === els.fuelStationSelect.value
+          );
+
+          if (station && els.fuelLocationText) {
+            els.fuelLocationText.value = station.name;
+          }
+        });
 
       els.fuelUseNow?.addEventListener("change", syncFuelNowUi);
       els.fuelLiters?.addEventListener("input", syncFuelPricePerLiter);
@@ -1826,6 +1853,102 @@ fuelStationSelect: document.getElementById("fuelStationSelect"),
         );
       });
     }
+    
+    async function findNearbyFuelStations() {
+          const gps = await getCurrentPositionSafe();
+
+          if (!gps) {
+            showToast("Standort konnte nicht ermittelt werden.", "error");
+            return;
+          }
+
+          const stations = await fetchNearbyFuelStations(gps.latitude, gps.longitude);
+
+          state.nearbyFuelStations = stations;
+
+          if (!els.fuelStationSelect) return;
+
+          if (!stations.length) {
+            els.fuelStationSelect.innerHTML = '<option value="">Keine Tankstellen gefunden</option>';
+            showToast("Keine Tankstellen in der Nähe gefunden.", "error");
+            return;
+          }
+
+          els.fuelStationSelect.innerHTML = stations.map((station) => `
+            <option value="${escapeHtml(station.id)}">
+              ${escapeHtml(station.name)} · ${formatNumber(station.distanceKm)} km
+            </option>
+          `).join("");
+
+          els.fuelStationSelect.value = stations[0].id;
+          els.fuelLocationText.value = stations[0].name;
+
+          showToast("Tankstellen gefunden.", "success");
+        }
+
+        async function fetchNearbyFuelStations(latitude, longitude) {
+          const radiusMeters = 5000;
+
+          const query = `
+            [out:json][timeout:10];
+            (
+              node["amenity"="fuel"](around:${radiusMeters},${latitude},${longitude});
+              way["amenity"="fuel"](around:${radiusMeters},${latitude},${longitude});
+              relation["amenity"="fuel"](around:${radiusMeters},${latitude},${longitude});
+            );
+            out center tags;
+          `;
+
+          const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+
+          try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("Tankstellen-Abfrage fehlgeschlagen.");
+
+            const data = await response.json();
+
+            return (data.elements || [])
+              .map((item) => {
+                const lat = item.lat ?? item.center?.lat;
+                const lon = item.lon ?? item.center?.lon;
+                const tags = item.tags || {};
+                const brand = tags.brand || "";
+                const name = tags.name || brand || "Tankstelle";
+
+                return {
+                  id: String(item.id),
+                  name,
+                  brand,
+                  latitude: lat,
+                  longitude: lon,
+                  distanceKm: calculateDistanceKm(latitude, longitude, lat, lon)
+                };
+              })
+              .filter((item) => Number.isFinite(item.latitude) && Number.isFinite(item.longitude))
+              .sort((a, b) => a.distanceKm - b.distanceKm)
+              .slice(0, 12);
+          } catch (error) {
+            console.error("Tankstellen-Suche Fehler:", error);
+            showToast("Tankstellen konnten nicht geladen werden.", "error");
+            return [];
+          }
+        }
+
+        function calculateDistanceKm(lat1, lon1, lat2, lon2) {
+          const earthRadiusKm = 6371;
+          const toRad = (value) => value * Math.PI / 180;
+
+          const dLat = toRad(lat2 - lat1);
+          const dLon = toRad(lon2 - lon1);
+
+          const a =
+            Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(lat1)) *
+            Math.cos(toRad(lat2)) *
+            Math.sin(dLon / 2) ** 2;
+
+          return round2(earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+        }
 
     function syncFuelPricePerLiter() {
       const liters = toNumber(els.fuelLiters?.value);
@@ -2625,6 +2748,9 @@ if (metaContainer) {
         }
 
         const locationText = els.fuelLocationText?.value?.trim() || "";
+        const selectedStation = state.nearbyFuelStations.find(
+          (item) => item.id === els.fuelStationSelect?.value
+        ) || null;
 
         await saveRecord("fuelEntries", {
           carId,
@@ -2640,6 +2766,9 @@ if (metaContainer) {
           longitude: gps?.longitude ?? null,
           gpsAccuracy: gps?.accuracy ?? null,
           gpsCapturedAt: gps?.capturedAt ?? null,
+            stationId: selectedStation?.id ?? null,
+            stationName: selectedStation?.name ?? locationText,
+            stationBrand: selectedStation?.brand ?? "",
           note,
           date: isoDate,
           createdAt: new Date().toISOString()
