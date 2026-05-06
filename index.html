@@ -502,7 +502,7 @@
         <h1>Zählerstände, Pellets und Kosten im Blick</h1>
         <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
         <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du den Haushalt wechseln oder neu anlegen.</p>
-        <p class="hero-copy">Version 1.1.0.0</p>
+        <p class="hero-copy">Version 1.5.0.0</p>
       </div>
       <div class="hero-actions">
         <button id="installBtn" class="btn secondary hidden" type="button">App installieren</button>
@@ -2565,7 +2565,10 @@ if (metaContainer) {
                 ${Number.isFinite(entry.costPer100km) ? ` · ${formatCurrency(entry.costPer100km)}/100km` : ""}
               </small>
             `,
-            note: entry.note || "Keine Notiz"
+            note: [
+          entry.stationDisplayName || entry.locationText || "",
+          entry.note || ""
+        ].filter(Boolean).join(" · ") || "Keine Notiz"
         });
         els.fuelList.appendChild(node);
       });
@@ -2784,6 +2787,11 @@ if (metaContainer) {
       autoStation ||
       null;
 
+    if (!selectedStation) {
+      showToast("Bitte eine Tankstelle auswählen oder Tankstellen suchen.", "error");
+      return;
+    }
+
     const locationText =
       els.fuelLocationText?.value?.trim() ||
       selectedStation?.displayName ||
@@ -2799,8 +2807,8 @@ if (metaContainer) {
           litersPer100km,
           costPer100km,
           locationText,
-          latitude: gps?.latitude ?? null,
-          longitude: gps?.longitude ?? null,
+        latitude: selectedStation?.latitude ?? gps?.latitude ?? null,
+        longitude: selectedStation?.longitude ?? gps?.longitude ?? null,
           gpsAccuracy: gps?.accuracy ?? null,
           gpsCapturedAt: gps?.capturedAt ?? null,
             stationId: selectedStation?.id ?? null,
