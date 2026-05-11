@@ -513,7 +513,7 @@
         <h1>Zählerstände, Pellets und Kosten im Blick</h1>
         <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
         <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du den Haushalt wechseln oder neu anlegen.</p>
-        <p class="hero-copy">Version 1.1.0.0</p>
+        <p class="hero-copy">Version 1.3.0.0</p>
       </div>
       <div class="hero-actions">
         <button id="installBtn" class="btn secondary hidden" type="button">App installieren</button>
@@ -1744,15 +1744,7 @@
         });
       els.findFuelStationsBtn?.addEventListener("click", findNearbyFuelStations);
 
-        els.fuelStationSelect?.addEventListener("change", () => {
-          const station = state.nearbyFuelStations.find(
-            (item) => item.id === els.fuelStationSelect.value
-          );
-
-          if (station && els.fuelLocationText) {
-            els.fuelLocationText.value = station.displayName;
-          }
-        });
+      els.fuelStationSelect?.addEventListener("change", applySelectedFuelStation);
 
       els.fuelUseNow?.addEventListener("change", syncFuelNowUi);
       els.fuelLiters?.addEventListener("input", syncFuelPricePerLiter);
@@ -1924,11 +1916,11 @@ els.fuelStationSelect.innerHTML = stations.map((station) => `
           showToast("Tankstellen gefunden.", "success");
         }
 
-      async function searchFuelStationByText() {
+ async function searchFuelStationByText() {
   const text = els.fuelStationSearchText?.value?.trim() || "";
 
   if (!text) {
-    showToast("Bitte Suchtext für die Tankstelle eingeben.", "error");
+    showToast("Bitte Suchtext eingeben, z. B. Shell Köln.", "error");
     return;
   }
 
@@ -1950,42 +1942,51 @@ els.fuelStationSelect.innerHTML = stations.map((station) => `
   `).join("");
 
   els.fuelStationSelect.value = stations[0].id;
+  applySelectedFuelStation();
 
-  if (els.fuelLocationText) {
-    els.fuelLocationText.value = stations[0].displayName;
-  }
-
-  showToast("Tankstelle gefunden.", "success");
+  showToast("Tankstellen gefunden.", "success");
 }
 
 async function fetchFuelStationsByText(searchText) {
-  const query = `
-    [out:json][timeout:12];
-    area["ISO3166-1"="DE"][admin_level=2]->.de;
-    (
-      node["amenity"="fuel"]["name"~"${escapeOverpassRegex(searchText)}",i](area.de);
-      way["amenity"="fuel"]["name"~"${escapeOverpassRegex(searchText)}",i](area.de);
-      relation["amenity"="fuel"]["name"~"${escapeOverpassRegex(searchText)}",i](area.de);
-
-      node["amenity"="fuel"]["brand"~"${escapeOverpassRegex(searchText)}",i](area.de);
-      way["amenity"="fuel"]["brand"~"${escapeOverpassRegex(searchText)}",i](area.de);
-      relation["amenity"="fuel"]["brand"~"${escapeOverpassRegex(searchText)}",i](area.de);
-    );
-    out center tags 25;
-  `;
-
-  const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=20&countrycodes=de&addressdetails=1&q=${encodeURIComponent(searchText + " Tankstelle")}`;
 
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: {
+        "Accept": "application/json"
+      }
+    });
+
     if (!response.ok) throw new Error("Tankstellen-Suche fehlgeschlagen.");
 
     const data = await response.json();
 
-    return (data.elements || [])
-      .map(mapOverpassFuelStation)
-      .filter(Boolean)
-      .slice(0, 25);
+    return (data || [])
+      .map((item) => {
+        const lat = Number(item.lat);
+        const lon = Number(item.lon);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+
+        const address = item.address || {};
+        const name =
+          item.name ||
+          address.amenity ||
+          address.shop ||
+          address.road ||
+          "Tankstelle";
+
+        return {
+          id: `search-${item.osm_type}-${item.osm_id}`,
+          name,
+          brand: "",
+          address: item.display_name || "",
+          displayName: item.display_name || name,
+          latitude: lat,
+          longitude: lon,
+          distanceKm: null
+        };
+      })
+      .filter(Boolean);
   } catch (error) {
     console.error("Tankstellen-Textsuche Fehler:", error);
     showToast("Tankstellen-Suche konnte nicht geladen werden.", "error");
@@ -1993,6 +1994,30 @@ async function fetchFuelStationsByText(searchText) {
   }
 }
 
+function applySelectedFuelStation() {
+  const station = state.nearbyFuelStations.find(
+    (item) => item.id === els.fuelStationSelect?.value
+  );
+
+  if (!station) return;
+
+  if (els.fuelLocationText) {
+    els.fuelLocationText.value = station.displayName;
+  }
+
+  renderFuelMap();
+
+  if (fuelMapInstance && fuelMapMarkersLayer) {
+    const marker = L.marker([station.latitude, station.longitude])
+      .addTo(fuelMapMarkersLayer)
+      .bindPopup(escapeHtml(station.displayName))
+      .openPopup();
+
+    fuelMapInstance.setView([station.latitude, station.longitude], 15);
+    setTimeout(() => fuelMapInstance.invalidateSize(), 80);
+  }
+}
+      
 function mapOverpassFuelStation(item) {
   const lat = item.lat ?? item.center?.lat;
   const lon = item.lon ?? item.center?.lon;
@@ -2980,34 +3005,31 @@ const entries = buildComputedFuelEntriesForCar(state.selectedAnalyticsCarId)
         return;
       }
         
-        let gps = null;
-        let autoStation = null;
+      let gps = null;
 
-        if (els.fuelUseGps?.checked) {
-          gps = await getCurrentPositionSafe();
+let selectedStation =
+  state.nearbyFuelStations.find(
+    (item) => item.id === els.fuelStationSelect?.value
+  ) || null;
 
-          if (gps) {
-            const stations = await fetchNearbyFuelStations(gps.latitude, gps.longitude);
-            state.nearbyFuelStations = stations;
-            autoStation = stations[0] || null;
+if (els.fuelUseGps?.checked && !selectedStation) {
+  gps = await getCurrentPositionSafe();
 
-            if (autoStation && els.fuelLocationText && !els.fuelLocationText.value.trim()) {
-              els.fuelLocationText.value = autoStation.displayName;
-            }
-          }
-        }
+  if (gps) {
+    const stations = await fetchNearbyFuelStations(gps.latitude, gps.longitude);
+    state.nearbyFuelStations = stations;
+    selectedStation = stations[0] || null;
 
-    const selectedStation =
-      state.nearbyFuelStations.find(
-        (item) => item.id === els.fuelStationSelect?.value
-      ) ||
-      autoStation ||
-      null;
+    if (selectedStation && els.fuelLocationText && !els.fuelLocationText.value.trim()) {
+      els.fuelLocationText.value = selectedStation.displayName;
+    }
+  }
+}
 
-    const locationText =
-      els.fuelLocationText?.value?.trim() ||
-      selectedStation?.displayName ||
-      "";
+const locationText =
+  els.fuelLocationText?.value?.trim() ||
+  selectedStation?.displayName ||
+  "";
 
         await saveRecord("fuelEntries", {
           carId,
