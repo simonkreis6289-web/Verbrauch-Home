@@ -513,7 +513,7 @@
         <h1>Zählerstände, Pellets und Kosten im Blick</h1>
         <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
         <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du den Haushalt wechseln oder neu anlegen.</p>
-        <p class="hero-copy">Version 1.3.0.0</p>
+        <p class="hero-copy">Version 1.3.1.0</p>
       </div>
       <div class="hero-actions">
         <button id="installBtn" class="btn secondary hidden" type="button">App installieren</button>
@@ -904,6 +904,23 @@
     <label>
       E-Auto
       <select id="chargeCarId" required></select>
+    </label>
+          <label>
+      Ladeort
+      <select id="chargeLocation">
+        <option value="home">Zuhause</option>
+        <option value="away">Unterwegs / Ladesäule</option>
+      </select>
+    </label>
+
+    <label>
+      Preis gesamt unterwegs
+      <input id="chargeTotalPrice" type="number" step="0.01" min="0" placeholder="z. B. 18,50">
+    </label>
+
+    <label>
+      Ladesäule / Ort
+      <input id="chargeLocationText" type="text" placeholder="z. B. EnBW, Hauptstraße 1, Köln">
     </label>
 
     <label>
@@ -1405,6 +1422,7 @@
       getDoc,
       collection,
       addDoc,
+        updateDoc,
       deleteDoc,
       onSnapshot,
       orderBy,
@@ -1574,7 +1592,9 @@
       carFuelType: document.getElementById("carFuelType"),
       carNote: document.getElementById("carNote"),
       carList: document.getElementById("carList"),
-
+        chargeLocation: document.getElementById("chargeLocation"),
+        chargeTotalPrice: document.getElementById("chargeTotalPrice"),
+        chargeLocationText: document.getElementById("chargeLocationText"),
         fuelMap: document.getElementById("fuelMap"),
         showLiveLocationBtn: document.getElementById("showLiveLocationBtn"),
         fuelStationSelect: document.getElementById("fuelStationSelect"),
@@ -1782,7 +1802,37 @@
         if (event.key === "Escape") closeChartOverlay();
       });
     }
+      
+function getSelectedAnalyticsCar() {
+  return state.cars.find((car) => car.id === state.selectedAnalyticsCarId) || null;
+}
 
+function isElectricCar(car) {
+  return ["electric", "hybrid", "plug_in_hybrid"].includes(car?.fuelType);
+}
+
+function isCombustionCar(car) {
+  return car && car.fuelType !== "electric";
+}
+
+function formatStationShort(station) {
+  if (!station) return "";
+
+  const address = station.addressParts || {};
+  const street = [address.road || address.street, address.house_number]
+    .filter(Boolean)
+    .join(" ");
+
+  const city = [
+    address.postcode,
+    address.city || address.town || address.village || address.municipality
+  ].filter(Boolean).join(" ");
+
+  return [station.name || "Tankstelle", street, city]
+    .filter(Boolean)
+    .join(", ");
+}
+      
     function registerInstallHandling() {
       window.addEventListener("beforeinstallprompt", (event) => {
         event.preventDefault();
@@ -1948,7 +1998,7 @@ els.fuelStationSelect.innerHTML = stations.map((station) => `
 }
 
 async function fetchFuelStationsByText(searchText) {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=20&countrycodes=de&addressdetails=1&q=${encodeURIComponent(searchText + " Tankstelle")}`;
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=20&countrycodes=de&addressdetails=1&namedetails=1&extratags=1&q=${encodeURIComponent(searchText + " Tankstelle")}`;
 
   try {
     const response = await fetch(url, {
@@ -1962,30 +2012,37 @@ async function fetchFuelStationsByText(searchText) {
     const data = await response.json();
 
     return (data || [])
-      .map((item) => {
-        const lat = Number(item.lat);
-        const lon = Number(item.lon);
-        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+.map((item) => {
+  const lat = Number(item.lat);
+  const lon = Number(item.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
 
-        const address = item.address || {};
-        const name =
-          item.name ||
-          address.amenity ||
-          address.shop ||
-          address.road ||
-          "Tankstelle";
+  const address = item.address || {};
+  const name =
+    item.namedetails?.name ||
+    item.name ||
+    item.extratags?.brand ||
+    address.amenity ||
+    "Tankstelle";
 
-        return {
-          id: `search-${item.osm_type}-${item.osm_id}`,
-          name,
-          brand: "",
-          address: item.display_name || "",
-          displayName: item.display_name || name,
-          latitude: lat,
-          longitude: lon,
-          distanceKm: null
-        };
-      })
+  const station = {
+    id: `search-${item.osm_type}-${item.osm_id}`,
+    name,
+    brand: item.extratags?.brand || "",
+    address: "",
+    addressParts: address,
+    displayName: "",
+    latitude: lat,
+    longitude: lon,
+    distanceKm: null
+  };
+
+  station.displayName = formatStationShort(station);
+  station.address = station.displayName;
+
+  return station;
+})
+
       .filter(Boolean);
   } catch (error) {
     console.error("Tankstellen-Textsuche Fehler:", error);
@@ -2210,17 +2267,20 @@ async function fetchNearbyFuelStations(latitude, longitude) {
       return round2(pricing.cost || 0);
     }
     
-    async function handleChargeSubmit(event) {
+async function handleChargeSubmit(event) {
   event.preventDefault();
 
   const carId = els.chargeCarId.value;
   const car = state.cars.find((c) => c.id === carId);
 
   const mode = els.chargeMode?.value || "single";
+  const location = els.chargeLocation?.value || "home";
   const from = new Date(els.chargeFrom.value);
   const to = new Date(els.chargeTo.value);
   const kwh = toNumber(els.chargeKwh.value);
   const note = els.chargeNote?.value?.trim() || "";
+  const locationText = els.chargeLocationText?.value?.trim() || "";
+  const awayTotalPrice = toNumber(els.chargeTotalPrice?.value);
 
   if (!carId || !car) return showToast("Bitte ein E-Auto auswählen.", "error");
   if (Number.isNaN(from.getTime())) return showToast("Bitte gültiges Startdatum eingeben.", "error");
@@ -2228,31 +2288,41 @@ async function fetchNearbyFuelStations(latitude, longitude) {
   if (to < from) return showToast("Bis darf nicht vor Von liegen.", "error");
   if (!Number.isFinite(kwh) || kwh <= 0) return showToast("Bitte gültige kWh eingeben.", "error");
 
+  if (location === "away" && (!Number.isFinite(awayTotalPrice) || awayTotalPrice < 0)) {
+    return showToast("Bitte den Preis für unterwegs eingeben.", "error");
+  }
+
   const ownership = car.ownership || "private";
   const companyName = car.companyName || "";
   const isCompany = ownership === "company";
 
-  const electricityCost = calculateElectricityCostForKwh(
-    from.toISOString(),
-    to.toISOString(),
-    round2(kwh)
-  );
+  const homeElectricityCost = location === "home"
+    ? calculateElectricityCostForKwh(from.toISOString(), to.toISOString(), round2(kwh))
+    : 0;
+
+  const electricityCost = location === "away"
+    ? round2(awayTotalPrice || 0)
+    : round2(homeElectricityCost);
 
   await saveRecord("chargeEntries", {
     carId,
     mode,
+    location,
+    locationText,
     kwh: round2(kwh),
     fromDate: from.toISOString(),
     toDate: to.toISOString(),
     date: to.toISOString(),
-    location: "home",
+
+    totalPrice: electricityCost,
+    pricePerKwh: kwh > 0 ? round4(electricityCost / kwh) : 0,
 
     ownership,
     companyName,
     isReimbursable: isCompany,
-    electricityCost: round2(electricityCost),
-    reimbursementAmount: isCompany ? round2(electricityCost) : 0,
-    netElectricityCost: isCompany ? 0 : round2(electricityCost),
+    electricityCost,
+    reimbursementAmount: isCompany ? electricityCost : 0,
+    netElectricityCost: isCompany ? 0 : electricityCost,
 
     note,
     createdAt: new Date().toISOString()
@@ -2372,16 +2442,19 @@ function renderChargeEntries() {
         ${formatNumber(entry.kwh)} kWh
         <br>
         <small class="muted">
-          ${entry.mode === "period" ? "Zeitraum / Summe" : "Einzelladung"}
-          · ${entry.ownership === "company" ? "Firmenwagen" : "Privateigentum"}
-          · brutto ${formatCurrency(entry.electricityCost)}
-          ${reimbursementText}
+        ${entry.mode === "period" ? "Zeitraum / Summe" : "Einzelladung"}
+        · ${entry.location === "away" ? "Unterwegs" : "Zuhause"}
+        · ${entry.ownership === "company" ? "Firmenwagen" : "Privateigentum"}
+        · ${formatCurrency(entry.pricePerKwh || 0)}/kWh
+        · brutto ${formatCurrency(entry.electricityCost)}
+        ${reimbursementText}
         </small>
       `,
-      note: [
-        entry.companyName ? `Firma: ${entry.companyName}` : "",
-        entry.note || ""
-      ].filter(Boolean).join(" · ") || "Keine Notiz"
+        note: [
+          entry.locationText ? `Ort: ${entry.locationText}` : "",
+          entry.companyName ? `Firma: ${entry.companyName}` : "",
+          entry.note || ""
+        ].filter(Boolean).join(" · ") || "Keine Notiz"
     });
 
     els.chargeList.appendChild(node);
@@ -2487,72 +2560,43 @@ if (!entries.length && !chargeStats.totalKwh) {
     const projectedDistanceText = `${formatNumber(projectedYearDistance)} km`;
     const projectedFuelCostText = formatCurrency(projectedYearFuelCost);
     const lastPriceText = lastEntry?.pricePerLiter != null ? `${formatCurrency(lastEntry.pricePerLiter)}/l` : "–";
+const isElectric = isElectricCar(car);
+const isCombustion = isCombustionCar(car);
 
-    els.selectedCarStats.innerHTML = [
-      createKpiCard({
-        label: "Fahrzeug",
-        value: escapeHtml(car?.name || "Unbekannt"),
-        sub: car?.plate ? escapeHtml(car.plate) : "ohne Kennzeichen",
-        icon: "🚘",
-        accent: ""
-      }),
-      createKpiCard({
-        label: "Ø Verbrauch",
-        value: avgConsumptionText,
-        sub: "auf Basis der letzten Tankintervalle",
-        icon: "⛽",
-        accent: "accent-green"
-      }),
-      createKpiCard({
-        label: "Ø Kosten",
-        value: avgCost100Text,
-        sub: "durchschnittlich pro 100 km",
-        icon: "💶",
-        accent: "accent-amber"
-      }),
-      createKpiCard({
-        label: "Letzter Preis",
-        value: lastPriceText,
-        sub: lastEntry ? formatDateTime(lastEntry.date) : "kein Eintrag",
-        icon: "🏷️",
-        accent: ""
-      }),
-      createKpiCard({
-        label: "Gesamtkosten",
-        value: totalCostText,
-        sub: "alle gespeicherten Tankvorgänge",
-        icon: "💳",
-        accent: "accent-red"
-      }),
-      createKpiCard({
-        label: "Gesamtmenge",
-        value: totalLitersText,
-        sub: "insgesamt getankte Liter",
-        icon: "🛢️",
-        accent: ""
-      }),
-      createKpiCard({
-        label: "Erfasste Strecke",
-        value: totalDistanceText,
-        sub: "aus berechneten Intervallen",
-        icon: "🛣️",
-        accent: "accent-violet"
-      }),
-      createKpiCard({
-        label: "Jahreshochrechnung",
-        value: projectedDistanceText,
-        sub: `${projectedFuelCostText} Kraftstoffkosten/Jahr`,
-        icon: "📈",
-        accent: "accent-green"
-      }),
-      createKpiCard({
-          label: "Ladestrom",
-          value: `${formatNumber(chargeStats.totalKwh)} kWh`,
-          sub: `brutto ${formatCurrency(chargeStats.grossCost)} · Erstattung ${formatCurrency(chargeStats.reimbursedCost)} · netto ${formatCurrency(chargeStats.netCost)}`,
-          icon: "🔌",
-          accent: "accent-violet"
-        })
-    ].join("");
+const cards = [
+  createKpiCard({
+    label: "Fahrzeug",
+    value: escapeHtml(car?.name || "Unbekannt"),
+    sub: car?.plate ? escapeHtml(car.plate) : "ohne Kennzeichen",
+    icon: "🚘"
+  })
+];
+
+if (isCombustion) {
+  cards.push(
+    createKpiCard({ label: "Ø Verbrauch", value: avgConsumptionText, sub: "auf Basis der letzten Tankintervalle", icon: "⛽", accent: "accent-green" }),
+    createKpiCard({ label: "Ø Kosten", value: avgCost100Text, sub: "durchschnittlich pro 100 km", icon: "💶", accent: "accent-amber" }),
+    createKpiCard({ label: "Letzter Preis", value: lastPriceText, sub: lastEntry ? formatDateTime(lastEntry.date) : "kein Eintrag", icon: "🏷️" }),
+    createKpiCard({ label: "Gesamtkosten", value: totalCostText, sub: "alle gespeicherten Tankvorgänge", icon: "💳", accent: "accent-red" }),
+    createKpiCard({ label: "Gesamtmenge", value: totalLitersText, sub: "insgesamt getankte Liter", icon: "🛢️" }),
+    createKpiCard({ label: "Erfasste Strecke", value: totalDistanceText, sub: "aus berechneten Intervallen", icon: "🛣️", accent: "accent-violet" }),
+    createKpiCard({ label: "Jahreshochrechnung", value: projectedDistanceText, sub: `${projectedFuelCostText} Kraftstoffkosten/Jahr`, icon: "📈", accent: "accent-green" })
+  );
+}
+
+if (isElectric) {
+  cards.push(
+    createKpiCard({
+      label: "Ladestrom",
+      value: `${formatNumber(chargeStats.totalKwh)} kWh`,
+      sub: `brutto ${formatCurrency(chargeStats.grossCost)} · Erstattung ${formatCurrency(chargeStats.reimbursedCost)} · netto ${formatCurrency(chargeStats.netCost)}`,
+      icon: "🔌",
+      accent: "accent-violet"
+    })
+  );
+}
+
+els.selectedCarStats.innerHTML = cards.join("");
     
 if (els.carConsumptionChartMeta && car?.name) {
   els.carConsumptionChartMeta.textContent = `${car.name} · Verbrauchsverlauf`;
@@ -2822,8 +2866,11 @@ function renderFuelEntries() {
         ${rangeHtml ? `<br><small class="muted">${rangeHtml}</small>` : ""}
         ${entry.calculationWarning ? `<br><small class="muted">⚠️ ${escapeHtml(entry.calculationWarning)}</small>` : ""}
       `,
-      note: entry.note || "Keine Notiz"
-    });
+      note: [
+          entry.stationDisplayName || entry.locationText ? `Tankstelle: ${entry.stationDisplayName || entry.locationText}` : "",
+          entry.note || ""
+        ].filter(Boolean).join(" · ") || "Keine Notiz"
+            });
 
     els.fuelList.appendChild(node);
   });
@@ -3629,6 +3676,32 @@ renderFuelMap();
         renderAll();
       }
     }
+      
+async function updateRecord(kind, id, payload) {
+  if (state.firebaseEnabled) {
+    const pathMap = {
+      readings: `${householdBasePath()}/readings/${id}`,
+      refills: `${householdBasePath()}/refills/${id}`,
+      purchases: `${householdBasePath()}/purchases/${id}`,
+      resets: `${householdBasePath()}/resets/${id}`,
+      fuelEntries: `${householdBasePath()}/fuelEntries/${id}`,
+      pricePeriods: `${householdBasePath()}/pricePeriods/${id}`,
+      chargeEntries: `${householdBasePath()}/chargeEntries/${id}`,
+      cars: `${householdBasePath()}/cars/${id}`
+    };
+
+    await updateDoc(doc(state.db, pathMap[kind]), {
+      ...payload,
+      updatedAt: new Date().toISOString()
+    });
+  } else {
+    state[kind] = state[kind].map((item) =>
+      item.id === id ? { ...item, ...payload, updatedAt: new Date().toISOString() } : item
+    );
+    persistLocalSnapshot();
+    renderAll();
+  }
+}
 
     function updateFirebaseStatus(error = null) {
       if (state.firebaseEnabled) {
@@ -3685,6 +3758,7 @@ renderFuelMap();
       return round2(state.chargeEntries.reduce((sum, entry) => {
         const from = new Date(entry.fromDate || entry.date).getTime();
         const to = new Date(entry.toDate || entry.date).getTime();
+                 if ((entry.location || "home") !== "home") return sum;
 
         if (to < start || from > end) return sum;
 
@@ -4313,9 +4387,123 @@ renderFuelMap();
           showToast("Eintrag gelöscht.", "success");
         });
       }
+        article.addEventListener("click", (event) => {
+          if (event.target.closest("button")) return;
+          openEntryEditor(kind, id);
+        });
       return node;
     }
 
+      function openEntryEditor(kind, id) {
+  const entry = state[kind]?.find((item) => item.id === id);
+  if (!entry) return;
+
+  if (kind !== "fuelEntries") {
+    showToast("Bearbeiten ist aktuell für Tankvorgänge vorbereitet.", "error");
+    return;
+  }
+
+  const overlay = document.createElement("div");
+  overlay.className = "chart-overlay active";
+  overlay.innerHTML = `
+    <div class="chart-modal" style="max-width:720px;">
+      <div class="chart-modal-head">
+        <div>
+          <h3>Tankvorgang bearbeiten</h3>
+          <p class="muted">${formatDateTime(entry.date)}</p>
+        </div>
+        <button class="icon-btn" type="button" data-close>✕</button>
+      </div>
+
+      <form id="editFuelForm" class="form-grid">
+        <label>Datum / Uhrzeit
+          <input name="date" type="datetime-local" value="${toDatetimeLocal(entry.date)}" required>
+        </label>
+
+        <label>Liter
+          <input name="liters" type="number" step="0.01" value="${entry.liters ?? ""}" required>
+        </label>
+
+        <label>Gesamtpreis
+          <input name="totalPrice" type="number" step="0.01" value="${entry.totalPrice ?? ""}" required>
+        </label>
+
+        <label>Kilometerstand
+          <input name="mileage" type="number" step="1" value="${entry.mileage ?? ""}" required>
+        </label>
+
+        <label>Restreichweite vorher
+          <input name="rangeBefore" type="number" step="1" value="${entry.rangeBefore ?? ""}">
+        </label>
+
+        <label>Reichweite nachher
+          <input name="rangeAfter" type="number" step="1" value="${entry.rangeAfter ?? ""}">
+        </label>
+
+        <label class="full-width">Tankstelle / Ort
+          <input name="locationText" type="text" value="${escapeHtml(entry.stationDisplayName || entry.locationText || "")}">
+        </label>
+
+        <label class="full-width">Notiz
+          <textarea name="note">${escapeHtml(entry.note || "")}</textarea>
+        </label>
+
+        <div class="form-actions full-width">
+          <button class="ghost-btn" type="button" data-close>Abbrechen</button>
+          <button class="primary-btn" type="submit">Speichern</button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  document.body.style.overflow = "hidden";
+
+  const close = () => {
+    overlay.remove();
+    document.body.style.overflow = "";
+  };
+
+  overlay.querySelectorAll("[data-close]").forEach((btn) =>
+    btn.addEventListener("click", close)
+  );
+
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) close();
+  });
+
+  overlay.querySelector("#editFuelForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const form = new FormData(event.target);
+    const liters = toNumber(form.get("liters"));
+    const totalPrice = toNumber(form.get("totalPrice"));
+    const mileage = toNumber(form.get("mileage"));
+    const dt = new Date(form.get("date"));
+
+    if (Number.isNaN(dt.getTime())) return showToast("Datum ist ungültig.", "error");
+    if (!Number.isFinite(liters) || liters <= 0) return showToast("Bitte gültige Liter eingeben.", "error");
+    if (!Number.isFinite(totalPrice) || totalPrice < 0) return showToast("Bitte gültigen Preis eingeben.", "error");
+    if (!Number.isFinite(mileage) || mileage < 0) return showToast("Bitte gültigen Kilometerstand eingeben.", "error");
+
+    await updateRecord("fuelEntries", id, {
+      date: dt.toISOString(),
+      liters: round2(liters),
+      totalPrice: round2(totalPrice),
+      pricePerLiter: liters > 0 ? round4(totalPrice / liters) : 0,
+      mileage,
+      rangeBefore: Number.isFinite(toNumber(form.get("rangeBefore"))) ? toNumber(form.get("rangeBefore")) : null,
+      rangeAfter: Number.isFinite(toNumber(form.get("rangeAfter"))) ? toNumber(form.get("rangeAfter")) : null,
+      locationText: form.get("locationText").trim(),
+      stationDisplayName: form.get("locationText").trim(),
+      note: form.get("note").trim()
+    });
+
+    close();
+    showToast("Tankvorgang aktualisiert.", "success");
+  });
+}
+      
     function exportBackup() {
         const payload = {
           exportedAt: new Date().toISOString(),
