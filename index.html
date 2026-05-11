@@ -905,13 +905,38 @@
       E-Auto
       <select id="chargeCarId" required></select>
     </label>
-          <label>
-      Ladeort
-      <select id="chargeLocation">
-        <option value="home">Zuhause</option>
-        <option value="away">Unterwegs / Ladesäule</option>
-      </select>
-    </label>
+
+      <label>
+          Ladeort
+          <select id="chargeLocation">
+            <option value="home">Zuhause</option>
+            <option value="away">Unterwegs / Ladesäule</option>
+          </select>
+        </label>
+
+        <label>
+          Ladesäule in der Nähe
+          <select id="chargeStationSelect">
+            <option value="">GPS ermitteln, dann Ladesäule wählen</option>
+          </select>
+        </label>
+
+        <div class="form-actions">
+          <button id="findChargeStationsBtn" class="btn secondary" type="button">
+            Ladesäulen in der Nähe suchen
+          </button>
+        </div>
+
+        <label class="span-12">
+          Ladesäule manuell suchen
+          <input id="chargeStationSearchText" type="text" maxlength="160" placeholder="z. B. EnBW Köln, Ionity München" />
+        </label>
+
+        <div class="form-actions span-12">
+          <button id="searchChargeStationByTextBtn" class="btn ghost" type="button">
+            Ladesäule suchen
+          </button>
+        </div>
 
     <label>
       Preis gesamt unterwegs
@@ -1477,6 +1502,7 @@
       availableHouseholds: [],
       chargeEntries: [],
     nearbyFuelStations: [],
+        nearbyChargeStations: [],
       bagSizes: [...defaultBagSizes],
       firebaseEnabled: false,
       app: null,
@@ -1626,7 +1652,12 @@
         carCompanyName: document.getElementById("carCompanyName"),
         fuelRangeBefore: document.getElementById("fuelRangeBefore"),
         fuelRangeAfter: document.getElementById("fuelRangeAfter"),
-
+        chargeStationSelect: document.getElementById("chargeStationSelect"),
+        findChargeStationsBtn: document.getElementById("findChargeStationsBtn"),
+        chargeStationSearchText: document.getElementById("chargeStationSearchText"),
+        searchChargeStationByTextBtn: document.getElementById("searchChargeStationByTextBtn"),
+        fuelEntryCard: document.getElementById("fuelEntryCard"),
+        chargeEntryCard: document.getElementById("chargeEntryCard"),
         chargeForm: document.getElementById("chargeForm"),
         chargeCarId: document.getElementById("chargeCarId"),
         chargeMode: document.getElementById("chargeMode"),
@@ -1765,21 +1796,26 @@
       els.findFuelStationsBtn?.addEventListener("click", findNearbyFuelStations);
 
       els.fuelStationSelect?.addEventListener("change", applySelectedFuelStation);
-
-      els.fuelUseNow?.addEventListener("change", syncFuelNowUi);
-      els.fuelLiters?.addEventListener("input", syncFuelPricePerLiter);
-      els.fuelTotalPrice?.addEventListener("input", syncFuelPricePerLiter);
-      els.fuelForm?.addEventListener("submit", handleFuelSubmit);
-      els.fuelForm?.addEventListener("reset", () => setTimeout(() => {
-        if (els.fuelUseNow) els.fuelUseNow.checked = true;
-        if (els.fuelDatetime) els.fuelDatetime.value = toDatetimeLocal(new Date());
-        syncFuelNowUi();
-        syncFuelPricePerLiter();
-      }, 0));
       
-          els.analyticsCarSelect?.addEventListener("change", () => {
-            state.selectedAnalyticsCarId = els.analyticsCarSelect.value || null;
+        els.findChargeStationsBtn?.addEventListener("click", findNearbyChargeStations);
+        els.searchChargeStationByTextBtn?.addEventListener("click", searchChargeStationByText);
+        els.chargeStationSelect?.addEventListener("change", applySelectedChargeStation);
+              els.fuelUseNow?.addEventListener("change", syncFuelNowUi);
+              els.fuelLiters?.addEventListener("input", syncFuelPricePerLiter);
+              els.fuelTotalPrice?.addEventListener("input", syncFuelPricePerLiter);
+              els.fuelForm?.addEventListener("submit", handleFuelSubmit);
+              els.fuelForm?.addEventListener("reset", () => setTimeout(() => {
+                if (els.fuelUseNow) els.fuelUseNow.checked = true;
+                if (els.fuelDatetime) els.fuelDatetime.value = toDatetimeLocal(new Date());
+                syncFuelNowUi();
+                syncFuelPricePerLiter();
+              }, 0));
+      
+        els.analyticsCarSelect?.addEventListener("change", () => {
+          state.selectedAnalyticsCarId = els.analyticsCarSelect.value || null;
           renderSelectedCarAnalytics();
+          renderFuelEntries();
+          renderChargeEntries();
         });
       els.carConsumptionChart?.addEventListener("click", () => openCarChartOverlay("consumption"));
       els.carCostChart?.addEventListener("click", () => openCarChartOverlay("cost"));
@@ -2304,11 +2340,23 @@ async function handleChargeSubmit(event) {
     ? round2(awayTotalPrice || 0)
     : round2(homeElectricityCost);
 
+const selectedChargeStation =
+  state.nearbyChargeStations.find(
+    (item) => item.id === els.chargeStationSelect?.value
+  ) || null;
+
   await saveRecord("chargeEntries", {
     carId,
     mode,
     location,
-    locationText,
+    locationText: locationText || selectedChargeStation?.displayName || "",
+    chargeStationId: selectedChargeStation?.id ?? null,
+    chargeStationName: selectedChargeStation?.name ?? "",
+    chargeStationBrand: selectedChargeStation?.brand ?? "",
+    chargeStationAddress: selectedChargeStation?.address ?? "",
+    chargeStationDisplayName: selectedChargeStation?.displayName ?? locationText,
+    latitude: selectedChargeStation?.latitude ?? null,
+    longitude: selectedChargeStation?.longitude ?? null,
     kwh: round2(kwh),
     fromDate: from.toISOString(),
     toDate: to.toISOString(),
@@ -2333,7 +2381,7 @@ async function handleChargeSubmit(event) {
   const now = toDatetimeLocal(new Date());
   els.chargeFrom.value = now;
   els.chargeTo.value = now;
-
+    renderFuelMap();
   showToast("Ladevorgang gespeichert.", "success");
 }
 
@@ -2350,6 +2398,37 @@ function initFuelMap() {
   fuelMapMarkersLayer = L.layerGroup().addTo(fuelMapInstance);
 }
 
+function createMapMarkerIcon(color) {
+  return L.divIcon({
+    className: "",
+    html: `
+      <div style="
+        width:18px;
+        height:18px;
+        border-radius:50%;
+        background:${color};
+        border:3px solid white;
+        box-shadow:0 2px 8px rgba(0,0,0,.35);
+      "></div>
+    `,
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+    popupAnchor: [0, -10]
+  });
+}
+
+function getMapEntriesWithGps() {
+  const fuel = state.fuelEntries
+    .filter((entry) => Number.isFinite(entry.latitude) && Number.isFinite(entry.longitude))
+    .map((entry) => ({ ...entry, mapType: "fuel" }));
+
+  const charges = state.chargeEntries
+    .filter((entry) => Number.isFinite(entry.latitude) && Number.isFinite(entry.longitude))
+    .map((entry) => ({ ...entry, mapType: "charge" }));
+
+  return [...fuel, ...charges];
+}
+
 function renderFuelMap() {
   if (!els.fuelMap || typeof L === "undefined") return;
   if (!isCarsViewVisible()) return;
@@ -2360,9 +2439,7 @@ function renderFuelMap() {
 
   fuelMapMarkersLayer.clearLayers();
 
-  const entriesWithGps = state.fuelEntries.filter((entry) =>
-    Number.isFinite(entry.latitude) && Number.isFinite(entry.longitude)
-  );
+  const entriesWithGps = getMapEntriesWithGps();
 
   if (!entriesWithGps.length) {
     fuelMapInstance.setView([51.1657, 10.4515], 6);
@@ -2377,13 +2454,27 @@ function renderFuelMap() {
     const latLng = [entry.latitude, entry.longitude];
     bounds.push(latLng);
 
-    L.marker(latLng)
+    if (entry.mapType === "charge") {
+      L.marker(latLng, { icon: createMapMarkerIcon("#ef4444") })
+        .addTo(fuelMapMarkersLayer)
+        .bindPopup(`
+          <strong>${escapeHtml(car?.name || "Auto")}</strong><br>
+          🔴 Ladevorgang<br>
+          ${formatDateTime(entry.fromDate || entry.date)} → ${formatDateTime(entry.toDate || entry.date)}<br>
+          ${formatNumber(entry.kwh)} kWh · ${formatCurrency(entry.totalPrice || entry.electricityCost || 0)}<br>
+          ${entry.chargeStationDisplayName || entry.locationText ? escapeHtml(entry.chargeStationDisplayName || entry.locationText) : "Kein Standorttext"}
+        `);
+      return;
+    }
+
+    L.marker(latLng, { icon: createMapMarkerIcon("#3b82f6") })
       .addTo(fuelMapMarkersLayer)
       .bindPopup(`
         <strong>${escapeHtml(car?.name || "Auto")}</strong><br>
+        🔵 Tankvorgang<br>
         ${formatDateTime(entry.date)}<br>
         ${formatNumber(entry.liters)} l · ${formatCurrency(entry.totalPrice)}<br>
-        ${entry.locationText ? escapeHtml(entry.locationText) : "Kein Standorttext"}
+        ${entry.stationDisplayName || entry.locationText ? escapeHtml(entry.stationDisplayName || entry.locationText) : "Kein Standorttext"}
       `);
   });
 
@@ -2401,9 +2492,7 @@ function refreshFuelMapSize() {
   setTimeout(() => {
     fuelMapInstance.invalidateSize();
 
-    const entriesWithGps = state.fuelEntries.filter((entry) =>
-      Number.isFinite(entry.latitude) && Number.isFinite(entry.longitude)
-    );
+const entriesWithGps = getMapEntriesWithGps();
 
     if (entriesWithGps.length) {
       fuelMapInstance.fitBounds(
@@ -2417,7 +2506,17 @@ function refreshFuelMapSize() {
 function renderChargeEntries() {
   if (!els.chargeList) return;
 
-  const entries = [...state.chargeEntries].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const car = state.cars.find((c) => c.id === state.selectedAnalyticsCarId);
+
+  if (!car || !isElectricCar(car)) {
+    els.chargeList.innerHTML = "";
+    return;
+  }
+
+  const entries = state.chargeEntries
+    .filter((entry) => entry.carId === state.selectedAnalyticsCarId)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+
   els.chargeList.innerHTML = "";
 
   if (!entries.length) {
@@ -2498,6 +2597,162 @@ function createKpiCard({ label, value, sub = "", icon = "•", accent = "" }) {
     </div>
   `;
 }
+
+async function findNearbyChargeStations() {
+  const gps = await getCurrentPositionSafe();
+  if (!gps) return showToast("Standort konnte nicht ermittelt werden.", "error");
+
+  const stations = await fetchNearbyChargeStations(gps.latitude, gps.longitude);
+  state.nearbyChargeStations = stations;
+
+  if (!stations.length) {
+    els.chargeStationSelect.innerHTML = '<option value="">Keine Ladesäulen gefunden</option>';
+    return showToast("Keine Ladesäulen in der Nähe gefunden.", "error");
+  }
+
+  els.chargeStationSelect.innerHTML = stations.map((station) => `
+    <option value="${escapeHtml(station.id)}">
+      ${escapeHtml(station.displayName)} · ${formatNumber(station.distanceKm)} km
+    </option>
+  `).join("");
+
+  els.chargeStationSelect.value = stations[0].id;
+  applySelectedChargeStation();
+  showToast("Ladesäulen gefunden.", "success");
+}
+
+async function searchChargeStationByText() {
+  const text = els.chargeStationSearchText?.value?.trim() || "";
+  if (!text) return showToast("Bitte Suchtext eingeben, z. B. EnBW Köln.", "error");
+
+  const stations = await fetchChargeStationsByText(text);
+  state.nearbyChargeStations = stations;
+
+  if (!stations.length) {
+    els.chargeStationSelect.innerHTML = '<option value="">Keine Ladesäule gefunden</option>';
+    return showToast("Keine passende Ladesäule gefunden.", "error");
+  }
+
+  els.chargeStationSelect.innerHTML = stations.map((station) => `
+    <option value="${escapeHtml(station.id)}">${escapeHtml(station.displayName)}</option>
+  `).join("");
+
+  els.chargeStationSelect.value = stations[0].id;
+  applySelectedChargeStation();
+  showToast("Ladesäulen gefunden.", "success");
+}
+
+function applySelectedChargeStation() {
+  const station = state.nearbyChargeStations.find(
+    (item) => item.id === els.chargeStationSelect?.value
+  );
+  if (!station) return;
+
+  if (els.chargeLocationText) {
+    els.chargeLocationText.value = station.displayName;
+  }
+}
+
+async function fetchNearbyChargeStations(latitude, longitude) {
+  const radiusMeters = 5000;
+  const query = `
+    [out:json][timeout:10];
+    (
+      node["amenity"="charging_station"](around:${radiusMeters},${latitude},${longitude});
+      way["amenity"="charging_station"](around:${radiusMeters},${latitude},${longitude});
+      relation["amenity"="charging_station"](around:${radiusMeters},${latitude},${longitude});
+    );
+    out center tags;
+  `;
+
+  const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Ladesäulen-Abfrage fehlgeschlagen.");
+    const data = await response.json();
+
+    return (data.elements || [])
+      .map((item) => mapOverpassStation(item, latitude, longitude, "Ladesäule"))
+      .filter(Boolean)
+      .sort((a, b) => a.distanceKm - b.distanceKm)
+      .slice(0, 12);
+  } catch (error) {
+    console.error("Ladesäulen-Suche Fehler:", error);
+    showToast("Ladesäulen konnten nicht geladen werden.", "error");
+    return [];
+  }
+}
+
+async function fetchChargeStationsByText(searchText) {
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=20&countrycodes=de&addressdetails=1&namedetails=1&extratags=1&q=${encodeURIComponent(searchText + " Ladesäule")}`;
+
+  try {
+    const response = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!response.ok) throw new Error("Ladesäulen-Suche fehlgeschlagen.");
+    const data = await response.json();
+
+    return (data || []).map((item) => {
+      const lat = Number(item.lat);
+      const lon = Number(item.lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+
+      const address = item.address || {};
+      const name = item.namedetails?.name || item.name || item.extratags?.operator || "Ladesäule";
+
+      const station = {
+        id: `charge-search-${item.osm_type}-${item.osm_id}`,
+        name,
+        brand: item.extratags?.operator || "",
+        addressParts: address,
+        latitude: lat,
+        longitude: lon,
+        distanceKm: null
+      };
+
+      station.displayName = formatStationShort(station);
+      station.address = station.displayName;
+      return station;
+    }).filter(Boolean);
+  } catch (error) {
+    console.error("Ladesäulen-Textsuche Fehler:", error);
+    showToast("Ladesäulen-Suche konnte nicht geladen werden.", "error");
+    return [];
+  }
+}
+
+function mapOverpassStation(item, originLat, originLon, fallbackName = "Station") {
+  const lat = item.lat ?? item.center?.lat;
+  const lon = item.lon ?? item.center?.lon;
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+
+  const tags = item.tags || {};
+  const name = tags.name || tags.operator || tags.brand || fallbackName;
+
+  const street = [tags["addr:street"], tags["addr:housenumber"]].filter(Boolean).join(" ");
+  const cityLine = [tags["addr:postcode"], tags["addr:city"]].filter(Boolean).join(" ");
+  const address = [street, cityLine].filter(Boolean).join(", ");
+  const displayName = address ? `${name}, ${address}` : name;
+
+  return {
+    id: String(item.id),
+    name,
+    brand: tags.operator || tags.brand || "",
+    address,
+    displayName,
+    latitude: lat,
+    longitude: lon,
+    distanceKm: calculateDistanceKm(originLat, originLon, lat, lon)
+  };
+}
+
+function syncCarModeSections(car) {
+  const electric = isElectricCar(car);
+  const combustion = isCombustionCar(car);
+
+  els.fuelEntryCard?.classList.toggle("hidden", !combustion);
+  els.chargeEntryCard?.classList.toggle("hidden", !electric);
+}
       
 function renderSelectedCarAnalytics() {
   if (!els.selectedCarStats || !els.carConsumptionChart || !els.carCostChart) return;
@@ -2515,6 +2770,10 @@ function renderSelectedCarAnalytics() {
     const entries = buildComputedFuelEntriesForCar(state.selectedAnalyticsCarId)
     .filter(entry => entry.carId === state.selectedAnalyticsCarId)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    syncCarModeSections(car);
+    if (els.fuelCarId && !isElectricCar(car)) els.fuelCarId.value = car.id;
+    if (els.chargeCarId && isElectricCar(car)) els.chargeCarId.value = car.id;
 
     const chargeStats = getChargeCostStatsForCar(state.selectedAnalyticsCarId);
 
@@ -2543,14 +2802,21 @@ if (!entries.length && !chargeStats.totalKwh) {
 
   const totalDistance = validConsumption.reduce((sum, e) => sum + (toNumber(e.distanceKm) || 0), 0);
 
-  const lastEntry = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+const lastEntry = entries.length
+  ? [...entries].sort((a, b) => new Date(b.date) - new Date(a.date))[0]
+  : null;
 
+let projectedYearDistance = 0;
+let projectedYearFuelCost = 0;
+
+if (entries.length && lastEntry) {
   const firstDate = new Date(entries[0].date);
   const lastDate = new Date(lastEntry.date);
   const days = Math.max(1, (lastDate - firstDate) / 86400000);
   const yearFactor = 365 / days;
-  const projectedYearDistance = round2(totalDistance * yearFactor);
-  const projectedYearFuelCost = round2(totalCost * yearFactor);
+  projectedYearDistance = round2(totalDistance * yearFactor);
+  projectedYearFuelCost = round2(totalCost * yearFactor);
+}
 
     const avgConsumptionText = avgConsumption != null ? `${formatNumber(avgConsumption)} l/100 km` : "–";
     const avgCost100Text = avgCost100 != null ? `${formatCurrency(avgCost100)}/100 km` : "–";
@@ -2827,7 +3093,15 @@ function buildAllComputedFuelEntries() {
 function renderFuelEntries() {
   if (!els.fuelList) return;
 
-  const entries = buildAllComputedFuelEntries()
+  const car = state.cars.find((c) => c.id === state.selectedAnalyticsCarId);
+
+if (!car || car.fuelType === "electric") {
+    els.fuelList.innerHTML = "";
+    renderFuelStats();
+    return;
+  }
+
+  const entries = buildComputedFuelEntriesForCar(state.selectedAnalyticsCarId)
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 
   els.fuelList.innerHTML = "";
@@ -2878,16 +3152,23 @@ function renderFuelEntries() {
   renderFuelStats();
 }
 
-    function renderFuelStats() {
-      if (!els.fuelStats) return;
+function renderFuelStats() {
+  if (!els.fuelStats) return;
 
-      if (!state.selectedAnalyticsCarId) {
-        els.fuelStats.innerHTML = '<div class="empty-state">Kein Auto ausgewählt.</div>';
-        return;
-      }
+  if (!state.selectedAnalyticsCarId) {
+    els.fuelStats.innerHTML = '<div class="empty-state">Kein Auto ausgewählt.</div>';
+    return;
+  }
 
-const entries = buildComputedFuelEntriesForCar(state.selectedAnalyticsCarId)
-        .sort((a, b) => new Date(b.date) - new Date(a.date));
+  const car = state.cars.find((c) => c.id === state.selectedAnalyticsCarId);
+
+if (!car || car.fuelType === "electric") {
+    els.fuelStats.innerHTML = "";
+    return;
+  }
+
+  const entries = buildComputedFuelEntriesForCar(state.selectedAnalyticsCarId)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
 
       if (!entries.length) {
         els.fuelStats.innerHTML = '<div class="empty-state">Noch keine Tankdaten für dieses Auto vorhanden.</div>';
@@ -2895,7 +3176,6 @@ const entries = buildComputedFuelEntriesForCar(state.selectedAnalyticsCarId)
       }
 
       const last = entries[0];
-      const car = state.cars.find((c) => c.id === state.selectedAnalyticsCarId);
 
       els.fuelStats.innerHTML = `
         <div class="stat-box">
@@ -4440,6 +4720,20 @@ async function updateRecord(kind, id, payload) {
           <input name="rangeAfter" type="number" step="1" value="${entry.rangeAfter ?? ""}">
         </label>
 
+          <label class="full-width">Tankstelle suchen
+          <input name="stationSearch" type="text" placeholder="z. B. Shell Köln, Aral München">
+        </label>
+
+        <div class="form-actions full-width">
+          <button class="btn ghost" type="button" data-search-station>Tankstelle suchen</button>
+        </div>
+
+        <label class="full-width">Gefundene Tankstelle
+          <select name="stationSelect">
+            <option value="">Keine neue Tankstelle gewählt</option>
+          </select>
+        </label>
+  
         <label class="full-width">Tankstelle / Ort
           <input name="locationText" type="text" value="${escapeHtml(entry.stationDisplayName || entry.locationText || "")}">
         </label>
@@ -4457,6 +4751,36 @@ async function updateRecord(kind, id, payload) {
   `;
 
   document.body.appendChild(overlay);
+    let editorStations = [];
+
+    overlay.querySelector("[data-search-station]")?.addEventListener("click", async () => {
+      const text = overlay.querySelector('[name="stationSearch"]')?.value?.trim() || "";
+      if (!text) return showToast("Bitte Suchtext eingeben.", "error");
+
+      editorStations = await fetchFuelStationsByText(text);
+
+      const select = overlay.querySelector('[name="stationSelect"]');
+      if (!editorStations.length) {
+        select.innerHTML = '<option value="">Keine Tankstelle gefunden</option>';
+        return showToast("Keine passende Tankstelle gefunden.", "error");
+      }
+
+      select.innerHTML = '<option value="">Bitte wählen</option>' + editorStations.map((station) => `
+        <option value="${escapeHtml(station.id)}">${escapeHtml(station.displayName)}</option>
+      `).join("");
+
+      showToast("Tankstellen gefunden.", "success");
+    });
+
+    overlay.querySelector('[name="stationSelect"]')?.addEventListener("change", () => {
+      const selected = editorStations.find(
+        (station) => station.id === overlay.querySelector('[name="stationSelect"]').value
+      );
+      if (selected) {
+        overlay.querySelector('[name="locationText"]').value = selected.displayName;
+      }
+    });
+
   document.body.style.overflow = "hidden";
 
   const close = () => {
@@ -4486,6 +4810,10 @@ async function updateRecord(kind, id, payload) {
     if (!Number.isFinite(totalPrice) || totalPrice < 0) return showToast("Bitte gültigen Preis eingeben.", "error");
     if (!Number.isFinite(mileage) || mileage < 0) return showToast("Bitte gültigen Kilometerstand eingeben.", "error");
 
+const selectedStation = editorStations.find(
+  (station) => station.id === form.get("stationSelect")
+) || null;
+
     await updateRecord("fuelEntries", id, {
       date: dt.toISOString(),
       liters: round2(liters),
@@ -4495,7 +4823,13 @@ async function updateRecord(kind, id, payload) {
       rangeBefore: Number.isFinite(toNumber(form.get("rangeBefore"))) ? toNumber(form.get("rangeBefore")) : null,
       rangeAfter: Number.isFinite(toNumber(form.get("rangeAfter"))) ? toNumber(form.get("rangeAfter")) : null,
       locationText: form.get("locationText").trim(),
-      stationDisplayName: form.get("locationText").trim(),
+latitude: selectedStation?.latitude ?? entry.latitude ?? null,
+longitude: selectedStation?.longitude ?? entry.longitude ?? null,
+stationId: selectedStation?.id ?? entry.stationId ?? null,
+stationName: selectedStation?.name ?? entry.stationName ?? "",
+stationBrand: selectedStation?.brand ?? entry.stationBrand ?? "",
+stationAddress: selectedStation?.address ?? entry.stationAddress ?? "",
+stationDisplayName: selectedStation?.displayName ?? form.get("locationText").trim(),
       note: form.get("note").trim()
     });
 
