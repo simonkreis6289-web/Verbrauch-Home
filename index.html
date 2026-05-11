@@ -816,6 +816,17 @@
             Tankstellen in der Nähe suchen
           </button>
         </div>
+          
+          <label class="span-12">
+              Tankstelle manuell suchen
+              <input id="fuelStationSearchText" type="text" maxlength="160" placeholder="z. B. Shell Köln, Aral München Sendling" />
+            </label>
+
+            <div class="form-actions span-12">
+              <button id="searchFuelStationByTextBtn" class="btn ghost" type="button">
+                Tankstelle suchen
+              </button>
+            </div>
 
         <label>
           Standort
@@ -856,6 +867,18 @@
           <input id="fuelMileage" type="number" step="1" min="0" required />
         </label>
 
+        <label>
+          Restreichweite vor dem Tanken
+          <input id="fuelRangeBefore" type="number" step="1" min="0" placeholder="optional, z. B. 60" />
+          <small>Anzeige im Auto vor dem Tanken.</small>
+        </label>
+
+        <label>
+          Reichweite nach dem Tanken
+          <input id="fuelRangeAfter" type="number" step="1" min="0" placeholder="optional, z. B. 780" />
+          <small>Anzeige im Auto nach dem Tanken.</small>
+        </label>
+          
         <label class="span-12">
           Notiz
           <input id="fuelNote" type="text" maxlength="160" placeholder="optional" />
@@ -1552,10 +1575,12 @@
       carNote: document.getElementById("carNote"),
       carList: document.getElementById("carList"),
 
-fuelMap: document.getElementById("fuelMap"),
-showLiveLocationBtn: document.getElementById("showLiveLocationBtn"),
-fuelStationSelect: document.getElementById("fuelStationSelect"),
-findFuelStationsBtn: document.getElementById("findFuelStationsBtn"),
+        fuelMap: document.getElementById("fuelMap"),
+        showLiveLocationBtn: document.getElementById("showLiveLocationBtn"),
+        fuelStationSelect: document.getElementById("fuelStationSelect"),
+        findFuelStationsBtn: document.getElementById("findFuelStationsBtn"),
+        fuelStationSearchText: document.getElementById("fuelStationSearchText"),
+        searchFuelStationByTextBtn: document.getElementById("searchFuelStationByTextBtn"),
 
       fuelForm: document.getElementById("fuelForm"),
       fuelCarId: document.getElementById("fuelCarId"),
@@ -1579,6 +1604,8 @@ findFuelStationsBtn: document.getElementById("findFuelStationsBtn"),
       fuelLocationText: document.getElementById("fuelLocationText"),
       carOwnership: document.getElementById("carOwnership"),
         carCompanyName: document.getElementById("carCompanyName"),
+        fuelRangeBefore: document.getElementById("fuelRangeBefore"),
+        fuelRangeAfter: document.getElementById("fuelRangeAfter"),
 
         chargeForm: document.getElementById("chargeForm"),
         chargeCarId: document.getElementById("chargeCarId"),
@@ -1651,7 +1678,7 @@ findFuelStationsBtn: document.getElementById("findFuelStationsBtn"),
       els.exportBackupBtn?.addEventListener("click", exportBackup);
 
       els.quickUseNow?.addEventListener("change", syncQuickNowUi);
-
+      els.searchFuelStationByTextBtn?.addEventListener("click", searchFuelStationByText);
       els.batchReadingForm?.addEventListener("submit", handleBatchReadingSubmit);
       els.batchReadingForm?.addEventListener("reset", () => setTimeout(() => {
         els.batchReadingDatetime.value = toDatetimeLocal(new Date());
@@ -1897,6 +1924,117 @@ els.fuelStationSelect.innerHTML = stations.map((station) => `
           showToast("Tankstellen gefunden.", "success");
         }
 
+      async function searchFuelStationByText() {
+  const text = els.fuelStationSearchText?.value?.trim() || "";
+
+  if (!text) {
+    showToast("Bitte Suchtext für die Tankstelle eingeben.", "error");
+    return;
+  }
+
+  const stations = await fetchFuelStationsByText(text);
+  state.nearbyFuelStations = stations;
+
+  if (!els.fuelStationSelect) return;
+
+  if (!stations.length) {
+    els.fuelStationSelect.innerHTML = '<option value="">Keine Tankstelle gefunden</option>';
+    showToast("Keine passende Tankstelle gefunden.", "error");
+    return;
+  }
+
+  els.fuelStationSelect.innerHTML = stations.map((station) => `
+    <option value="${escapeHtml(station.id)}">
+      ${escapeHtml(station.displayName)}
+    </option>
+  `).join("");
+
+  els.fuelStationSelect.value = stations[0].id;
+
+  if (els.fuelLocationText) {
+    els.fuelLocationText.value = stations[0].displayName;
+  }
+
+  showToast("Tankstelle gefunden.", "success");
+}
+
+async function fetchFuelStationsByText(searchText) {
+  const query = `
+    [out:json][timeout:12];
+    area["ISO3166-1"="DE"][admin_level=2]->.de;
+    (
+      node["amenity"="fuel"]["name"~"${escapeOverpassRegex(searchText)}",i](area.de);
+      way["amenity"="fuel"]["name"~"${escapeOverpassRegex(searchText)}",i](area.de);
+      relation["amenity"="fuel"]["name"~"${escapeOverpassRegex(searchText)}",i](area.de);
+
+      node["amenity"="fuel"]["brand"~"${escapeOverpassRegex(searchText)}",i](area.de);
+      way["amenity"="fuel"]["brand"~"${escapeOverpassRegex(searchText)}",i](area.de);
+      relation["amenity"="fuel"]["brand"~"${escapeOverpassRegex(searchText)}",i](area.de);
+    );
+    out center tags 25;
+  `;
+
+  const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Tankstellen-Suche fehlgeschlagen.");
+
+    const data = await response.json();
+
+    return (data.elements || [])
+      .map(mapOverpassFuelStation)
+      .filter(Boolean)
+      .slice(0, 25);
+  } catch (error) {
+    console.error("Tankstellen-Textsuche Fehler:", error);
+    showToast("Tankstellen-Suche konnte nicht geladen werden.", "error");
+    return [];
+  }
+}
+
+function mapOverpassFuelStation(item) {
+  const lat = item.lat ?? item.center?.lat;
+  const lon = item.lon ?? item.center?.lon;
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+
+  const tags = item.tags || {};
+  const brand = tags.brand || "";
+  const name = tags.name || brand || "Tankstelle";
+
+  const street = [tags["addr:street"], tags["addr:housenumber"]]
+    .filter(Boolean)
+    .join(" ");
+
+  const cityLine = [tags["addr:postcode"], tags["addr:city"]]
+    .filter(Boolean)
+    .join(" ");
+
+  const address = [street, cityLine]
+    .filter(Boolean)
+    .join(", ");
+
+  const displayName = address ? `${name}, ${address}` : name;
+
+  return {
+    id: String(item.id),
+    name,
+    brand,
+    address,
+    displayName,
+    latitude: lat,
+    longitude: lon,
+    distanceKm: null
+  };
+}
+
+function escapeOverpassRegex(text) {
+  return String(text)
+    .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    .trim();
+}
+      
 async function fetchNearbyFuelStations(latitude, longitude) {
   const radiusMeters = 5000;
 
@@ -2276,7 +2414,7 @@ function renderSelectedCarAnalytics() {
   }
 
   const car = state.cars.find(c => c.id === state.selectedAnalyticsCarId);
-  const entries = [...state.fuelEntries]
+    const entries = buildComputedFuelEntriesForCar(state.selectedAnalyticsCarId)
     .filter(entry => entry.carId === state.selectedAnalyticsCarId)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
@@ -2490,48 +2628,52 @@ if (metaContainer) {
   return metaText;
 }
 
-    function openCarChartOverlay(mode) {
-      const entries = [...state.fuelEntries]
-        .filter(entry => entry.carId === state.selectedAnalyticsCarId)
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
+function openCarChartOverlay(mode) {
+  const entries = buildComputedFuelEntriesForCar(state.selectedAnalyticsCarId)
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-      if (!entries.length) return;
+  if (!entries.length) return;
 
-      if (mode === "consumption") {
-        const filtered = entries.filter(e => Number.isFinite(e.litersPer100km));
-        const car = state.cars.find(c => c.id === state.selectedAnalyticsCarId);
-            els.chartOverlayTitle.textContent = `${car?.name || "Auto"} · Verbrauch groß`;
-        const meta = renderCarMetricChart({
-          entries: filtered,
-          container: els.chartOverlayContent,
-          metaContainer: null,
-          metricKey: "litersPer100km",
-          label: "Verbrauch",
-          unit: "l/100 km",
-          color: "#38bdf8",
-          large: true
-        });
-        els.chartOverlayMeta.textContent = meta;
-      } else {
-        const filtered = entries.filter(e => Number.isFinite(e.costPer100km));
-        els.chartOverlayTitle.textContent = "Kosten · groß";
-        const meta = renderCarMetricChart({
-          entries: filtered,
-          container: els.chartOverlayContent,
-          metaContainer: null,
-          metricKey: "costPer100km",
-          label: "Kosten",
-          unit: "€/100 km",
-          color: "#22c55e",
-          large: true
-        });
-        els.chartOverlayMeta.textContent = meta;
-      }
+  const car = state.cars.find(c => c.id === state.selectedAnalyticsCarId);
 
-      els.chartOverlay.classList.add("active");
-      els.chartOverlay.setAttribute("aria-hidden", "false");
-      document.body.style.overflow = "hidden";
-    }
+  if (mode === "consumption") {
+    const filtered = entries.filter(e => Number.isFinite(e.litersPer100km));
+    els.chartOverlayTitle.textContent = `${car?.name || "Auto"} · Verbrauch groß`;
+
+    const meta = renderCarMetricChart({
+      entries: filtered,
+      container: els.chartOverlayContent,
+      metaContainer: null,
+      metricKey: "litersPer100km",
+      label: "Verbrauch",
+      unit: "l/100 km",
+      color: "#38bdf8",
+      large: true
+    });
+
+    els.chartOverlayMeta.textContent = meta;
+  } else {
+    const filtered = entries.filter(e => Number.isFinite(e.costPer100km));
+    els.chartOverlayTitle.textContent = `${car?.name || "Auto"} · Kosten groß`;
+
+    const meta = renderCarMetricChart({
+      entries: filtered,
+      container: els.chartOverlayContent,
+      metaContainer: null,
+      metricKey: "costPer100km",
+      label: "Kosten",
+      unit: "€/100 km",
+      color: "#22c55e",
+      large: true
+    });
+
+    els.chartOverlayMeta.textContent = meta;
+  }
+
+  els.chartOverlay.classList.add("active");
+  els.chartOverlay.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+}
             
     function renderCarOptions() {
       if (!els.fuelCarId) return;
@@ -2556,46 +2698,113 @@ if (metaContainer) {
         .join("");
     }
 
-    function renderFuelEntries() {
-      if (!els.fuelList) return;
+function buildComputedFuelEntriesForCar(carId) {
+  const entries = [...state.fuelEntries]
+    .filter((entry) => entry.carId === carId)
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-      const entries = [...state.fuelEntries].sort((a, b) => new Date(b.date) - new Date(a.date));
-      els.fuelList.innerHTML = "";
+  return entries.map((entry, index) => {
+    const previous = index > 0 ? entries[index - 1] : null;
 
-      if (!entries.length) {
-        els.fuelList.innerHTML = '<div class="empty-state">Noch keine Tankvorgänge gespeichert.</div>';
-        renderFuelStats();
-        return;
+    let distanceKm = null;
+    let litersPer100km = null;
+    let costPer100km = null;
+    let calculationWarning = "";
+    let suspectedMissingRefuel = false;
+    let rangeUsedKm = null;
+    let rangeDifferenceKm = null;
+
+    if (previous) {
+      distanceKm = round2((toNumber(entry.mileage) || 0) - (toNumber(previous.mileage) || 0));
+
+      const previousRangeAfter = toNumber(previous.rangeAfter);
+      const currentRangeBefore = toNumber(entry.rangeBefore);
+
+      if (Number.isFinite(previousRangeAfter) && Number.isFinite(currentRangeBefore)) {
+        rangeUsedKm = round2(previousRangeAfter - currentRangeBefore);
+        rangeDifferenceKm = round2(distanceKm - rangeUsedKm);
+
+        const tolerance = Math.max(50, distanceKm * 0.25);
+
+        if (distanceKm > rangeUsedKm + tolerance || distanceKm > previousRangeAfter + tolerance) {
+          suspectedMissingRefuel = true;
+          calculationWarning = "Möglicherweise wurde ein Tankvorgang vergessen. Verbrauch wird für dieses Intervall nicht berechnet.";
+        }
       }
 
-      entries.forEach((entry) => {
-        const car = state.cars.find((c) => c.id === entry.carId);
-        const carName = car ? car.name : "Unbekanntes Auto";
-        const node = createEntryNode({
-          id: entry.id,
-          kind: "fuelEntries",
-          typeLabel: `Tanken · ${carName}`,
-          datetime: formatDateTime(entry.date),
-            valueHtml: `
-              ${formatNumber(entry.liters)} l · ${formatCurrency(entry.totalPrice)}
-              <br>
-              <small class="muted">
-                ${formatCurrency(entry.pricePerLiter)}/l · ${formatNumber(entry.mileage)} km
-                ${Number.isFinite(entry.distanceKm) ? ` · Strecke ${formatNumber(entry.distanceKm)} km` : ""}
-                ${Number.isFinite(entry.litersPer100km) ? ` · ${formatNumber(entry.litersPer100km)} l/100km` : ""}
-                ${Number.isFinite(entry.costPer100km) ? ` · ${formatCurrency(entry.costPer100km)}/100km` : ""}
-              </small>
-            `,
-            note: [
-          entry.stationDisplayName || entry.locationText || "",
-          entry.note || ""
-        ].filter(Boolean).join(" · ") || "Keine Notiz"
-        });
-        els.fuelList.appendChild(node);
-      });
-
-      renderFuelStats();
+      if (!suspectedMissingRefuel && distanceKm > 0) {
+        litersPer100km = round2(((toNumber(entry.liters) || 0) / distanceKm) * 100);
+        costPer100km = round2(((toNumber(entry.totalPrice) || 0) / distanceKm) * 100);
+      }
     }
+
+    return {
+      ...entry,
+      distanceKm,
+      litersPer100km,
+      costPer100km,
+      rangeUsedKm,
+      rangeDifferenceKm,
+      suspectedMissingRefuel,
+      calculationWarning
+    };
+  });
+}
+
+function buildAllComputedFuelEntries() {
+  return state.cars.flatMap((car) => buildComputedFuelEntriesForCar(car.id));
+}
+            
+function renderFuelEntries() {
+  if (!els.fuelList) return;
+
+  const entries = buildAllComputedFuelEntries()
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  els.fuelList.innerHTML = "";
+
+  if (!entries.length) {
+    els.fuelList.innerHTML = '<div class="empty-state">Noch keine Tankvorgänge gespeichert.</div>';
+    renderFuelStats();
+    return;
+  }
+
+  entries.forEach((entry) => {
+    const car = state.cars.find((c) => c.id === entry.carId);
+    const carName = car ? car.name : "Unbekanntes Auto";
+
+    const rangeHtml = [
+      Number.isFinite(entry.rangeBefore) ? `Rest vorher ${formatNumber(entry.rangeBefore)} km` : "",
+      Number.isFinite(entry.rangeAfter) ? `Reichweite nachher ${formatNumber(entry.rangeAfter)} km` : "",
+      Number.isFinite(entry.rangeUsedKm) ? `Anzeige-Verbrauch ${formatNumber(entry.rangeUsedKm)} km` : "",
+      Number.isFinite(entry.rangeDifferenceKm) ? `Abweichung ${formatNumber(entry.rangeDifferenceKm)} km` : ""
+    ].filter(Boolean).join(" · ");
+
+    const node = createEntryNode({
+      id: entry.id,
+      kind: "fuelEntries",
+      typeLabel: `Tanken · ${carName}`,
+      datetime: formatDateTime(entry.date),
+      valueHtml: `
+        ${formatNumber(entry.liters)} l · ${formatCurrency(entry.totalPrice)}
+        <br>
+        <small class="muted">
+          ${formatCurrency(entry.pricePerLiter)}/l · ${formatNumber(entry.mileage)} km
+          ${Number.isFinite(entry.distanceKm) ? ` · Strecke ${formatNumber(entry.distanceKm)} km` : ""}
+          ${Number.isFinite(entry.litersPer100km) ? ` · ${formatNumber(entry.litersPer100km)} l/100km` : ""}
+          ${Number.isFinite(entry.costPer100km) ? ` · ${formatCurrency(entry.costPer100km)}/100km` : ""}
+        </small>
+        ${rangeHtml ? `<br><small class="muted">${rangeHtml}</small>` : ""}
+        ${entry.calculationWarning ? `<br><small class="muted">⚠️ ${escapeHtml(entry.calculationWarning)}</small>` : ""}
+      `,
+      note: entry.note || "Keine Notiz"
+    });
+
+    els.fuelList.appendChild(node);
+  });
+
+  renderFuelStats();
+}
 
     function renderFuelStats() {
       if (!els.fuelStats) return;
@@ -2605,8 +2814,7 @@ if (metaContainer) {
         return;
       }
 
-      const entries = [...state.fuelEntries]
-        .filter((entry) => entry.carId === state.selectedAnalyticsCarId)
+const entries = buildComputedFuelEntriesForCar(state.selectedAnalyticsCarId)
         .sort((a, b) => new Date(b.date) - new Date(a.date));
 
       if (!entries.length) {
@@ -2715,6 +2923,8 @@ if (metaContainer) {
       const mileage = toNumber(els.fuelMileage.value);
       const note = els.fuelNote.value.trim();
       const pricePerLiter = liters > 0 ? round4(totalPrice / liters) : 0;
+        const rangeBefore = toNumber(els.fuelRangeBefore?.value);
+        const rangeAfter = toNumber(els.fuelRangeAfter?.value);
 
       if (!carId) {
         showToast("Bitte ein Auto auswählen.", "error");
@@ -2769,20 +2979,6 @@ if (metaContainer) {
         showToast(`Kilometerstand darf nicht kleiner als ${formatNumber(latestMileage)} km sein.`, "error");
         return;
       }
-
-        const previousFuelEntry = getPreviousFuelEntryForCar(carId, isoDate);
-        let distanceKm = null;
-        let litersPer100km = null;
-        let costPer100km = null;
-
-        if (previousFuelEntry) {
-          distanceKm = round2(mileage - previousFuelEntry.mileage);
-
-          if (distanceKm > 0) {
-            litersPer100km = round2((liters / distanceKm) * 100);
-            costPer100km = round2((totalPrice / distanceKm) * 100);
-          }
-        }
         
         let gps = null;
         let autoStation = null;
@@ -2808,11 +3004,6 @@ if (metaContainer) {
       autoStation ||
       null;
 
-    if (!selectedStation) {
-      showToast("Bitte eine Tankstelle auswählen oder Tankstellen suchen.", "error");
-      return;
-    }
-
     const locationText =
       els.fuelLocationText?.value?.trim() ||
       selectedStation?.displayName ||
@@ -2824,9 +3015,9 @@ if (metaContainer) {
           totalPrice: round2(totalPrice),
           pricePerLiter,
           mileage,
-          distanceKm,
-          litersPer100km,
-          costPer100km,
+            distanceKm: null,
+            litersPer100km: null,
+            costPer100km: null,
           locationText,
         latitude: selectedStation?.latitude ?? gps?.latitude ?? null,
         longitude: selectedStation?.longitude ?? gps?.longitude ?? null,
@@ -2837,16 +3028,22 @@ if (metaContainer) {
             stationBrand: selectedStation?.brand ?? "",
             stationAddress: selectedStation?.address ?? "",
             stationDisplayName: selectedStation?.displayName ?? locationText,
+            rangeBefore: Number.isFinite(rangeBefore) ? rangeBefore : null,
+            rangeAfter: Number.isFinite(rangeAfter) ? rangeAfter : null,
           note,
           date: isoDate,
           createdAt: new Date().toISOString()
         });
 
       els.fuelForm.reset();
+        if (els.fuelRangeBefore) els.fuelRangeBefore.value = "";
+        if (els.fuelRangeAfter) els.fuelRangeAfter.value = "";
       els.fuelUseNow.checked = true;
       els.fuelDatetime.value = toDatetimeLocal(new Date());
       syncFuelNowUi();
       syncFuelPricePerLiter();
+
+renderFuelMap();
 
       showToast("Tankvorgang gespeichert.", "success");
     }
