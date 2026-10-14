@@ -1,10 +1,17 @@
 name: Energiepreise prüfen
+
 on:
   schedule:
     - cron: '17 6,13 * * *'
   workflow_dispatch:
+
 permissions:
   contents: write
+
+concurrency:
+  group: energiepreise-update
+  cancel-in-progress: false
+
 jobs:
   prices:
     runs-on: ubuntu-latest
@@ -13,21 +20,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install requests beautifulsoup4
-      - run: python update_market_prices.py
-      - name: Preisdatei aktualisieren
+      - name: Python-Abhängigkeiten installieren
+        run: pip install requests beautifulsoup4
+      - name: Energiepreise abrufen
+        run: python update_market_prices.py
+      - name: Preisdateien aktualisieren
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git add market-prices.json
-
+          git add market-prices.json market-price-history.json
           if git diff --cached --quiet; then
-            echo "Keine Änderungen vorhanden."
+            echo "Keine neuen Preise vorhanden."
             exit 0
           fi
-
-          git commit -m "Marktpreise aktualisieren"
-
+          git commit -m "Marktpreise und Preisverlauf aktualisieren"
           git pull --rebase origin main
           git push origin HEAD:main
