@@ -1,0 +1,9 @@
+{
+  "generated_at": null,
+  "region": "57489 Drolshagen",
+  "prices": {
+    "pellets_loose": {"price": null, "unit": "EUR/1000kg", "scope": "regional", "checked_at": null, "source_url": "https://www.heizpellets24.de/pelletpreise/nordrhein-westfalen/olpe/drolshagen-57489"},
+    "pellets_bag": {"price": null, "unit": "EUR/1000kg", "scope": "regional", "checked_at": null, "source_url": "https://www.holzpellets.net/pelletspreise/Nordrhein-Westfalen/Olpe/pellets-Drolshagen"},
+    "heating_oil": {"price": null, "unit": "EUR/100l", "scope": "national", "checked_at": null, "source_url": "https://www.tecson.de/de/heizoelpreise.html"}
+  }
+}

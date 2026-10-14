@@ -221,6 +221,14 @@
     }
     .summary-grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
+    .energy-market-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+    .energy-market-tile{padding:18px;border:1px solid var(--line);background:var(--app-inner,rgba(8,17,32,.65));border-radius:18px;position:relative;min-width:0}
+    .energy-market-tile:before{content:"";position:absolute;top:0;left:0;width:100%;height:4px;background:var(--market-accent,#f59e0b);border-radius:18px 18px 0 0}
+    .energy-market-tile h3{font-size:.94rem;margin:4px 0 12px}
+    .energy-market-tile .market-value{font-size:clamp(1.1rem,2vw,1.7rem);font-weight:850;letter-spacing:-.02em}
+    .energy-market-tile p{font-size:.8rem;color:var(--muted);line-height:1.5;margin:8px 0 0}
+    .energy-market-tile a{font-size:.83rem;color:var(--primary)}
+    @media(max-width:900px){.energy-market-grid{grid-template-columns:1fr}}
     .stat-box {
       background: rgba(8, 17, 32, 0.7);
       border: 1px solid var(--line);
@@ -229,6 +237,109 @@
     }
     .stat-label { color: var(--muted); font-size: 0.82rem; margin-bottom: 6px; }
     .stat-value { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.45; }
+
+    .fuel-stats-grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+    }
+    .fuel-hero-card, .fuel-mini-card {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(8, 17, 32, 0.78), rgba(8, 17, 32, 0.58));
+      box-shadow: var(--shadow);
+    }
+    .fuel-hero-card {
+      grid-column: span 6;
+      padding: 18px 20px;
+      min-height: 148px;
+    }
+    .fuel-mini-card {
+      grid-column: span 3;
+      padding: 16px 18px;
+      min-height: 132px;
+    }
+    .fuel-card-accent {
+      position: absolute;
+      inset: 0 auto auto 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, var(--card-accent, var(--primary)), color-mix(in srgb, var(--card-accent, var(--primary)) 30%, white));
+    }
+    .fuel-card-head {
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom: 12px;
+    }
+    .fuel-card-kicker {
+      color: var(--muted);
+      font-size: .8rem;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+    .fuel-card-title {
+      font-size: 1.22rem;
+      font-weight: 850;
+      letter-spacing: -.02em;
+      line-height: 1.18;
+      margin: 2px 0 0;
+      overflow-wrap:anywhere;
+    }
+    .fuel-card-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      color: var(--text);
+      background: color-mix(in srgb, var(--card-accent, var(--primary)) 18%, transparent);
+      border: 1px solid color-mix(in srgb, var(--card-accent, var(--primary)) 35%, transparent);
+      font-size: 1.2rem;
+    }
+    .fuel-card-value {
+      font-size: clamp(1.18rem, 2.4vw, 1.9rem);
+      font-weight: 850;
+      letter-spacing: -.03em;
+      line-height: 1.12;
+      margin-bottom: 6px;
+      font-variant-numeric: tabular-nums;
+      overflow-wrap:anywhere;
+    }
+    .fuel-card-sub, .fuel-card-meta, .fuel-card-foot {
+      color: var(--muted);
+      font-size: .88rem;
+      line-height: 1.55;
+    }
+    .fuel-card-sub strong, .fuel-card-meta strong, .fuel-card-foot strong { color: var(--text); }
+    .fuel-card-meta {
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top: 8px;
+    }
+    .fuel-pill {
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(148,163,184,.08);
+      font-size: .79rem;
+      color: var(--muted);
+    }
+    .fuel-card-foot { margin-top: 10px; }
+    .fuel-card-foot strong { display:block; margin-bottom: 2px; }
+    html[data-theme="light"] .fuel-hero-card,
+    html[data-theme="light"] .fuel-mini-card {
+      background: linear-gradient(180deg, #ffffff, #f4f8fd);
+    }
+    html[data-theme="light"] .fuel-pill { background: rgba(77,105,142,.06); }
 
     .muted { color: var(--muted); }
     .list-stack { display: grid; gap: 14px; }
@@ -479,6 +590,8 @@
       
     @media (max-width: 1100px) {
       .card, .card.wide { grid-column: 1 / -1; }
+      .fuel-hero-card { grid-column: span 6; }
+      .fuel-mini-card { grid-column: span 3; }
       .price-grid, .summary-grid, .summary-grid.four, .stats-grid, .settings-summary-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
@@ -498,6 +611,8 @@
         flex-direction: column;
         align-items: stretch;
       }
+      .fuel-stats-grid { grid-template-columns: 1fr; }
+      .fuel-hero-card, .fuel-mini-card { grid-column: 1 / -1; min-height: auto; }
       .form-grid, .settings-grid, .price-grid, .summary-grid, .summary-grid.four, .stats-grid, .settings-summary-grid {
         grid-template-columns: 1fr;
       }
@@ -643,6 +758,14 @@
 @media(max-width:720px){#dashboardView .dash-kpis,#dashboardView .dash-totals,#dashboardView .dash-month-cards{grid-template-columns:1fr}#dashboardView .dash-month-chart svg{height:250px}#dashboardView .dash-month-chart{overflow-x:auto}}
 html[data-theme="light"] #dashboardView .dash-trend.up{color:#b91c1c} html[data-theme="light"] #dashboardView .dash-trend.down{color:#15803d}
 
+
+    .pellet-compare-grid { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px }
+    .pellet-compare-item {background:var(--app-inner,rgba(8,17,32,.6));border:1px solid var(--line);border-radius:18px;padding:17px;min-width:0}
+    .pellet-compare-item strong {display:block;font-size:1.35rem;margin:10px 0;color:var(--text)}
+    .pellet-compare-item small {display:block;line-height:1.55;color:var(--muted)}
+    .pellet-compare-item .pellet-kicker{font-size:.85rem;font-weight:700;color:var(--muted)}
+    .pellet-compare-item .pellet-big {font-size:clamp(1.18rem,2.6vw,1.8rem);font-weight:850}
+    @media(max-width:850px){.pellet-compare-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -653,7 +776,7 @@ html[data-theme="light"] #dashboardView .dash-trend.up{color:#b91c1c} html[data-
         <h1>Zählerstände, Pellets und Kosten im Blick</h1>
         <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
         <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du den Haushalt wechseln oder neu anlegen.</p>
-        <p class="hero-copy">Version 1.3.1.110</p>
+        <p class="hero-copy">Version 1.3.1.113</p>
       </div>
       <div class="hero-actions">
         <button id="themeToggleBtn" class="btn ghost theme-toggle" type="button" aria-label="Design wechseln" aria-pressed="false"><span id="themeToggleIcon" aria-hidden="true">☀️</span> <span id="themeToggleLabel">Helles Design</span></button>
@@ -683,10 +806,21 @@ html[data-theme="light"] #dashboardView .dash-trend.up{color:#b91c1c} html[data-
           <div id="dashboardStats" class="dash-kpis"></div>
         </section>
 
+        <section class="card wide" aria-label="Marktpreise in Drolshagen">
+          <div class="card-head"><div><p class="section-kicker">ENERGIEPREISE · 57489 DROLSHAGEN</p><h2>Aktuelle Marktpreise</h2><small class="muted">Nur zur Information. Für die Pellets-Kostenrechnung zählt ausschließlich der letzte gespeicherte Kauf.</small></div><button class="btn ghost" id="marketRefreshBtn" type="button">Preise aktualisieren</button></div>
+          <div class="energy-market-grid" id="energyMarketPrices" aria-live="polite"><p class="muted">Preisübersicht wird geladen …</p></div>
+          <p class="muted" id="energyMarketUpdated" style="margin:12px 0 0;font-size:.8rem"></p>
+        </section>
+
         <section class="card wide" aria-label="Kostenüberblick">
           <div class="dash-section-header"><div><p class="section-kicker">Kostenblick</p><h2>Monatskosten und Trends</h2></div></div>
           <div id="dashboardCostTotals" class="dash-totals" aria-live="polite"></div>
         </section>
+
+    <section class="card wide" id="pelletComparisonSection">
+      <div class="card-head"><div><p class="section-kicker">Pelletspreise</p><h2>Heizkosten nach letztem Pelletskauf</h2></div><span class="badge">Nur letzter Kauf zählt</span></div>
+      <div id="pelletComparisonDashboard" class="pellet-compare-grid"></div>
+    </section>
         <section class="card wide" aria-label="Monatsvergleich">
           <div class="dash-section-header"><div><p class="section-kicker">Entwicklung</p><h2>Monatsvergleich · Ø pro Tag</h2><small class="muted">Verbrauch zwischen zwei Ablesungen wird zeitanteilig auf die jeweiligen Monate verteilt.</small></div><div class="dash-chart-controls"><label for="dashboardChartMetric">Anzeigen</label><select id="dashboardChartMetric"><option value="cost">Kosten (€)</option><option value="strom">Strom (kWh)</option><option value="wasser">Wasser (m³)</option><option value="pellets">Pellets (kg)</option></select></div></div>
           <div id="dashboardMonthlyChart" class="dash-month-chart" aria-live="polite"></div>
@@ -1386,6 +1520,20 @@ html[data-theme="light"] #dashboardView .dash-trend.up{color:#b91c1c} html[data-
       <div id="bagSizeList" class="list-stack" style="margin-top:14px;"></div>
     </section>
 
+
+    <section class="card wide glass" id="pelletMarketPriceCard">
+      <div class="card-head"><div><p class="section-kicker">Pellets · Vergleichspreis</p><h2>Holz Bald: optionaler Angebotspreis (nur Notiz)</h2></div></div>
+      <p class="muted">Der Angebotspreis wird nur als Notiz auf diesem Gerät gespeichert und fließt nicht in die Kostenberechnung ein.</p>
+      <p><a href="https://www.heizpellets24.de/holzpellets-sackware/angebotsliste?zipCode=57489&amp;amount=1&amp;stations=1&amp;product=23&amp;options=229,248,-41,244,468&amp;ap=0&amp;pcert=4,2,6,1" target="_blank" rel="noopener noreferrer">Aktuelles Angebot bei HeizPellets24 öffnen ↗</a></p>
+      <form id="pelletMarketForm" class="form-grid">
+        <label>Gesamtpreis inklusive Lieferung (€)<input id="pelletMarketPrice" type="number" min="0.01" step="0.01" required placeholder="z. B. 559,61" /></label>
+        <label>Gelieferte Menge (kg)<input id="pelletMarketKg" type="number" min="0.01" step="0.01" required placeholder="z. B. 990" /></label>
+        <label>Datum des Angebots<input id="pelletMarketDate" type="date" required /></label>
+        <div class="form-actions" style="align-items:end"><button type="submit" class="btn primary">Angebotspreis übernehmen</button></div>
+      </form>
+      <small class="muted">Ein direkter Live-Preisabruf aus der externen Webseite ist nicht verfügbar. Der hinterlegte Preis wird auf diesem Gerät gespeichert und bleibt als Angebot mit Datum gekennzeichnet.</small>
+      <div id="pelletComparisonSettings" class="pellet-compare-grid" style="margin-top:16px"></div>
+    </section>
     <section class="card glass">
       <div class="card-head">
         <div>
@@ -1823,10 +1971,44 @@ html[data-theme="light"] #dashboardView .dash-trend.up{color:#b91c1c} html[data-
       registerEvents();
       registerInstallHandling();
       registerServiceWorker();
+      document.getElementById('marketRefreshBtn')?.addEventListener('click', () => loadMarketPrices(true));
+      void loadMarketPrices();
       renderAll();
       renderSavedStationOptions();
       if (state.householdId) await connectFirebase(FIREBASE_CONFIG, state.householdId, false);
       else updateFirebaseStatus();
+    }
+
+    // Anzeige einer vom GitHub-Workflow gepflegten Datei. Keine Marktwerte fließen in Kostenberechnungen ein.
+    async function loadMarketPrices(force = false) {
+      const area = document.getElementById('energyMarketPrices');
+      const footer = document.getElementById('energyMarketUpdated');
+      if (!area) return;
+      try {
+        const response = await fetch(`./market-prices.json${force ? '?v='+Date.now() : ''}`, {cache:'no-store'});
+        if (!response.ok) throw new Error('Preisdaten fehlen (HTTP '+response.status+')');
+        const data = await response.json();
+        const definitions = [
+          ['pellets_loose','Pellets · lose Ware','🔥','#f59e0b','€/1.000 kg'],
+          ['pellets_bag','Pellets · Sackware','📦','#8b5cf6','€/1.000 kg'],
+          ['heating_oil','Heizöl','🛢️','#38bdf8','€/100 Liter']
+        ];
+        const now = Date.now();
+        area.innerHTML = definitions.map(([key,label,symbol,color,unit]) => {
+          const item = data?.prices?.[key] || {};
+          const n = Number(item.price);
+          const valid = item.price !== null && item.price !== undefined && Number.isFinite(n) && n > 0;
+          const age = item.checked_at ? now - new Date(item.checked_at).getTime() : Infinity;
+          const fresh = valid && age >= 0 && age <= 48*3600*1000;
+          const source = item.source_url && /^https:\/\//.test(item.source_url) ? item.source_url : '';
+          const scope = item.scope === 'national' ? 'Deutschland-Durchschnitt · nicht regional' : '57489 Drolshagen';
+          return `<article class="energy-market-tile" style="--market-accent:${color}"><h3>${symbol} ${label}</h3><div class="market-value">${valid ? formatCurrency(n) : 'Nicht verfügbar'}</div><p>${unit} · ${escapeHtml(scope)}</p><p>${valid ? (fresh ? 'Aktuelle Preisprüfung' : 'Älterer Preis, bitte Datum beachten') : 'Noch kein verifizierter Preis abrufbar'}${item.checked_at ? ' · '+escapeHtml(new Date(item.checked_at).toLocaleDateString('de-DE')) : ''}</p>${source ? `<p><a href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Quelle öffnen ↗</a></p>` : ''}</article>`;
+        }).join('');
+        footer.textContent = 'Marktpreise nur zur Orientierung. Preisbasis und Bestellmenge unterscheiden sich je nach Anbieter. Keine Verwendung für Verbrauchs- oder Kostenberechnungen.';
+      } catch(err) {
+        area.innerHTML = '<div class="empty-state" style="grid-column:1/-1">Marktpreise derzeit nicht verfügbar. Die übrigen Funktionen der App sind davon nicht betroffen.</div>';
+        footer.textContent = String(err.message || err);
+      }
     }
 
     function hydrateLocalForms() {
@@ -1909,6 +2091,7 @@ html[data-theme="light"] #dashboardView .dash-trend.up{color:#b91c1c} html[data-
 
       els.resetForm?.addEventListener("submit", handleResetSubmit);
       els.settingsForm?.addEventListener("submit", handleSettingsSubmit);
+      document.getElementById("pelletMarketForm")?.addEventListener("submit", savePelletMarketQuote);
       els.pricePeriodForm?.addEventListener("submit", handlePricePeriodSubmit);
       els.bagSizeForm?.addEventListener("submit", handleBagSizeSubmit);
       els.pricePeriodForm?.addEventListener("reset", () => setTimeout(() => {
@@ -2289,6 +2472,70 @@ function stationAddressFromParts(parts) {
   return [street, city].filter(Boolean).join(', ');
 }
 
+function compactNominatimAddress(displayName, stationName = '') {
+  const value = String(displayName || '').trim();
+  if (!value) return '';
+  const parts = value.split(',').map(part => part.trim()).filter(Boolean);
+  const filtered = parts.filter(part => !/^(Deutschland|Germany)$/i.test(part));
+  const joined = filtered.slice(0, 4).join(', ');
+  if (!joined) return '';
+  if (stationName && joined.toLowerCase().startsWith(stationName.trim().toLowerCase() + ',')) {
+    return joined.slice(stationName.trim().length + 1).trim();
+  }
+  return joined;
+}
+
+async function resolveStationAddress(station) {
+  const result = {address: '', latitude: Number.isFinite(Number(station?.latitude)) ? Number(station.latitude) : null, longitude: Number.isFinite(Number(station?.longitude)) ? Number(station.longitude) : null};
+
+  if (Number.isFinite(result.latitude) && Number.isFinite(result.longitude)) {
+    try {
+      const reverseUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=18&lat=${encodeURIComponent(result.latitude)}&lon=${encodeURIComponent(result.longitude)}`;
+      const reverseResponse = await fetch(reverseUrl, {headers: {'Accept':'application/json'}});
+      if (reverseResponse.ok) {
+        const reverseData = await reverseResponse.json();
+        result.address = stationAddressFromParts(reverseData.address) || compactNominatimAddress(reverseData.display_name, station?.name || station?.brand || '');
+        if (stationHasUsefulAddress(result.address)) return result;
+      }
+    } catch (err) {
+      console.warn('Reverse-Geocoding fehlgeschlagen:', err);
+    }
+  }
+
+  const queryParts = [station?.name || station?.brand || '', station?.address || ''].map(x => String(x || '').trim()).filter(Boolean);
+  if (!queryParts.length) return result;
+  const query = queryParts.join(' ');
+  let searchUrl = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=1&q=${encodeURIComponent(query)}`;
+  const refLat = Number.isFinite(result.latitude) ? result.latitude : Number.isFinite(stationGps?.latitude) ? Number(stationGps.latitude) : null;
+  const refLon = Number.isFinite(result.longitude) ? result.longitude : Number.isFinite(stationGps?.longitude) ? Number(stationGps.longitude) : null;
+  if (Number.isFinite(refLat) && Number.isFinite(refLon)) {
+    const halfLon = 0.28;
+    const halfLat = 0.22;
+    searchUrl += `&viewbox=${encodeURIComponent(refLon - halfLon)},${encodeURIComponent(refLat + halfLat)},${encodeURIComponent(refLon + halfLon)},${encodeURIComponent(refLat - halfLat)}&bounded=1`;
+  }
+  try {
+    const response = await fetch(searchUrl, {headers: {'Accept':'application/json'}});
+    if (response.ok) {
+      const data = await response.json();
+      const best = (Array.isArray(data) ? data : []).find(item => {
+        const kind = String(item?.type || '').toLowerCase();
+        const cls = String(item?.class || '').toLowerCase();
+        return cls === 'amenity' || kind === 'fuel' || kind === 'charging_station';
+      }) || (Array.isArray(data) ? data[0] : null);
+      if (best) {
+        const addr = stationAddressFromParts(best.address) || compactNominatimAddress(best.display_name, station?.name || station?.brand || '');
+        if (stationHasUsefulAddress(addr)) result.address = addr;
+        const lat = Number(best.lat), lon = Number(best.lon);
+        if (!Number.isFinite(result.latitude) && Number.isFinite(lat)) result.latitude = lat;
+        if (!Number.isFinite(result.longitude) && Number.isFinite(lon)) result.longitude = lon;
+      }
+    }
+  } catch (err) {
+    console.warn('Stationssuche fehlgeschlagen:', err);
+  }
+  return result;
+}
+
 function normalizeStation(station, kind) {
   const latitude = station?.latitude == null ? NaN : Number(station.latitude);
   const longitude = station?.longitude == null ? NaN : Number(station.longitude);
@@ -2304,7 +2551,7 @@ function normalizeStation(station, kind) {
   if (address.toLowerCase().startsWith(name.toLowerCase() + ','))
     address = address.slice(name.length + 1).trim();
   if (!name && !address && !hasCoords) return null;
-  const displayName = address ? `${name}, ${address}` : `${name}, Adresse nicht hinterlegt`;
+  const displayName = address ? `${name}, ${address}` : `${name}, Adresse wird ergänzt`;
   return {
     ...station, kind, sourceId: String(station?.sourceId || station?.id || ''),
     name, brand: String(station?.brand || ''), address, displayName,
@@ -2377,6 +2624,7 @@ function renderSavedStationOptions() {
       if (restored) element.value = restored.id;
     }
   }
+  if (!stationAddressLookupRunning) void enrichOldStationAddresses();
 }
 
 async function refreshStationGps() {
@@ -2386,7 +2634,7 @@ async function refreshStationGps() {
   stationGpsPending = getCurrentPositionSafe().then(gps => {
     if (gps) stationGps = gps;
     renderSavedStationOptions();
-    if (gps) void enrichOldStationAddresses();
+    void enrichOldStationAddresses();
   }).finally(() => { stationGpsPending = null; });
   return stationGpsPending;
 }
@@ -2398,32 +2646,73 @@ async function enrichOldStationAddresses() {
   stationAddressLookupRunning = true;
   try {
     const missing = [...stationChoices('fuel'), ...stationChoices('charge')]
-      .filter(s => !s.address && Number.isFinite(s.latitude) && Number.isFinite(s.longitude))
-      .filter(s => !stationReverseCache.has(savedStationKey(s))).slice(0,8);
+      .filter(s => !s.address && (s.name || s.brand || Number.isFinite(s.latitude) || Number.isFinite(s.longitude)))
+      .filter(s => !stationReverseCache.has(savedStationKey(s))).slice(0,10);
     for (const station of missing) {
       const key = savedStationKey(station);
       stationReverseCache.set(key, true);
       try {
-        const url = `https://nominatim.openstreetmap.org/reverse?format=json&addressdetails=1&zoom=18&lat=${encodeURIComponent(station.latitude)}&lon=${encodeURIComponent(station.longitude)}`;
-        const response = await fetch(url, {headers: {'Accept':'application/json'}});
-        if (response.ok) {
-          const data = await response.json();
-          const address = stationAddressFromParts(data.address);
-          if (stationHasUsefulAddress(address)) {
-            const updated = normalizeStation({...station, address}, station.kind);
-            const index = state.stations.findIndex(s => savedStationKey(normalizeStation(s, s.kind || station.kind)) === key);
-            if (index >= 0) state.stations[index] = {...state.stations[index], ...updated};
-            else state.stations.push(updated);
-            persistLocalSnapshot();
-            renderSavedStationOptions();
-            if (state.firebaseEnabled) {
-              const safeId = Array.from(new TextEncoder().encode(key), b => b.toString(16).padStart(2,'0')).join('');
-              await setDoc(doc(state.db, `${householdBasePath()}/stations/${safeId}`), updated, {merge:true});
-            }
+        const resolved = await resolveStationAddress(station);
+        const address = String(resolved.address || '').trim();
+        const lat = Number.isFinite(Number(resolved.latitude)) ? Number(resolved.latitude) : station.latitude;
+        const lon = Number.isFinite(Number(resolved.longitude)) ? Number(resolved.longitude) : station.longitude;
+        if (stationHasUsefulAddress(address)) {
+          const updated = normalizeStation({...station, address, latitude: lat, longitude: lon}, station.kind);
+          const index = state.stations.findIndex(s => savedStationKey(normalizeStation(s, s.kind || station.kind)) === key);
+          if (index >= 0) state.stations[index] = {...state.stations[index], ...updated};
+          else state.stations.push(updated);
+
+          state.fuelEntries = state.fuelEntries.map(entry => {
+            const entryKey = savedStationKey(normalizeStation({
+              name: entry.stationName,
+              brand: entry.stationBrand,
+              address: entry.stationAddress,
+              displayName: entry.stationDisplayName || entry.locationText,
+              latitude: entry.latitude,
+              longitude: entry.longitude
+            }, 'fuel') || {kind:'fuel', latitude:NaN, longitude:NaN, displayName:''});
+            if (entryKey !== key) return entry;
+            return {
+              ...entry,
+              stationAddress: address,
+              stationDisplayName: updated.displayName,
+              stationName: updated.name || entry.stationName,
+              stationBrand: updated.brand || entry.stationBrand,
+              latitude: lat ?? entry.latitude,
+              longitude: lon ?? entry.longitude,
+              locationText: updated.displayName || entry.locationText
+            };
+          });
+          state.chargeEntries = state.chargeEntries.map(entry => {
+            const entryKey = savedStationKey(normalizeStation({
+              name: entry.chargeStationName,
+              brand: entry.chargeStationBrand,
+              address: entry.chargeStationAddress,
+              displayName: entry.chargeStationDisplayName || entry.locationText,
+              latitude: entry.latitude,
+              longitude: entry.longitude
+            }, 'charge') || {kind:'charge', latitude:NaN, longitude:NaN, displayName:''});
+            if (entryKey !== key) return entry;
+            return {
+              ...entry,
+              chargeStationAddress: address,
+              chargeStationDisplayName: updated.displayName,
+              chargeStationName: updated.name || entry.chargeStationName,
+              chargeStationBrand: updated.brand || entry.chargeStationBrand,
+              latitude: lat ?? entry.latitude,
+              longitude: lon ?? entry.longitude,
+              locationText: updated.displayName || entry.locationText
+            };
+          });
+          persistLocalSnapshot();
+          renderSavedStationOptions();
+          if (state.firebaseEnabled) {
+            const safeId = Array.from(new TextEncoder().encode(key), b => b.toString(16).padStart(2,'0')).join('');
+            await setDoc(doc(state.db, `${householdBasePath()}/stations/${safeId}`), updated, {merge:true});
           }
         }
       } catch (err) { console.warn('Stationsadresse konnte nicht ermittelt werden:',err); }
-      await new Promise(resolve => setTimeout(resolve, 1200));
+      await new Promise(resolve => setTimeout(resolve, 900));
     }
   } finally { stationAddressLookupRunning = false; }
 }
@@ -3567,8 +3856,7 @@ function renderFuelStats() {
   }
 
   const car = state.cars.find((c) => c.id === state.selectedAnalyticsCarId);
-
-if (!car || car.fuelType === "electric") {
+  if (!car || car.fuelType === "electric") {
     els.fuelStats.innerHTML = "";
     return;
   }
@@ -3576,32 +3864,94 @@ if (!car || car.fuelType === "electric") {
   const entries = buildComputedFuelEntriesForCar(state.selectedAnalyticsCarId)
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-      if (!entries.length) {
-        els.fuelStats.innerHTML = '<div class="empty-state">Noch keine Tankdaten für dieses Auto vorhanden.</div>';
-        return;
-      }
+  if (!entries.length) {
+    els.fuelStats.innerHTML = '<div class="empty-state">Noch keine Tankdaten für dieses Auto vorhanden.</div>';
+    return;
+  }
 
-      const last = entries[0];
+  const last = entries[0];
+  const previous = entries[1] || null;
+  const avgConsumption = entries.filter(e => Number.isFinite(e.litersPer100km)).map(e => Number(e.litersPer100km));
+  const avgCost = entries.filter(e => Number.isFinite(e.costPer100km)).map(e => Number(e.costPer100km));
+  const avgValue = list => list.length ? round2(list.reduce((sum, value) => sum + value, 0) / list.length) : null;
+  const fuelTypeLabelMap = {
+    petrol: 'Benzin',
+    diesel: 'Diesel',
+    lpg: 'LPG',
+    cng: 'CNG',
+    hybrid: 'Hybrid',
+    plug_in_hybrid: 'Plug-in-Hybrid',
+    electric: 'Elektro'
+  };
+  const fuelTypeLabel = fuelTypeLabelMap[car.fuelType] || 'Fahrzeug';
+  const trendText = previous && Number.isFinite(previous.pricePerLiter) && Number.isFinite(last.pricePerLiter)
+    ? `${last.pricePerLiter >= previous.pricePerLiter ? 'Preisänderung' : 'Preisänderung'} ${formatSigned(round2(last.pricePerLiter - previous.pricePerLiter))} €/l`
+    : 'Noch kein Preisvergleich verfügbar';
+  const lastStation = last.stationDisplayName || last.locationText || 'Keine Tankstelle hinterlegt';
+  const metaPills = [
+    car.plate ? `<span class="fuel-pill">🏷️ ${escapeHtml(car.plate)}</span>` : '',
+    `<span class="fuel-pill">⛽ ${escapeHtml(fuelTypeLabel)}</span>`,
+    last.date ? `<span class="fuel-pill">🕒 ${escapeHtml(formatDateTime(last.date))}</span>` : ''
+  ].filter(Boolean).join('');
 
-      els.fuelStats.innerHTML = `
-        <div class="stat-box">
-          <div class="stat-label">Auto</div>
-          <div class="stat-value">${escapeHtml(car?.name || "Auto")}</div>
+  els.fuelStats.className = 'fuel-stats-grid';
+  els.fuelStats.innerHTML = `
+    <article class="fuel-hero-card" style="--card-accent:#38bdf8;">
+      <span class="fuel-card-accent"></span>
+      <div class="fuel-card-head">
+        <div>
+          <div class="fuel-card-kicker">Ausgewähltes Fahrzeug</div>
+          <div class="fuel-card-title">${escapeHtml(car?.name || 'Auto')}</div>
         </div>
-        <div class="stat-box">
-          <div class="stat-label">Letzter Preis</div>
-          <div class="stat-value">${formatCurrency(last.pricePerLiter)}/l</div>
+        <div class="fuel-card-icon">🚗</div>
+      </div>
+      <div class="fuel-card-value">${formatNumber(last.mileage)} km</div>
+      <div class="fuel-card-sub">Letzter Kilometerstand · letzte Buchung ${escapeHtml(formatDateShort(last.date))}</div>
+      <div class="fuel-card-meta">${metaPills}</div>
+      <div class="fuel-card-foot"><strong>Letzte Tankstelle</strong>${escapeHtml(lastStation)}</div>
+    </article>
+
+    <article class="fuel-hero-card" style="--card-accent:#22c55e;">
+      <span class="fuel-card-accent"></span>
+      <div class="fuel-card-head">
+        <div>
+          <div class="fuel-card-kicker">Letzte Tankung</div>
+          <div class="fuel-card-title">${formatNumber(last.liters)} l · ${formatCurrency(last.totalPrice)}</div>
         </div>
-        <div class="stat-box">
-          <div class="stat-label">Letzte Tankung</div>
-          <div class="stat-value">${formatNumber(last.liters)} l</div>
+        <div class="fuel-card-icon">⛽</div>
+      </div>
+      <div class="fuel-card-value">${formatCurrency(last.pricePerLiter)}/l</div>
+      <div class="fuel-card-sub">${trendText}</div>
+      <div class="fuel-card-foot"><strong>Zusatzinfo</strong>${Number.isFinite(last.distanceKm) ? `Seit dem letzten Tanken ${formatNumber(last.distanceKm)} km gefahren` : 'Für dieses Intervall liegt noch kein Vergleich vor.'}</div>
+    </article>
+
+    <article class="fuel-mini-card" style="--card-accent:#f59e0b;">
+      <span class="fuel-card-accent"></span>
+      <div class="fuel-card-head">
+        <div>
+          <div class="fuel-card-kicker">Verbrauch</div>
+          <div class="fuel-card-title">Durchschnitt</div>
         </div>
-        <div class="stat-box">
-          <div class="stat-label">Letzter Kilometerstand</div>
-          <div class="stat-value">${formatNumber(last.mileage)} km</div>
+        <div class="fuel-card-icon">📊</div>
+      </div>
+      <div class="fuel-card-value">${avgValue(avgConsumption) != null ? `${formatNumber(avgValue(avgConsumption))} l/100 km` : '–'}</div>
+      <div class="fuel-card-sub">Berechnet aus ${avgConsumption.length} Intervallen</div>
+    </article>
+
+    <article class="fuel-mini-card" style="--card-accent:#8b5cf6;">
+      <span class="fuel-card-accent"></span>
+      <div class="fuel-card-head">
+        <div>
+          <div class="fuel-card-kicker">Kosten</div>
+          <div class="fuel-card-title">Durchschnitt</div>
         </div>
-      `;
-    }
+        <div class="fuel-card-icon">💶</div>
+      </div>
+      <div class="fuel-card-value">${avgValue(avgCost) != null ? `${formatCurrency(avgValue(avgCost))}/100 km` : '–'}</div>
+      <div class="fuel-card-sub">Auf Basis der gespeicherten Tankintervalle</div>
+    </article>
+  `;
+}
 
     async function handleCarSubmit(event) {
       event.preventDefault();
@@ -4175,6 +4525,7 @@ renderFuelMap();
     async function connectFirebase(config, householdId, showSuccess) {
       try {
         cleanupListeners();
+        state.firebaseError = null;
         state.householdId = householdId;
         const app = getApps().length ? getApps()[0] : initializeApp(config);
         const db = getFirestore(app);
@@ -4183,12 +4534,15 @@ renderFuelMap();
         state.firebaseEnabled = true;
         await loadAvailableHouseholds();
         listenToFirestore();
-        await ensureInitialSettingsDoc();
+        // Einstellungen sind nicht Voraussetzung für die Verbindung; Firestore-Regeln können Schreiben verhindern.
+        try { await ensureInitialSettingsDoc(); }
+        catch (settingsError) { console.warn('Einstellungen konnten nicht initialisiert werden:', settingsError); }
         updateFirebaseStatus();
         renderHouseholdOptions();
         if (showSuccess) showToast("Firebase verbunden.", "success");
       } catch (error) {
         console.error(error);
+        cleanupListeners();
         state.firebaseEnabled = false;
         updateFirebaseStatus(error);
         showToast("Firebase-Verbindung fehlgeschlagen.", "error");
@@ -4248,31 +4602,37 @@ renderFuelMap();
       const chargeEntriesQuery = query(collection(state.db, `${basePath}/chargeEntries`), orderBy("date", "desc"));
       const stationsCollection = collection(state.db, `${basePath}/stations`);
         
+      const listenerError = (area, error) => {
+        console.error(`Firestore ${area}:`, error);
+        // Ein Lesefehler darf nicht als erfolgreich synchronisiert angezeigt werden.
+        state.firebaseError = `${area}: ${error.code || error.message || error}`;
+        updateFirebaseStatus(error);
+      };
       state.unsubscribers.push(onSnapshot(readingsQuery, (s) => {
         state.readings = s.docs.map(mapFirestoreDoc);
         persistLocalSnapshot();
         renderAll();
-      }));
+      }, (error) => listenerError("readingsQuery", error)));
       state.unsubscribers.push(onSnapshot(refillsQuery, (s) => {
         state.refills = s.docs.map(mapFirestoreDoc);
         persistLocalSnapshot();
         renderAll();
-      }));
+      }, (error) => listenerError("refillsQuery", error)));
       state.unsubscribers.push(onSnapshot(purchasesQuery, (s) => {
         state.purchases = s.docs.map(mapFirestoreDoc);
         persistLocalSnapshot();
         renderAll();
-      }));
+      }, (error) => listenerError("purchasesQuery", error)));
       state.unsubscribers.push(onSnapshot(resetsQuery, (s) => {
         state.resets = s.docs.map(mapFirestoreDoc);
         persistLocalSnapshot();
         renderAll();
-      }));
+      }, (error) => listenerError("resetsQuery", error)));
       state.unsubscribers.push(onSnapshot(pricePeriodsQuery, (s) => {
         state.pricePeriods = s.docs.map(mapFirestoreDoc);
         persistLocalSnapshot();
         renderAll();
-      }));
+      }, (error) => listenerError("pricePeriodsQuery", error)));
         state.unsubscribers.push(onSnapshot(carsQuery, (s) => {
           state.cars = s.docs.map(mapFirestoreDoc).filter((car) => car && car.name);
           persistLocalSnapshot();
@@ -4284,7 +4644,7 @@ renderFuelMap();
         state.fuelEntries = s.docs.map(mapFirestoreDoc);
         persistLocalSnapshot();
         renderAll();
-      }));
+      }, (error) => listenerError("fuelEntriesQuery", error)));
       state.unsubscribers.push(onSnapshot(chargeEntriesQuery, (s) => {
           state.chargeEntries = s.docs.map(mapFirestoreDoc);
           persistLocalSnapshot();
@@ -4304,7 +4664,7 @@ renderFuelMap();
           persistLocalSnapshot();
           renderAll();
         }
-      }));
+      }, (error) => listenerError("settingsDocRef", error)));
     }
 
     async function ensureInitialSettingsDoc() {
@@ -4402,7 +4762,12 @@ async function updateRecord(kind, id, payload) {
 }
 
     function updateFirebaseStatus(error = null) {
-      if (state.firebaseEnabled) {
+      if (error || state.firebaseError) {
+        const detail = error?.code || error?.message || state.firebaseError || error;
+        els.firebaseStatus.textContent = `Firestore-Fehler (${state.householdId}): ${detail}`;
+        els.syncBadge.textContent = 'Firestore prüfen';
+        els.syncBadge.className = 'badge warn';
+      } else if (state.firebaseEnabled) {
         els.firebaseStatus.textContent = `Firestore aktiv. Haushalt: ${state.householdId}`;
         els.syncBadge.textContent = "Firestore live";
         els.syncBadge.className = "badge ok";
@@ -4481,6 +4846,7 @@ async function updateRecord(kind, id, payload) {
       try { renderBagSizes(); } catch (e) { console.error("renderBagSizes", e); }
       try { renderDashboard(); } catch (e) { console.error("renderDashboard", e); }
       try { renderMonthlyOverview(); } catch (e) { console.error("renderMonthlyOverview", e); }
+      try { renderPelletPriceComparisons(); } catch (e) { console.error("renderPelletPriceComparisons", e); }
       try { renderSettingsSummary(); } catch (e) { console.error("renderSettingsSummary", e); }
       try { renderSavedStationOptions(); } catch (e) { console.error("renderSavedStationOptions", e); }
       try { renderCars(); } catch (e) { console.error("renderCars", e); }
@@ -4637,6 +5003,7 @@ async function updateRecord(kind, id, payload) {
     function renderDashboard() {
       renderDashboardStats();
       renderDashboardCostTotals();
+      renderPelletPriceComparisons();
       renderDashboardMonthlyChart();
       renderConsumptionHistory();
       renderPelletSummary();
@@ -4714,6 +5081,57 @@ async function updateRecord(kind, id, payload) {
         out[type] = days > 0 ? { daily: euro / days, days } : null;
       }
       return out;
+    }
+
+
+    // Der Marktkurs ist eine klar gekennzeichnete Momentaufnahme, kein Live-API-Preis.
+    const PELLET_MARKET_KEY = 'verbrauch-holzbald-angebot-v1';
+    function readPelletMarketQuote() {
+      try {
+        const item = JSON.parse(localStorage.getItem(PELLET_MARKET_KEY) || 'null');
+        if (item && Number(item.price) > 0 && Number(item.kg) > 0) return item;
+      } catch (e) { console.warn('Pellet-Angebot ungültig:',e); }
+      return null;
+    }
+    function savePelletMarketQuote(event) {
+      event.preventDefault();
+      const price = Number(document.getElementById('pelletMarketPrice')?.value);
+      const kg = Number(document.getElementById('pelletMarketKg')?.value);
+      const date = document.getElementById('pelletMarketDate')?.value;
+      if (!(price > 0) || !(kg > 0) || !date || !Number.isFinite(Date.parse(date))) {
+        showToast('Bitte gültige Angebotsdaten eingeben.','error'); return;
+      }
+      localStorage.setItem(PELLET_MARKET_KEY,JSON.stringify({price,kg,date,source:'Holz Bald / HeizPellets24'}));
+      renderPelletPriceComparisons();
+      showToast('Angebotspreis als Information gespeichert.','success');
+    }
+    function pelletYearConsumptionEstimate() {
+      // Letzte zwölf Monate, gewichtet nach der zeitlichen Überlappung der Ableseintervalle.
+      const now = Date.now(), from = new Date(); from.setFullYear(from.getFullYear()-1);
+      let quantity = 0, days = 0;
+      for(const entry of buildComputedReadings().filter(e => e.type === 'pellets' && e.previousDate && Number.isFinite(e.delta) && e.delta >= 0)) {
+        const start=Date.parse(entry.previousDate),end=Date.parse(entry.date);
+        if(!Number.isFinite(start)||!Number.isFinite(end)||end<=start) continue;
+        const overlap=Math.max(0,Math.min(now,end)-Math.max(from.getTime(),start));
+        if(!overlap) continue;
+        quantity += entry.delta * overlap/(end-start);
+        days += overlap/86400000;
+      }
+      return days > 0 ? {daily:quantity/days,annual:quantity/days*365,coveredDays:days} : null;
+    }
+    function renderPelletPriceComparisons() {
+      const latest = [...state.purchases].filter(e => Number(e.totalKg)>0 && Number(e.totalPrice)>=0)
+        .sort((a,b)=>Date.parse(b.date)-Date.parse(a.date))[0] || null;
+      const consumption = pelletYearConsumptionEstimate();
+      const unit = latest ? Number(latest.totalPrice)/Number(latest.totalKg) : null;
+      const cards = [
+        `<div class="pellet-compare-item"><div class="pellet-kicker">Letzter Pelletskauf · einzige Kalkulationsgrundlage</div><strong class="pellet-big">${unit === null ? '–' : `${formatCurrency(unit)}/kg`}</strong><small>${latest ? `Kauf ${escapeHtml(formatDateShort(latest.date))} · ${formatCurrency(latest.totalPrice)} / ${formatNumber(latest.totalKg)} kg` : 'Noch kein Pelletskauf gespeichert.'}</small></div>`,
+        `<div class="pellet-compare-item"><div class="pellet-kicker">Hochrechnung Heizkosten pro Jahr</div><strong class="pellet-big">${unit === null || !consumption ? '–' : formatCurrency(unit * consumption.annual)}</strong><small>Nur Preis des letzten Pelletskaufs × geschätzter Jahresverbrauch, ohne Marktpreise.</small></div>`,
+        `<div class="pellet-compare-item"><div class="pellet-kicker">Verbrauchsgrundlage</div><strong class="pellet-big">${consumption ? `${formatNumber(consumption.annual)} kg/Jahr` : '–'}</strong><small>${consumption ? `Ø ${formatNumber(consumption.daily)} kg/Tag · ${formatNumber(consumption.coveredDays)} Tage erfasst` : 'Noch keine abgeschlossenen Pellets-Ableseintervalle'}</small></div>`
+      ].join('');
+      for (const id of ['pelletComparisonDashboard','pelletComparisonSettings']) {
+        const target = document.getElementById(id); if (target) target.innerHTML = cards;
+      }
     }
 
     function renderDashboardCostTotals() {
