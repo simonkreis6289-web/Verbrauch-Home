@@ -513,7 +513,7 @@
         <h1>Zählerstände, Pellets und Kosten im Blick</h1>
         <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
         <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du den Haushalt wechseln oder neu anlegen.</p>
-        <p class="hero-copy">Version 1.3.1.100</p>
+        <p class="hero-copy">Version 1.3.1.101</p>
       </div>
       <div class="hero-actions">
         <button id="installBtn" class="btn secondary hidden" type="button">App installieren</button>
@@ -775,25 +775,22 @@
             <label class="span-12">
               Fahrzeug
               <select id="analyticsCarSelect"></select>
-              <small>Hier wählst du das Auto aus, für das die Auswertung angezeigt wird.</small>
+              <small>Diese Auswahl gilt für Tanken, Laden, Historie, Karte und Auswertungen.</small>
             </label>
           </form>
         </section>
       
-    <section class="card glass">
+    <section class="card glass" id="fuelEntryCard">
       <div class="card-head">
         <div>
           <p class="section-kicker">Tanken</p>
           <h2>Tankvorgang erfassen</h2>
         </div>
-        <span class="badge ok">Auto auswählen</span>
+        <span class="badge ok">Ausgewähltes Fahrzeug</span>
       </div>
 
       <form id="fuelForm" class="form-grid">
-        <label>
-          Auto
-          <select id="fuelCarId" required></select>
-        </label>
+        <input id="fuelCarId" type="hidden" />
         
         <label>
           Standort speichern
@@ -891,7 +888,7 @@
       </form>
     </section>
     
-    <section class="card glass">
+    <section class="card glass" id="chargeEntryCard">
   <div class="card-head">
     <div>
       <p class="section-kicker">E-Auto laden</p>
@@ -901,10 +898,7 @@
   </div>
 
   <form id="chargeForm" class="form-grid">
-    <label>
-      E-Auto
-      <select id="chargeCarId" required></select>
-    </label>
+    <input id="chargeCarId" type="hidden" />
 
       <label>
           Ladeort
@@ -1041,7 +1035,7 @@
 <div id="selectedCarStats" class="kpi-grid"></div>
 </section>
 
-    <section class="card wide">
+    <section class="card wide" id="carConsumptionChartCard">
       <div class="card-head">
         <div>
           <p class="section-kicker">Verbrauchskurve</p>
@@ -1054,7 +1048,7 @@
       </article>
     </section>
 
-    <section class="card wide">
+    <section class="card wide" id="carCostChartCard">
       <div class="card-head">
         <div>
           <p class="section-kicker">Kostenkurve</p>
@@ -1816,6 +1810,7 @@
           renderSelectedCarAnalytics();
           renderFuelEntries();
           renderChargeEntries();
+          renderFuelMap();
         });
       els.carConsumptionChart?.addEventListener("click", () => openCarChartOverlay("consumption"));
       els.carCostChart?.addEventListener("click", () => openCarChartOverlay("cost"));
@@ -1844,11 +1839,12 @@ function getSelectedAnalyticsCar() {
 }
 
 function isElectricCar(car) {
-  return ["electric", "hybrid", "plug_in_hybrid"].includes(car?.fuelType);
+  // Ein normaler Hybrid hat keinen externen Ladeanschluss.
+  return ["electric", "plug_in_hybrid"].includes(car?.fuelType);
 }
 
 function isCombustionCar(car) {
-  return car && car.fuelType !== "electric";
+  return !!car && car.fuelType !== "electric";
 }
 
 function formatStationShort(station) {
@@ -2336,8 +2332,9 @@ async function fetchNearbyFuelStations(latitude, longitude) {
 async function handleChargeSubmit(event) {
   event.preventDefault();
 
-  const carId = els.chargeCarId.value;
+  const carId = state.selectedAnalyticsCarId;
   const car = state.cars.find((c) => c.id === carId);
+  if (!isElectricCar(car)) return showToast("Das ausgewählte Fahrzeug kann nicht extern geladen werden.", "error");
 
   const mode = els.chargeMode?.value || "single";
   const location = els.chargeLocation?.value || "home";
@@ -2407,6 +2404,7 @@ const selectedChargeStation =
   });
 
   els.chargeForm.reset();
+  if (els.chargeCarId) els.chargeCarId.value = carId;
 
   const now = toDatetimeLocal(new Date());
   els.chargeFrom.value = now;
@@ -2469,7 +2467,8 @@ function renderFuelMap() {
 
   fuelMapMarkersLayer.clearLayers();
 
-  const entriesWithGps = getMapEntriesWithGps();
+  const entriesWithGps = getMapEntriesWithGps()
+    .filter((entry) => entry.carId === state.selectedAnalyticsCarId);
 
   if (!entriesWithGps.length) {
     fuelMapInstance.setView([51.1657, 10.4515], 6);
@@ -2522,7 +2521,7 @@ function refreshFuelMapSize() {
   setTimeout(() => {
     fuelMapInstance.invalidateSize();
 
-const entriesWithGps = getMapEntriesWithGps();
+const entriesWithGps = getMapEntriesWithGps().filter((entry) => entry.carId === state.selectedAnalyticsCarId);
 
     if (entriesWithGps.length) {
       fuelMapInstance.fitBounds(
@@ -2782,12 +2781,15 @@ function syncCarModeSections(car) {
 
   els.fuelEntryCard?.classList.toggle("hidden", !combustion);
   els.chargeEntryCard?.classList.toggle("hidden", !electric);
+  document.getElementById("carConsumptionChartCard")?.classList.toggle("hidden", !combustion);
+  document.getElementById("carCostChartCard")?.classList.toggle("hidden", !combustion);
 }
       
 function renderSelectedCarAnalytics() {
   if (!els.selectedCarStats || !els.carConsumptionChart || !els.carCostChart) return;
 
   if (!state.selectedAnalyticsCarId) {
+    syncCarModeSections(null);
     els.selectedCarStats.innerHTML = '<div class="empty-state">Kein Auto ausgewählt.</div>';
     els.carConsumptionChart.innerHTML = '<div class="empty-state" style="height:100%;display:grid;place-items:center;">Keine Daten</div>';
     els.carCostChart.innerHTML = '<div class="empty-state" style="height:100%;display:grid;place-items:center;">Keine Daten</div>';
@@ -2802,8 +2804,8 @@ function renderSelectedCarAnalytics() {
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
     syncCarModeSections(car);
-    if (els.fuelCarId && !isElectricCar(car)) els.fuelCarId.value = car.id;
-    if (els.chargeCarId && isElectricCar(car)) els.chargeCarId.value = car.id;
+     if (els.fuelCarId) els.fuelCarId.value = isCombustionCar(car) ? car.id : "";
+     if (els.chargeCarId) els.chargeCarId.value = isElectricCar(car) ? car.id : "";
 
     const chargeStats = getChargeCostStatsForCar(state.selectedAnalyticsCarId);
 
@@ -3299,7 +3301,9 @@ if (!car || car.fuelType === "electric") {
         isoDate = dt.toISOString();
       }
 
-      const carId = els.fuelCarId.value;
+      const carId = state.selectedAnalyticsCarId;
+      const selectedCar = state.cars.find((car) => car.id === carId);
+      if (!isCombustionCar(selectedCar)) return showToast("Bitte oben einen Verbrenner oder Hybrid auswählen.", "error");
       const liters = toNumber(els.fuelLiters.value);
       const totalPrice = toNumber(els.fuelTotalPrice.value);
       const mileage = toNumber(els.fuelMileage.value);
@@ -3415,6 +3419,7 @@ const locationText =
         });
 
       els.fuelForm.reset();
+      if (els.fuelCarId) els.fuelCarId.value = carId;
         if (els.fuelRangeBefore) els.fuelRangeBefore.value = "";
         if (els.fuelRangeAfter) els.fuelRangeAfter.value = "";
       els.fuelUseNow.checked = true;
@@ -4093,10 +4098,10 @@ async function updateRecord(kind, id, payload) {
       try { renderDashboard(); } catch (e) { console.error("renderDashboard", e); }
       try { renderMonthlyOverview(); } catch (e) { console.error("renderMonthlyOverview", e); }
       try { renderSettingsSummary(); } catch (e) { console.error("renderSettingsSummary", e); }
+      try { renderCars(); } catch (e) { console.error("renderCars", e); }
       try { renderChargeEntries(); } catch (e) { console.error("renderChargeEntries", e); }
       try { renderPelletInventoryStats(); } catch (e) { console.error("renderPelletInventoryStats", e); }
       try { renderFuelMap(); } catch (e) { console.error("renderFuelMap", e); }
-      try { renderCars(); } catch (e) { console.error("renderCars", e); }
       try { renderFuelEntries(); } catch (e) { console.error("renderFuelEntries", e); }
     }
 
@@ -4227,7 +4232,7 @@ async function updateRecord(kind, id, payload) {
       if (!els.chargeCarId) return;
 
       const electricCars = state.cars.filter((car) =>
-        ["electric", "hybrid", "plug_in_hybrid"].includes(car.fuelType)
+        isElectricCar(car)
       );
 
       if (!electricCars.length) {
