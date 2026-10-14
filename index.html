@@ -776,7 +776,7 @@ html[data-theme="light"] #dashboardView .dash-trend.up{color:#b91c1c} html[data-
         <h1>Zählerstände, Pellets und Kosten im Blick</h1>
         <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
         <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du den Haushalt wechseln oder neu anlegen.</p>
-        <p class="hero-copy">Version 1.3.1.113</p>
+        <p class="hero-copy">Version 1.3.1.114</p>
       </div>
       <div class="hero-actions">
         <button id="themeToggleBtn" class="btn ghost theme-toggle" type="button" aria-label="Design wechseln" aria-pressed="false"><span id="themeToggleIcon" aria-hidden="true">☀️</span> <span id="themeToggleLabel">Helles Design</span></button>
@@ -4527,6 +4527,9 @@ renderFuelMap();
         cleanupListeners();
         state.firebaseError = null;
         state.householdId = householdId;
+        els.firebaseStatus.textContent = `Firestore-Verbindung wird geprüft (Haushalt: ${householdId}) …`;
+        els.syncBadge.textContent = 'Firestore verbindet';
+        els.syncBadge.className = 'badge warn';
         const app = getApps().length ? getApps()[0] : initializeApp(config);
         const db = getFirestore(app);
         state.app = app;
@@ -4535,8 +4538,12 @@ renderFuelMap();
         await loadAvailableHouseholds();
         listenToFirestore();
         // Einstellungen sind nicht Voraussetzung für die Verbindung; Firestore-Regeln können Schreiben verhindern.
-        try { await ensureInitialSettingsDoc(); }
-        catch (settingsError) { console.warn('Einstellungen konnten nicht initialisiert werden:', settingsError); }
+        // Initiale Einstellungen dürfen den UI-Status nicht unbegrenzt blockieren.
+        void ensureInitialSettingsDoc().catch(settingsError => {
+          console.warn('Einstellungen konnten nicht initialisiert werden:', settingsError);
+          state.firebaseError = `settings/main: ${settingsError.code || settingsError.message || settingsError}`;
+          updateFirebaseStatus(settingsError);
+        });
         updateFirebaseStatus();
         renderHouseholdOptions();
         if (showSuccess) showToast("Firebase verbunden.", "success");
@@ -4638,7 +4645,7 @@ renderFuelMap();
           persistLocalSnapshot();
           renderAll();
         }, (error) => {
-          console.error("cars onSnapshot Fehler:", error);
+          listenerError("carsQuery", error);
         }));
       state.unsubscribers.push(onSnapshot(fuelEntriesQuery, (s) => {
         state.fuelEntries = s.docs.map(mapFirestoreDoc);
@@ -4650,13 +4657,13 @@ renderFuelMap();
           persistLocalSnapshot();
           renderAll();
         }, (error) => {
-          console.error("chargeEntries onSnapshot Fehler:", error);
+          listenerError("chargeEntriesQuery", error);
         }));
       state.unsubscribers.push(onSnapshot(stationsCollection, (snapshot) => {
         state.stations = snapshot.docs.map(mapFirestoreDoc);
         persistLocalSnapshot();
         renderSavedStationOptions();
-      }, (error) => console.error("Stations-Synchronisierung:", error)));
+      }, (error) => listenerError("stations", error)));
       state.unsubscribers.push(onSnapshot(settingsDocRef, (snapshot) => {
         if (snapshot.exists()) {
           state.settings = mergeSettings(snapshot.data());
@@ -5459,9 +5466,24 @@ async function updateRecord(kind, id, payload) {
       return computed.sort((a, b) => new Date(b.date) - new Date(a.date));
     }
 
+    function latestPelletPurchasePricePerKg() {
+      const recent = [...state.purchases]
+        .filter(p => Number(p.totalKg) > 0 && Number(p.totalPrice) >= 0 && Number.isFinite(Date.parse(p.date)))
+        .sort((a, b) => Date.parse(b.date) - Date.parse(a.date))[0];
+      return recent ? Number(recent.totalPrice) / Number(recent.totalKg) : null;
+    }
+
     function calculateCostForInterval(type, startIso, endIso, totalDelta, daysBetween) {
       if (!Number.isFinite(totalDelta) || totalDelta <= 0 || !Number.isFinite(daysBetween) || daysBetween <= 0) {
         return { cost: 0, source: null };
+      }
+      // Pellets: ausschließlich der letzte tatsächlich erfasste Einkauf zählt.
+      // Internet-Marktpreise und frühere Basispreise dürfen diese Kalkulation nicht beeinflussen.
+      if (type === 'pellets') {
+        const purchaseRate = latestPelletPurchasePricePerKg();
+        return purchaseRate === null
+          ? { cost: null, source: 'Kein Pelletskauf verfügbar' }
+          : { cost: round2(totalDelta * purchaseRate), source: 'Letzter Pelletskauf' };
       }
 
       const matchingPeriods = findMatchingPricePeriods(type, startIso, endIso);
