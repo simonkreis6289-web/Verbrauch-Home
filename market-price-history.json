@@ -1,4 +1,14 @@
 {
   "region": "57489 Drolshagen",
-  "records": []
+  "records": [
+    {
+      "date": "2026-10-14",
+      "checked_at": "2026-10-14T12:36:54+02:00",
+      "prices": {
+        "pellets_loose": 417.75,
+        "pellets_bag": 510.68,
+        "heating_oil": 176.0
+      }
+    }
+  ]
 }
