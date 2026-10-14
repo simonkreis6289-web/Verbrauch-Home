@@ -1,73 +1,118 @@
 #!/usr/bin/env python3
-"""Update VERIFIED price references. Never mark archived data as fresh.
-Requires requests and BeautifulSoup. If a website changes/blocks, retain old values
-and old timestamps instead of fabricating freshness.
+"""Read regional pellet reference prices and national heating-oil reference.
+Only prices on pages with corroborating current-day dates are accepted.
+This script is informational only; it never changes the app's purchase prices.
 """
+from __future__ import annotations
 import datetime as dt
 import json
 import re
+import sys
 from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 
 ROOT = Path(__file__).resolve().parent
 FILE = ROOT / 'market-prices.json'
-NOW = dt.datetime.now(dt.timezone.utc)
+NOW = dt.datetime.now(dt.timezone(dt.timedelta(hours=2))) # German summer time fallback below
+try:
+    from zoneinfo import ZoneInfo
+    NOW = dt.datetime.now(ZoneInfo('Europe/Berlin'))
+except Exception:
+    pass
+TODAY = NOW.date()
 
+URLS = {
+    'pellets_loose': 'https://www.heizpellets24.de/pelletpreise/nordrhein-westfalen/olpe/drolshagen-57489',
+    'pellets_bag': 'https://www.holzpellets.net/pelletspreise/Nordrhein-Westfalen/Olpe/pellets-Drolshagen',
+    'heating_oil': 'https://www.tecson.de/de/heizoelpreise.html',
+}
 
-def get_page(url):
-    resp = requests.get(url, timeout=25, headers={'User-Agent':'VerbrauchZuhausePriceMonitor/1.0 (private price dashboard)', 'Accept-Language':'de-DE,de;q=0.9'})
-    resp.raise_for_status()
-    return BeautifulSoup(resp.text, 'html.parser').get_text(' ', strip=True)
+def get_text(url):
+    response = requests.get(url, timeout=30, headers={
+        'User-Agent': 'Mozilla/5.0 (compatible; VerbrauchZuhause/1.1; personal home energy dashboard)',
+        'Accept-Language': 'de-DE,de;q=0.9',
+    })
+    response.raise_for_status()
+    page = BeautifulSoup(response.text, 'html.parser')
+    for el in page(['script', 'style', 'noscript']):
+        el.decompose()
+    return re.sub(r'\s+', ' ', page.get_text(' ', strip=True)).strip()
 
+def euro(text):
+    return float(text.replace('.', '').replace(',', '.'))
 
-def money(value):
-    return float(value.replace('.', '').replace(',', '.'))
-
-
-def fresh_publication(text):
-    # The date must come from page content, not from fetch time alone.
-    dates = re.findall(r'\b(\d{1,2})\.(\d{1,2})\.(20\d{2})\b', text[:4500])
-    for d, m, y in dates:
+def page_has_today(text):
+    # Explicit day/month/year, with either two- or four-digit year.
+    for day, month, year in re.findall(r'\b(\d{1,2})\.(\d{1,2})\.(\d{2,4})\b', text):
+        yy = int(year) + (2000 if len(year) == 2 else 0)
         try:
-            published = dt.datetime(int(y), int(m), int(d), tzinfo=dt.timezone.utc)
-            if 0 <= (NOW-published).total_seconds() <= 48*3600:
+            if dt.date(yy, int(month), int(day)) == TODAY:
                 return True
         except ValueError:
             pass
-    return False
+    # TECSON market report often states 'Mittwoch, 14. Okt.' instead.
+    names = 'Jan Feb Mär Apr Mai Jun Jul Aug Sep Okt Nov Dez'.split()
+    month_name = names[TODAY.month - 1]
+    return bool(re.search(r'\b(?:Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag),?\s*'
+                          + str(TODAY.day) + r'\.\s*' + month_name + r'\.?\b', text, re.I))
 
+def parse_prices(key, text):
+    if key == 'pellets_loose':
+        patterns = [
+            r'Holzpelletspreise\s+für\s+lose\s+Ware\s+aktuell\s+bei\s*([\d.,]+)\s*€\s*pro\s*1[.]?000\s*kg',
+            r'Holzpelletspreise\s+für\s+lose\s+Ware.{0,70}?\s+bei\s*([\d.,]+)\s*€\s*pro\s*1[.]?000\s*kg',
+        ]
+        factor = 1
+    elif key == 'pellets_bag':
+        patterns = [
+            r'Der\s+Preis\s+für\s+Pellets\s+Sackware\s+in\s+Drolshagen.{0,90}?\s+aktuell\s+bei\s*([\d.,]+)\s*€\s*pro\s*Tonne',
+            r'Holzpellets\s+Sackware\s+für\s+Drolshagen.{0,350}?Tonnenpreis\s*([\d.,]+)\s*€',
+        ]
+        factor = 1
+    else:
+        patterns = [
+            r'Durchschnittspreis\s+heute\s+Morgen\s+auf\s*([\d.,]+)\s*Euro\s*je\s*100\s*Liter',
+            r'DE[- ]Durchschnittspreis\s+bei\s*([\d.,]+)\s*EUR/Liter',
+        ]
+        factor = 100 if 'EUR/Liter' in text else 1
+    for i, pattern in enumerate(patterns):
+        match = re.search(pattern, text, flags=re.I)
+        if match:
+            val = euro(match.group(1))
+            if key == 'heating_oil' and i == 1:
+                val *= 100
+            return round(val, 2)
+    return None
 
 def update():
     data = json.loads(FILE.read_text(encoding='utf-8'))
-    sources = {
-        'pellets_loose': ('https://www.heizpellets24.de/pelletpreise/nordrhein-westfalen/olpe/drolshagen-57489',
-                          r'(?:in 57489 Drolshagen liegen die Holzpelletspreise für lose Ware (?:aktuell )?bei)\s*([\d.,]+)\s*€\s*pro\s*1[.]?000\s*kg'),
-        'pellets_bag': ('https://www.holzpellets.net/pelletspreise/Nordrhein-Westfalen/Olpe/pellets-Drolshagen',
-                        r'(?:Preis für Pellets Sackware in Drolshagen[^.]{0,160}?bei)\s*([\d.,]+)\s*€\s*pro\s*Tonne'),
-        'heating_oil': ('https://www.tecson.de/de/heizoelpreise.html',
-                        r'(?:bundesweite Durchschnittspreis heute Morgen auf|Durchschnittspreis heute Morgen auf)\s*([\d.,]+)\s*Euro\s*je\s*100\s*Liter')
-    }
-    for key,(url, pattern) in sources.items():
+    success = 0
+    for key, url in URLS.items():
         try:
-            text = get_page(url)
-            if not fresh_publication(text):
-                print(key, 'Quelle ohne bestätigten aktuellen Zeitstempel; bisherige Daten bleiben unverändert')
+            text = get_text(url)
+            if not page_has_today(text):
+                print(f'{key}: kein überprüfbares heutiges Datum im Seitentext')
                 continue
-            hit = re.search(pattern, text, flags=re.I)
-            if not hit:
-                print(key, 'Preismuster fehlt; bisherige Daten bleiben unverändert')
+            price = parse_prices(key, text)
+            if price is None:
+                print(f'{key}: Preistext nicht gefunden (Länge {len(text)} Zeichen)')
                 continue
-            price = money(hit.group(1))
             minimum, maximum = (100, 1500) if key.startswith('pellets') else (30, 350)
             if not minimum <= price <= maximum:
-                raise ValueError(f'Unplausibler Preis: {price}')
+                print(f'{key}: Preis außerhalb plausiblen Bereichs: {price}')
+                continue
             data['prices'][key].update(price=price, checked_at=NOW.isoformat(timespec='seconds'), source_url=url)
-            print(key, price)
-        except Exception as error:
-            print(key, 'Abruf fehlgeschlagen:', error)
+            success += 1
+            print(f'{key}: {price:.2f} {data["prices"][key]["unit"]} ({TODAY.isoformat()})')
+        except Exception as err:
+            print(f'{key}: Abruf fehlgeschlagen: {type(err).__name__}: {err}')
     data['generated_at'] = NOW.isoformat(timespec='seconds')
-    FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
+    FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    print(f'Ergebnis: {success}/3 Preise bestätigt')
+    # Raise explicit failure when all sources are unavailable, rather than green success with nulls.
+    if success == 0:
+        sys.exit('Keine aktuellen Preise bestätigt. Prüfe Quellseiten/Parser im Log.')
 
-
-if __name__=='__main__': update()
+if __name__ == '__main__':
+    update()
