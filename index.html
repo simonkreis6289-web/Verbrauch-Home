@@ -653,7 +653,7 @@ html[data-theme="light"] #dashboardView .dash-trend.up{color:#b91c1c} html[data-
         <h1>Zählerstände, Pellets und Kosten im Blick</h1>
         <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
         <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du den Haushalt wechseln oder neu anlegen.</p>
-        <p class="hero-copy">Version 1.3.1.104</p>
+        <p class="hero-copy">Version 1.3.1.105</p>
       </div>
       <div class="hero-actions">
         <button id="themeToggleBtn" class="btn ghost theme-toggle" type="button" aria-label="Design wechseln" aria-pressed="false"><span id="themeToggleIcon" aria-hidden="true">☀️</span> <span id="themeToggleLabel">Helles Design</span></button>
@@ -1646,6 +1646,7 @@ html[data-theme="light"] #dashboardView .dash-trend.up{color:#b91c1c} html[data-
       availableHouseholds: [],
       chargeEntries: [],
     nearbyFuelStations: [],
+      stations: [],
         nearbyChargeStations: [],
       bagSizes: [...defaultBagSizes],
       firebaseEnabled: false,
@@ -1823,6 +1824,7 @@ html[data-theme="light"] #dashboardView .dash-trend.up{color:#b91c1c} html[data-
       registerInstallHandling();
       registerServiceWorker();
       renderAll();
+      renderSavedStationOptions();
       if (state.householdId) await connectFirebase(FIREBASE_CONFIG, state.householdId, false);
       else updateFirebaseStatus();
     }
@@ -1864,6 +1866,7 @@ html[data-theme="light"] #dashboardView .dash-trend.up{color:#b91c1c} html[data-
       state.chargeEntries = normalizeDateArray(local.chargeEntries || []);
       state.fuelEntries = normalizeDateArray(local.fuelEntries || []);
       state.bagSizes = normalizeBagSizes(local.bagSizes || defaultBagSizes);
+      state.stations = Array.isArray(local.stations) ? local.stations : [];
       fillSettingsForm();
       hydrateBagSizeSelects();
     }
@@ -2264,6 +2267,84 @@ async function fetchFuelStationsByText(searchText) {
   }
 }
 
+function normalizeStation(station, kind) {
+  const latitude = station?.latitude == null ? NaN : Number(station.latitude);
+  const longitude = station?.longitude == null ? NaN : Number(station.longitude);
+  const hasCoords = Number.isFinite(latitude) && Number.isFinite(longitude);
+  const displayName = String(station?.displayName || station?.address || station?.name || "").trim();
+  if (!displayName && !hasCoords) return null;
+  return {
+    kind,
+    sourceId: String(station?.sourceId || station?.id || ""),
+    name: String(station?.name || displayName || "Station"),
+    brand: String(station?.brand || ""),
+    address: String(station?.address || displayName),
+    displayName: displayName || String(station?.name || "Station"),
+    latitude: hasCoords ? latitude : null,
+    longitude: hasCoords ? longitude : null
+  };
+}
+
+function savedStationKey(s) {
+  if (Number.isFinite(s.latitude) && Number.isFinite(s.longitude))
+    return `${s.kind}:${s.latitude.toFixed(4)}:${s.longitude.toFixed(4)}`;
+  return `${s.kind}:${(s.displayName || s.address || s.name).trim().toLowerCase()}`;
+}
+
+function stationChoices(kind) {
+  const result = new Map();
+  // Ältere Tankvorgänge dienen als Rückwärtskompatibilität, auch ohne Migration.
+  const legacy = (kind === "fuel" ? state.fuelEntries : state.chargeEntries).map(e => normalizeStation({
+    id: kind === "fuel" ? e.stationId : e.chargeStationId,
+    name: kind === "fuel" ? e.stationName : e.chargeStationName,
+    brand: kind === "fuel" ? e.stationBrand : e.chargeStationBrand,
+    address: kind === "fuel" ? e.stationAddress : e.chargeStationAddress,
+    displayName: kind === "fuel" ? (e.stationDisplayName || e.locationText) : (e.chargeStationDisplayName || e.locationText),
+    latitude: e.latitude, longitude: e.longitude
+  }, kind)).filter(Boolean);
+  for (const x of [...legacy, ...state.stations.filter(x => x.kind === kind)]) {
+    const item = normalizeStation(x, kind);
+    if (item) result.set(savedStationKey(item), item);
+  }
+  return [...result.values()].sort((a,b) => a.displayName.localeCompare(b.displayName, "de"));
+}
+
+function renderSavedStationOptions() {
+  for (const [kind, element, stateKey] of [
+    ["fuel", els.fuelStationSelect, "nearbyFuelStations"],
+    ["charge", els.chargeStationSelect, "nearbyChargeStations"]
+  ]) {
+    if (!element) continue;
+    const previous = element.value;
+    const available = new Map();
+    for (const station of [...stationChoices(kind), ...state[stateKey]]) {
+      const item = normalizeStation(station, kind);
+      if (item) available.set(savedStationKey(item), {...station, ...item});
+    }
+    const choices = [...available.values()];
+    state[stateKey] = choices.map(item => ({...item, id: `choice-${encodeURIComponent(savedStationKey(item))}`}));
+    element.innerHTML = `<option value="">Station auswählen (optional)</option>` +
+      state[stateKey].map(st => `<option value="${escapeHtml(st.id)}">${escapeHtml(st.displayName)}</option>`).join("");
+    if (state[stateKey].some(x => x.id === previous)) element.value = previous;
+  }
+}
+
+async function rememberStation(station, kind) {
+  const candidate = normalizeStation(station, kind);
+  if (!candidate) return;
+  const key = savedStationKey(candidate);
+  if (state.stations.some(x => savedStationKey(x) === key)) return;
+  if (state.firebaseEnabled) {
+    // Deterministischer Schlüssel verhindert doppelte Einträge bei mehreren Geräten.
+    const safeId = Array.from(new TextEncoder().encode(key), b => b.toString(16).padStart(2, "0")).join("");
+    await setDoc(doc(state.db, `${householdBasePath()}/stations/${safeId}`), candidate, {merge: true});
+  } else {
+    state.stations.push(candidate);
+    persistLocalSnapshot();
+    renderSavedStationOptions();
+  }
+}
+
 function applySelectedFuelStation() {
   const station = state.nearbyFuelStations.find(
     (item) => item.id === els.fuelStationSelect?.value
@@ -2554,6 +2635,9 @@ const selectedChargeStation =
     createdAt: new Date().toISOString()
   });
 
+  if (selectedChargeStation) {
+    try { await rememberStation(selectedChargeStation, "charge"); } catch (e) { console.warn("Ladesäule konnte nicht gespeichert werden", e); }
+  }
   els.chargeForm.reset();
   if (els.chargeCarId) els.chargeCarId.value = carId;
 
@@ -3543,7 +3627,7 @@ if (els.fuelUseGps?.checked && !selectedStation) {
   if (gps) {
     const stations = await fetchNearbyFuelStations(gps.latitude, gps.longitude);
     state.nearbyFuelStations = stations;
-    selectedStation = stations[0] || null;
+    selectedStation = null; // GPS-Position speichern, aber niemals eine Tankstelle ungefragt zuordnen.
 
     if (selectedStation && els.fuelLocationText && !els.fuelLocationText.value.trim()) {
       els.fuelLocationText.value = selectedStation.displayName;
@@ -3582,6 +3666,9 @@ const locationText =
           createdAt: new Date().toISOString()
         });
 
+      if (selectedStation) {
+        try { await rememberStation(selectedStation, "fuel"); } catch (e) { console.warn("Tankstelle konnte nicht gespeichert werden", e); }
+      }
       els.fuelForm.reset();
       if (els.fuelCarId) els.fuelCarId.value = carId;
         if (els.fuelRangeBefore) els.fuelRangeBefore.value = "";
@@ -4033,6 +4120,7 @@ renderFuelMap();
       const carsQuery = query(collection(state.db, `${basePath}/cars`), orderBy("name", "asc"));
       const fuelEntriesQuery = query(collection(state.db, `${basePath}/fuelEntries`), orderBy("date", "desc"));
       const chargeEntriesQuery = query(collection(state.db, `${basePath}/chargeEntries`), orderBy("date", "desc"));
+      const stationsCollection = collection(state.db, `${basePath}/stations`);
         
       state.unsubscribers.push(onSnapshot(readingsQuery, (s) => {
         state.readings = s.docs.map(mapFirestoreDoc);
@@ -4078,6 +4166,11 @@ renderFuelMap();
         }, (error) => {
           console.error("chargeEntries onSnapshot Fehler:", error);
         }));
+      state.unsubscribers.push(onSnapshot(stationsCollection, (snapshot) => {
+        state.stations = snapshot.docs.map(mapFirestoreDoc);
+        persistLocalSnapshot();
+        renderSavedStationOptions();
+      }, (error) => console.error("Stations-Synchronisierung:", error)));
       state.unsubscribers.push(onSnapshot(settingsDocRef, (snapshot) => {
         if (snapshot.exists()) {
           state.settings = mergeSettings(snapshot.data());
@@ -4226,7 +4319,8 @@ async function updateRecord(kind, id, payload) {
         cars: state.cars,
         fuelEntries: state.fuelEntries,
         chargeEntries: state.chargeEntries,
-        bagSizes: state.bagSizes
+        bagSizes: state.bagSizes,
+        stations: state.stations
       }));
     }
     
@@ -4262,6 +4356,7 @@ async function updateRecord(kind, id, payload) {
       try { renderDashboard(); } catch (e) { console.error("renderDashboard", e); }
       try { renderMonthlyOverview(); } catch (e) { console.error("renderMonthlyOverview", e); }
       try { renderSettingsSummary(); } catch (e) { console.error("renderSettingsSummary", e); }
+      try { renderSavedStationOptions(); } catch (e) { console.error("renderSavedStationOptions", e); }
       try { renderCars(); } catch (e) { console.error("renderCars", e); }
       try { renderChargeEntries(); } catch (e) { console.error("renderChargeEntries", e); }
       try { renderPelletInventoryStats(); } catch (e) { console.error("renderPelletInventoryStats", e); }
@@ -5123,7 +5218,7 @@ stationDisplayName: selectedStation?.displayName ?? form.get("locationText").tri
           bagSizes: state.bagSizes,
           // Stationen sind bisher in den Tank- und Ladeeinträgen gespeichert.
           // Zusätzlich als abgeleiteter Katalog exportieren, ohne die Datenstruktur zu verändern.
-          stations: [...new Map([...state.fuelEntries.map(e => ({
+          stations: [...new Map([...state.stations, ...state.fuelEntries.map(e => ({
             id: e.stationId || null, name: e.stationName || "", brand: e.stationBrand || "",
             address: e.stationAddress || e.stationDisplayName || e.locationText || "",
             latitude: e.latitude, longitude: e.longitude, kind: "fuel"
@@ -5132,7 +5227,7 @@ stationDisplayName: selectedStation?.displayName ?? form.get("locationText").tri
             address: e.chargeStationAddress || e.chargeStationDisplayName || e.locationText || "",
             latitude: e.latitude, longitude: e.longitude, kind: "charge"
           }))].filter(e => e.id || e.name || e.address).map(e => [
-            `${e.kind}|${e.id || `${e.latitude},${e.longitude}`}|${e.address}`, e
+            `${e.kind}|${e.latitude ?? ""}|${e.longitude ?? ""}|${(e.name || e.address || "").toLowerCase()}`, e
           ])).values()]
         };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
