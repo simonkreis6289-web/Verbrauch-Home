@@ -653,7 +653,7 @@ html[data-theme="light"] #dashboardView .dash-trend.up{color:#b91c1c} html[data-
         <h1>Zählerstände, Pellets und Kosten im Blick</h1>
         <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
         <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du den Haushalt wechseln oder neu anlegen.</p>
-        <p class="hero-copy">Version 1.3.1.105</p>
+        <p class="hero-copy">Version 1.3.1.110</p>
       </div>
       <div class="hero-actions">
         <button id="themeToggleBtn" class="btn ghost theme-toggle" type="button" aria-label="Design wechseln" aria-pressed="false"><span id="themeToggleIcon" aria-hidden="true">☀️</span> <span id="themeToggleLabel">Helles Design</span></button>
@@ -688,7 +688,7 @@ html[data-theme="light"] #dashboardView .dash-trend.up{color:#b91c1c} html[data-
           <div id="dashboardCostTotals" class="dash-totals" aria-live="polite"></div>
         </section>
         <section class="card wide" aria-label="Monatsvergleich">
-          <div class="dash-section-header"><div><p class="section-kicker">Entwicklung</p><h2>Monatsvergleich</h2></div><div class="dash-chart-controls"><label for="dashboardChartMetric">Anzeigen</label><select id="dashboardChartMetric"><option value="cost">Kosten (€)</option><option value="strom">Strom (kWh)</option><option value="wasser">Wasser (m³)</option><option value="pellets">Pellets (kg)</option></select></div></div>
+          <div class="dash-section-header"><div><p class="section-kicker">Entwicklung</p><h2>Monatsvergleich · Ø pro Tag</h2><small class="muted">Verbrauch zwischen zwei Ablesungen wird zeitanteilig auf die jeweiligen Monate verteilt.</small></div><div class="dash-chart-controls"><label for="dashboardChartMetric">Anzeigen</label><select id="dashboardChartMetric"><option value="cost">Kosten (€)</option><option value="strom">Strom (kWh)</option><option value="wasser">Wasser (m³)</option><option value="pellets">Pellets (kg)</option></select></div></div>
           <div id="dashboardMonthlyChart" class="dash-month-chart" aria-live="polite"></div>
           <div id="dashboardMonthlyChartLegend" class="dash-month-legend"></div>
         </section>
@@ -1127,7 +1127,7 @@ html[data-theme="light"] #dashboardView .dash-trend.up{color:#b91c1c} html[data-
   </form>
 </section>
 
-<section class="card wide">
+<section class="card wide" id="chargeHistoryCard">
   <div class="card-head">
     <div>
       <p class="section-kicker">Ladehistorie</p>
@@ -1166,7 +1166,7 @@ html[data-theme="light"] #dashboardView .dash-trend.up{color:#b91c1c} html[data-
   <div id="fuelMap" class="map-box"></div>
 </section>
 
-    <section class="card wide">
+    <section class="card wide" id="fuelHistoryCard">
       <div class="card-head">
         <div>
           <p class="section-kicker">Historie</p>
@@ -1925,6 +1925,7 @@ html[data-theme="light"] #dashboardView .dash-trend.up{color:#b91c1c} html[data-
       els.carForm?.addEventListener("submit", handleCarSubmit);
         els.showLiveLocationBtn?.addEventListener("click", async () => {
           const gps = await getCurrentPositionSafe();
+          if (gps) { stationGps = gps; renderSavedStationOptions(); }
 
           if (!gps) {
             showToast("Live-Standort konnte nicht ermittelt werden.", "error");
@@ -2071,6 +2072,7 @@ function formatStationShort(station) {
       setTimeout(() => {
         renderFuelMap();
         refreshFuelMapSize();
+        void refreshStationGps();
       }, 150);
     }
     }
@@ -2267,21 +2269,46 @@ async function fetchFuelStationsByText(searchText) {
   }
 }
 
+// Stationsauswahl v62: einheitliche Adressen und GPS-Abstand.
+let stationGps = null;
+let stationGpsLastCheck = 0;
+let stationGpsPending = null;
+const stationReverseCache = new Map();
+let stationAddressLookupRunning = false;
+
+function stationHasUsefulAddress(address) {
+  const value = String(address || '').trim();
+  return /\b\d{5}\b/.test(value) || /(?:straße|strasse|str\.|weg|platz|allee|ring|gasse|chaussee|damm|hütte|straße\b)/i.test(value);
+}
+
+function stationAddressFromParts(parts) {
+  if (!parts || typeof parts !== 'object') return '';
+  const street = [parts.road || parts.street || parts.pedestrian || parts.residential,
+    parts.house_number].filter(Boolean).join(' ');
+  const city = [parts.postcode, parts.city || parts.town || parts.village || parts.municipality].filter(Boolean).join(' ');
+  return [street, city].filter(Boolean).join(', ');
+}
+
 function normalizeStation(station, kind) {
   const latitude = station?.latitude == null ? NaN : Number(station.latitude);
   const longitude = station?.longitude == null ? NaN : Number(station.longitude);
   const hasCoords = Number.isFinite(latitude) && Number.isFinite(longitude);
-  const displayName = String(station?.displayName || station?.address || station?.name || "").trim();
-  if (!displayName && !hasCoords) return null;
+  const name = String(station?.name || station?.brand || 'Station').trim();
+  const storedAddress = String(station?.address || '').trim();
+  const oldDisplay = String(station?.displayName || '').trim();
+  const partsAddress = stationAddressFromParts(station?.addressParts);
+  let address = stationHasUsefulAddress(partsAddress) ? partsAddress :
+    stationHasUsefulAddress(storedAddress) ? storedAddress :
+    stationHasUsefulAddress(oldDisplay) ? oldDisplay : '';
+  // Bereits zusammengesetzte Anzeigenamen nicht doppelt anhängen.
+  if (address.toLowerCase().startsWith(name.toLowerCase() + ','))
+    address = address.slice(name.length + 1).trim();
+  if (!name && !address && !hasCoords) return null;
+  const displayName = address ? `${name}, ${address}` : `${name}, Adresse nicht hinterlegt`;
   return {
-    kind,
-    sourceId: String(station?.sourceId || station?.id || ""),
-    name: String(station?.name || displayName || "Station"),
-    brand: String(station?.brand || ""),
-    address: String(station?.address || displayName),
-    displayName: displayName || String(station?.name || "Station"),
-    latitude: hasCoords ? latitude : null,
-    longitude: hasCoords ? longitude : null
+    ...station, kind, sourceId: String(station?.sourceId || station?.id || ''),
+    name, brand: String(station?.brand || ''), address, displayName,
+    latitude: hasCoords ? latitude : null, longitude: hasCoords ? longitude : null
   };
 }
 
@@ -2293,40 +2320,112 @@ function savedStationKey(s) {
 
 function stationChoices(kind) {
   const result = new Map();
-  // Ältere Tankvorgänge dienen als Rückwärtskompatibilität, auch ohne Migration.
-  const legacy = (kind === "fuel" ? state.fuelEntries : state.chargeEntries).map(e => normalizeStation({
-    id: kind === "fuel" ? e.stationId : e.chargeStationId,
-    name: kind === "fuel" ? e.stationName : e.chargeStationName,
-    brand: kind === "fuel" ? e.stationBrand : e.chargeStationBrand,
-    address: kind === "fuel" ? e.stationAddress : e.chargeStationAddress,
-    displayName: kind === "fuel" ? (e.stationDisplayName || e.locationText) : (e.chargeStationDisplayName || e.locationText),
+  const legacy = (kind === 'fuel' ? state.fuelEntries : state.chargeEntries).map(e => normalizeStation({
+    id: kind === 'fuel' ? e.stationId : e.chargeStationId,
+    name: kind === 'fuel' ? e.stationName : e.chargeStationName,
+    brand: kind === 'fuel' ? e.stationBrand : e.chargeStationBrand,
+    address: kind === 'fuel' ? e.stationAddress : e.chargeStationAddress,
+    displayName: kind === 'fuel' ? (e.stationDisplayName || e.locationText) : (e.chargeStationDisplayName || e.locationText),
     latitude: e.latitude, longitude: e.longitude
   }, kind)).filter(Boolean);
-  for (const x of [...legacy, ...state.stations.filter(x => x.kind === kind)]) {
-    const item = normalizeStation(x, kind);
-    if (item) result.set(savedStationKey(item), item);
+  for (const station of [...legacy, ...state.stations.filter(x => x.kind === kind)]) {
+    const item = normalizeStation(station, kind);
+    if (!item) continue;
+    const key = savedStationKey(item);
+    const old = result.get(key);
+    // Vollständige Adressen haben Vorrang vor älteren Kurzbezeichnungen.
+    if (!old || (item.address && !old.address)) result.set(key, item);
   }
-  return [...result.values()].sort((a,b) => a.displayName.localeCompare(b.displayName, "de"));
+  return [...result.values()];
+}
+
+function stationDistance(station) {
+  if (!stationGps || !Number.isFinite(station.latitude) || !Number.isFinite(station.longitude)) return null;
+  return calculateDistanceKm(stationGps.latitude, stationGps.longitude, station.latitude, station.longitude);
 }
 
 function renderSavedStationOptions() {
   for (const [kind, element, stateKey] of [
-    ["fuel", els.fuelStationSelect, "nearbyFuelStations"],
-    ["charge", els.chargeStationSelect, "nearbyChargeStations"]
+    ['fuel', els.fuelStationSelect, 'nearbyFuelStations'],
+    ['charge', els.chargeStationSelect, 'nearbyChargeStations']
   ]) {
     if (!element) continue;
-    const previous = element.value;
+    const selected = state[stateKey].find(x => x.id === element.value);
+    const selectedKey = selected ? savedStationKey(normalizeStation(selected, kind)) : null;
     const available = new Map();
     for (const station of [...stationChoices(kind), ...state[stateKey]]) {
       const item = normalizeStation(station, kind);
-      if (item) available.set(savedStationKey(item), {...station, ...item});
+      if (!item) continue;
+      const key = savedStationKey(item);
+      const old = available.get(key);
+      if (!old || (item.address && !old.address)) available.set(key, item);
     }
-    const choices = [...available.values()];
-    state[stateKey] = choices.map(item => ({...item, id: `choice-${encodeURIComponent(savedStationKey(item))}`}));
-    element.innerHTML = `<option value="">Station auswählen (optional)</option>` +
-      state[stateKey].map(st => `<option value="${escapeHtml(st.id)}">${escapeHtml(st.displayName)}</option>`).join("");
-    if (state[stateKey].some(x => x.id === previous)) element.value = previous;
+    const choices = [...available.values()].map(item => ({
+      ...item, id: `choice-${encodeURIComponent(savedStationKey(item))}`,
+      distanceKm: stationDistance(item)
+    })).sort((a,b) => {
+      if (a.distanceKm != null && b.distanceKm != null) return a.distanceKm - b.distanceKm;
+      if (a.distanceKm != null) return -1;
+      if (b.distanceKm != null) return 1;
+      return a.displayName.localeCompare(b.displayName, 'de');
+    });
+    state[stateKey] = choices;
+    element.innerHTML = '<option value="">Station auswählen (optional)</option>' +
+      choices.map(st => `<option value="${escapeHtml(st.id)}">${escapeHtml(st.displayName)}${st.distanceKm == null ? '' : ` · ${formatNumber(st.distanceKm)} km`}</option>`).join('');
+    if (selectedKey) {
+      const restored = choices.find(st => savedStationKey(st) === selectedKey);
+      if (restored) element.value = restored.id;
+    }
   }
+}
+
+async function refreshStationGps() {
+  if (stationGpsPending) return stationGpsPending;
+  if (Date.now() - stationGpsLastCheck < 60000) return;
+  stationGpsLastCheck = Date.now();
+  stationGpsPending = getCurrentPositionSafe().then(gps => {
+    if (gps) stationGps = gps;
+    renderSavedStationOptions();
+    if (gps) void enrichOldStationAddresses();
+  }).finally(() => { stationGpsPending = null; });
+  return stationGpsPending;
+}
+
+// Maximal 8 Reverse-Geocoding-Abfragen pro Seitenaufruf, mindestens 1,2 s Abstand.
+// Fehlende Straßeninformationen werden niemals frei erfunden.
+async function enrichOldStationAddresses() {
+  if (stationAddressLookupRunning) return;
+  stationAddressLookupRunning = true;
+  try {
+    const missing = [...stationChoices('fuel'), ...stationChoices('charge')]
+      .filter(s => !s.address && Number.isFinite(s.latitude) && Number.isFinite(s.longitude))
+      .filter(s => !stationReverseCache.has(savedStationKey(s))).slice(0,8);
+    for (const station of missing) {
+      const key = savedStationKey(station);
+      stationReverseCache.set(key, true);
+      try {
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&addressdetails=1&zoom=18&lat=${encodeURIComponent(station.latitude)}&lon=${encodeURIComponent(station.longitude)}`;
+        const response = await fetch(url, {headers: {'Accept':'application/json'}});
+        if (response.ok) {
+          const data = await response.json();
+          const address = stationAddressFromParts(data.address);
+          if (stationHasUsefulAddress(address)) {
+            const updated = normalizeStation({...station, address}, station.kind);
+            const index = state.stations.findIndex(s => savedStationKey(normalizeStation(s, s.kind || station.kind)) === key);
+            if (index >= 0) state.stations[index] = {...state.stations[index], ...updated};
+            else state.stations.push(updated);
+            persistLocalSnapshot();
+            renderSavedStationOptions();
+            if (state.firebaseEnabled) {
+              const safeId = Array.from(new TextEncoder().encode(key), b => b.toString(16).padStart(2,'0')).join('');
+              await setDoc(doc(state.db, `${householdBasePath()}/stations/${safeId}`), updated, {merge:true});
+            }
+          }
+        }
+      } catch (err) { console.warn('Stationsadresse konnte nicht ermittelt werden:',err); }
+      await new Promise(resolve => setTimeout(resolve, 1200));
+    }
+  } finally { stationAddressLookupRunning = false; }
 }
 
 async function rememberStation(station, kind) {
@@ -2358,7 +2457,7 @@ function applySelectedFuelStation() {
 
   renderFuelMap();
 
-  if (fuelMapInstance && fuelMapMarkersLayer) {
+  if (fuelMapInstance && fuelMapMarkersLayer && Number.isFinite(station.latitude) && Number.isFinite(station.longitude)) {
     const marker = L.marker([station.latitude, station.longitude])
       .addTo(fuelMapMarkersLayer)
       .bindPopup(escapeHtml(station.displayName))
@@ -2661,88 +2760,111 @@ function initFuelMap() {
   fuelMapMarkersLayer = L.layerGroup().addTo(fuelMapInstance);
 }
 
-function createMapMarkerIcon(color) {
+function createMapMarkerIcon(color, count = 1) {
+  const size = count >= 100 ? 39 : 34;
   return L.divIcon({
     className: "",
-    html: `
-      <div style="
-        width:18px;
-        height:18px;
-        border-radius:50%;
-        background:${color};
-        border:3px solid white;
-        box-shadow:0 2px 8px rgba(0,0,0,.35);
-      "></div>
-    `,
-    iconSize: [18, 18],
-    iconAnchor: [9, 9],
-    popupAnchor: [0, -10]
+    html: `<div style="
+      width:${size}px;height:${size}px;border-radius:50%;
+      background:${color};border:3px solid white;
+      display:flex;align-items:center;justify-content:center;
+      color:white;font-size:${count >= 100 ? 11 : 13}px;font-weight:800;
+      box-shadow:0 2px 10px rgba(0,0,0,.35);
+    ">${count}</div>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2]
   });
 }
 
 function getMapEntriesWithGps() {
+  const validGps = (entry) => {
+    const latitude = Number(entry.latitude);
+    const longitude = Number(entry.longitude);
+    return entry.latitude != null && entry.longitude != null &&
+      Number.isFinite(latitude) && Number.isFinite(longitude) &&
+      Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180 &&
+      !(latitude === 0 && longitude === 0);
+  };
   const fuel = state.fuelEntries
-    .filter((entry) => Number.isFinite(entry.latitude) && Number.isFinite(entry.longitude))
+    .filter(validGps)
     .map((entry) => ({ ...entry, mapType: "fuel" }));
-
   const charges = state.chargeEntries
-    .filter((entry) => Number.isFinite(entry.latitude) && Number.isFinite(entry.longitude))
+    .filter(validGps)
     .map((entry) => ({ ...entry, mapType: "charge" }));
-
   return [...fuel, ...charges];
 }
 
+// Mehrere Vorgänge an derselben Station erhalten genau einen Zähl-Marker.
+// Koordinaten können bei unterschiedlichen GPS-Messungen leicht abweichen.
+function groupMapEntriesByStation(entries) {
+  const groups = [];
+  for (const entry of entries) {
+    const lat = Number(entry.latitude);
+    const lon = Number(entry.longitude);
+    const stationId = String(entry.mapType === "charge"
+      ? (entry.chargeStationId || "") : (entry.stationId || ""));
+    let group = groups.find(g => {
+      if (g.mapType !== entry.mapType) return false;
+      // Verschiedene eindeutig identifizierte Stationen nie zusammenführen.
+      if (stationId && g.stationId && stationId !== g.stationId) return false;
+      return calculateDistanceKm(g.latitude, g.longitude, lat, lon) <= 0.06;
+    });
+    if (!group) {
+      group = { mapType: entry.mapType, stationId, latitude: lat,
+        longitude: lon, entries: [] };
+      groups.push(group);
+    }
+    group.entries.push(entry);
+    if (!group.stationId && stationId) group.stationId = stationId;
+  }
+  return groups;
+}
+
 function renderFuelMap() {
-  if (!els.fuelMap || typeof L === "undefined") return;
-  if (!isCarsViewVisible()) return;
-
+  if (!els.fuelMap || typeof L === "undefined" || !isCarsViewVisible()) return;
   initFuelMap();
-
   if (!fuelMapInstance || !fuelMapMarkersLayer) return;
-
   fuelMapMarkersLayer.clearLayers();
 
-  const entriesWithGps = getMapEntriesWithGps()
-    .filter((entry) => entry.carId === state.selectedAnalyticsCarId);
-
-  if (!entriesWithGps.length) {
+  const entries = getMapEntriesWithGps()
+    .filter(entry => entry.carId === state.selectedAnalyticsCarId);
+  const groups = groupMapEntriesByStation(entries);
+  if (!groups.length) {
     fuelMapInstance.setView([51.1657, 10.4515], 6);
     setTimeout(() => fuelMapInstance.invalidateSize(), 80);
     return;
   }
 
-  const bounds = [];
-
-  entriesWithGps.forEach((entry) => {
-    const car = state.cars.find((c) => c.id === entry.carId);
-    const latLng = [entry.latitude, entry.longitude];
-    bounds.push(latLng);
-
-    if (entry.mapType === "charge") {
-      L.marker(latLng, { icon: createMapMarkerIcon("#ef4444") })
-        .addTo(fuelMapMarkersLayer)
-        .bindPopup(`
-          <strong>${escapeHtml(car?.name || "Auto")}</strong><br>
-          🔴 Ladevorgang<br>
-          ${formatDateTime(entry.fromDate || entry.date)} → ${formatDateTime(entry.toDate || entry.date)}<br>
-          ${formatNumber(entry.kwh)} kWh · ${formatCurrency(entry.totalPrice || entry.electricityCost || 0)}<br>
-          ${entry.chargeStationDisplayName || entry.locationText ? escapeHtml(entry.chargeStationDisplayName || entry.locationText) : "Kein Standorttext"}
-        `);
-      return;
-    }
-
-    L.marker(latLng, { icon: createMapMarkerIcon("#3b82f6") })
-      .addTo(fuelMapMarkersLayer)
-      .bindPopup(`
-        <strong>${escapeHtml(car?.name || "Auto")}</strong><br>
-        🔵 Tankvorgang<br>
-        ${formatDateTime(entry.date)}<br>
-        ${formatNumber(entry.liters)} l · ${formatCurrency(entry.totalPrice)}<br>
-        ${entry.stationDisplayName || entry.locationText ? escapeHtml(entry.stationDisplayName || entry.locationText) : "Kein Standorttext"}
-      `);
+  groups.forEach(group => {
+    const isCharge = group.mapType === "charge";
+    const count = group.entries.length;
+    const sorted = [...group.entries]
+      .sort((a, b) => new Date(b.date || b.toDate) - new Date(a.date || a.toDate));
+    const recent = sorted.slice(0, 8).map(entry => {
+      const date = escapeHtml(formatDateTime(entry.date || entry.toDate));
+      const amount = isCharge
+        ? `${formatNumber(entry.kwh)} kWh · ${formatCurrency(entry.totalPrice || entry.electricityCost || 0)}`
+        : `${formatNumber(entry.liters)} l · ${formatCurrency(entry.totalPrice)}`;
+      return `<li>${date}: ${amount}</li>`;
+    }).join("");
+    const name = sorted.map(entry => isCharge
+      ? (entry.chargeStationDisplayName || entry.locationText)
+      : (entry.stationDisplayName || entry.locationText)).find(Boolean)
+      || (isCharge ? "Ladestandort" : "Tankstelle");
+    const car = state.cars.find(c => c.id === state.selectedAnalyticsCarId);
+    const kind = isCharge ? "Ladevorgänge" : "Tankvorgänge";
+    const popup = `<strong>${escapeHtml(name)}</strong><br>` +
+      `${escapeHtml(car?.name || "Fahrzeug")} · <b>${count} ${kind}</b>` +
+      `<ul style="padding-left:18px;margin:8px 0">${recent}</ul>` +
+      (count > 8 ? `<small>… und ${count - 8} weitere</small>` : "");
+    L.marker([group.latitude, group.longitude], {
+      icon: createMapMarkerIcon(isCharge ? "#ef4444" : "#3b82f6", count)
+    }).addTo(fuelMapMarkersLayer).bindPopup(popup, { maxWidth: 360 });
   });
 
-  fuelMapInstance.fitBounds(bounds, { padding: [28, 28], maxZoom: 15 });
+  fuelMapInstance.fitBounds(groups.map(g => [g.latitude, g.longitude]),
+    { padding: [35, 35], maxZoom: 15 });
   setTimeout(() => fuelMapInstance.invalidateSize(), 80);
 }
 
@@ -3016,6 +3138,8 @@ function syncCarModeSections(car) {
 
   els.fuelEntryCard?.classList.toggle("hidden", !combustion);
   els.chargeEntryCard?.classList.toggle("hidden", !electric);
+  document.getElementById("chargeHistoryCard")?.classList.toggle("hidden", !electric);
+  document.getElementById("fuelHistoryCard")?.classList.toggle("hidden", !combustion);
   document.getElementById("carConsumptionChartCard")?.classList.toggle("hidden", !combustion);
   document.getElementById("carCostChartCard")?.classList.toggle("hidden", !combustion);
 }
@@ -3339,11 +3463,13 @@ function buildComputedFuelEntriesForCar(carId) {
         rangeUsedKm = round2(previousRangeAfter - currentRangeBefore);
         rangeDifferenceKm = round2(distanceKm - rangeUsedKm);
 
-        const tolerance = Math.max(50, distanceKm * 0.25);
-
-        if (distanceKm > rangeUsedKm + tolerance || distanceKm > previousRangeAfter + tolerance) {
-          suspectedMissingRefuel = true;
-          calculationWarning = "Möglicherweise wurde ein Tankvorgang vergessen. Verbrauch wird für dieses Intervall nicht berechnet.";
+        // Reichweitenangaben des Bordcomputers sind Prognosen. Besonders bei
+        // frühem Nachtanken ist die Differenz zur tatsächlich gefahrenen
+        // Strecke normal und KEIN Hinweis auf eine vergessene Tankung.
+        // Nur bei sehr großer Abweichung einen unverbindlichen Hinweis zeigen.
+        const tolerance = Math.max(120, previousRangeAfter * 0.35);
+        if (previousRangeAfter > 0 && distanceKm > previousRangeAfter + tolerance) {
+          calculationWarning = "Hinweis: Gefahrene Strecke übersteigt die zuvor angezeigte Reichweite deutlich. Bitte Einträge prüfen; die Reichweitenanzeige ist nur eine Schätzung.";
         }
       }
 
@@ -4523,7 +4649,7 @@ async function updateRecord(kind, id, payload) {
       const types = ["strom", "wasser", "pellets"];
       els.monthlyOverview.innerHTML = types.map((type) => {
         const months = Object.entries(monthly[type]).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 6);
-        return `<div class="dash-month-card"><h3>${type === "strom" ? "⚡" : type === "wasser" ? "💧" : "🔥"} ${typeConfig[type].label}</h3>${months.length ? months.map(([month, data]) => `<div class="dash-month-row"><strong>${month}</strong><span class="muted">${formatNumber(data.total)} ${typeConfig[type].unit}<br>Ø ${formatNumber(data.avgPerDay)}/Tag · ${formatCurrency(data.cost)}</span></div>`).join("") : `<div class="muted">Noch keine Monatsdaten</div>`}</div>`;
+        return `<div class="dash-month-card"><h3>${type === "strom" ? "⚡" : type === "wasser" ? "💧" : "🔥"} ${typeConfig[type].label}</h3>${months.length ? months.map(([month, data]) => `<div class="dash-month-row"><strong>${month}</strong><span class="muted">${formatNumber(data.total)} ${typeConfig[type].unit}<br>Ø ${formatNumber(data.avgPerDay)} ${typeConfig[type].unit}/Tag · Ø ${formatCurrency(data.avgCostPerDay)}/Tag<br>${formatNumber(data.coveredDays)} Tage erfasst · ${formatCurrency(data.cost)} anteilig</span></div>`).join("") : `<div class="muted">Noch keine Monatsdaten</div>`}</div>`;
       }).join("");
     }
 
@@ -4566,26 +4692,78 @@ async function updateRecord(kind, id, payload) {
     }
 
 
-    // Dashboard-Kosten basieren auf den vorhandenen Monatssummen, ohne Zählerdaten zu verändern.
+    // Kostenprognose auf Basis der jüngsten 365 Tage mit zeitgewichteten Messintervallen.
+    // Ohne neue Ablesung im aktuellen Monat wird der Wert klar als Prognose markiert.
+    function getRecentCostRates() {
+      const now = Date.now();
+      const cutoff = new Date(now); cutoff.setFullYear(cutoff.getFullYear() - 1);
+      const out = {};
+      for (const type of ["strom", "wasser", "pellets"]) {
+        let euro = 0, days = 0;
+        const entries = buildComputedReadings().filter(e => e.type === type && e.previousDate && Number.isFinite(e.cost));
+        for (const e of entries) {
+          const start = new Date(e.previousDate).getTime();
+          const end = new Date(e.date).getTime();
+          if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) continue;
+          const overlap = Math.max(0, Math.min(end, now) - Math.max(start, cutoff.getTime()));
+          if (!overlap) continue;
+          const proportion = overlap / (end - start);
+          euro += Math.max(0, e.cost) * proportion;
+          days += overlap / 86400000;
+        }
+        out[type] = days > 0 ? { daily: euro / days, days } : null;
+      }
+      return out;
+    }
+
     function renderDashboardCostTotals() {
       const container = document.getElementById("dashboardCostTotals");
       if (!container) return;
       const monthly = buildMonthlyStats();
+      const rates = getRecentCostRates();
       const now = new Date();
-      const current = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
-      const prior = new Date(now.getFullYear(), now.getMonth()-1, 1);
-      const previous = `${prior.getFullYear()}-${String(prior.getMonth()+1).padStart(2,"0")}`;
+      const key = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+      const current = key(now);
+      const previous = key(new Date(now.getFullYear(), now.getMonth()-1, 1));
+      const monthDays = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
       const types = ["strom", "wasser", "pellets"];
-      const labels = ["Strom", "Wasser", "Pellets"];
-      const icons = ["⚡", "💧", "🔥"];
-      const sumMonth = (key) => types.reduce((s,type) => s + (monthly[type][key]?.cost || 0), 0);
-      const rows = types.map((type,i)=>({label:labels[i],icon:icons[i],value:monthly[type][current]?.cost || 0,prev:monthly[type][previous]?.cost || 0,has:!!monthly[type][current]}));
-      rows.push({label:"Gesamtkosten",icon:"💶",value:sumMonth(current),prev:sumMonth(previous),has:types.some(type=>!!monthly[type][current])});
-      container.innerHTML = rows.map((row)=>{
-        const trend = row.prev > 0 && row.has ? ((row.value-row.prev)/row.prev)*100 : null;
-        const cls = trend == null ? "flat" : trend > 0.5 ? "up" : trend < -0.5 ? "down" : "flat";
-        const trendHtml = trend === null ? "Kein Vergleich verfügbar" : `${trend > 0 ? "+" : ""}${formatNumber(trend)} % zum Vormonat`;
-        return `<div class="dash-total"><span>${row.icon} ${row.label} · aktueller Monat</span><b>${row.has ? formatCurrency(row.value) : "–"}</b><span>Vormonat: ${row.prev ? formatCurrency(row.prev) : "keine Daten"}</span><br><span class="dash-trend ${cls}">${trendHtml}</span></div>`;
+      const icons = {strom:"⚡",wasser:"💧",pellets:"🔥"};
+      const labels = {strom:"Strom",wasser:"Wasser",pellets:"Pellets"};
+      const rows = types.map(type => {
+        const observed = monthly[type][current];
+        const prior = monthly[type][previous];
+        const rate = rates[type];
+        // Der Monatswert wird auf Basis aller verfügbaren abgeschlossenen Intervalle
+        // und einer zeitgewichteten Tagesrate geschätzt, niemals als Messwert ausgegeben.
+        const covered = Math.min(monthDays, observed?.coveredDays || 0);
+        const forecast = rate ? (observed?.cost || 0) + Math.max(0, monthDays-covered)*rate.daily : null;
+        const priorDaily = prior?.avgCostPerDay ?? null;
+        const trend = rate && priorDaily !== null && priorDaily > 0 ? (rate.daily / priorDaily - 1)*100 : null;
+        return { label:labels[type], icon:icons[type], forecast, previousCost:prior?.cost ?? null,
+          rate, trend, known:observed?.cost ?? null, covered };
+      });
+      const complete = rows.every(row => row.forecast !== null);
+      const totalForecast = rows.some(row=>row.forecast!==null)
+        ? rows.reduce((s,row)=>s+(row.forecast || 0),0) : null;
+      const totalYear = rows.some(row=>row.rate)
+        ? rows.reduce((s,row)=>s+(row.rate?.daily || 0)*365,0) : null;
+      const previousValues = rows.map(row => row.previousCost);
+      const priorTotal = previousValues.some(v=>v!==null) ? previousValues.reduce((s,v)=>s+(v||0),0) : null;
+      rows.push({label:"Gesamtkosten",icon:"💶",forecast:totalForecast,rate:totalYear===null?null:{daily:totalYear/365},
+        previousCost:priorTotal,trend:null,partial:!complete});
+      container.innerHTML = rows.map(row=>{
+        const cls = row.trend===null ? "flat" : row.trend > 0.5 ? "up" : row.trend < -0.5 ? "down" : "flat";
+        const trendText = row.trend===null ? "Kein belastbarer Vormonatsvergleich" : `${row.trend>0?"+":""}${formatNumber(row.trend)} % Tageskosten gegenüber Vormonat`;
+        const annual = row.rate ? formatCurrency(row.rate.daily*365) : "–";
+        const monthlyText = row.forecast===null ? "Noch keine Berechnungsgrundlage" : formatCurrency(row.forecast);
+        return `<div class="dash-total">
+          <span>${row.icon} ${row.label} · Monatsprognose${row.partial?" (teilweise)":""}</span>
+          <b>${monthlyText}</b>
+          <span>Vormonat erfasst: ${row.previousCost===null ? "keine Daten" : formatCurrency(row.previousCost)}</span>
+          <span style="display:block;margin-top:8px;font-weight:700">Jahreshochrechnung: ${annual}</span>
+          <small class="muted">${row.rate ? `Ø ${formatCurrency(row.rate.daily)}/Tag · Basis ${formatNumber(row.rate.days||365)} erfasste Tage` : "Noch keine abgeschlossenen Messintervalle"}</small>
+          <br><span class="dash-trend ${cls}">${trendText}</span>
+        </div>`;
       }).join("");
     }
 
@@ -4603,14 +4781,15 @@ async function updateRecord(kind, id, payload) {
       }
       const types = metric === "cost" ? ["strom","wasser","pellets"] : [metric];
       const colors = {strom:"#38bdf8",wasser:"#22c55e",pellets:"#f59e0b"};
-      const getVal = (type,date)=>Math.max(0,monthly[type][date]?.[metric==="cost"?"cost":"total"] || 0);
+      // Tagesdurchschnitt je Monat statt ungleich langer Ableseintervalle.
+      const getVal = (type,date)=>Math.max(0,monthly[type][date]?.[metric==="cost"?"avgCostPerDay":"avgPerDay"] || 0);
       const max = Math.max(1,...dates.map(d=>types.reduce((s,t)=>s+getVal(t,d),0)));
       const scale = 10**Math.floor(Math.log10(max));
       const step = Math.max(scale/2, Math.ceil(max / 4 / (scale/2))*(scale/2));
       const top = Math.ceil(max / step)*step;
       const w=900,h=280,left=68,right=18,topPad=22,bottom=42,plotHeight=h-topPad-bottom;
       const plotWidth=w-left-right;
-      const unit = metric==="cost"?"€":typeConfig[metric].unit;
+      const unit = metric==="cost"?"€/Tag":`${typeConfig[metric].unit}/Tag`;
       const grid=Array.from({length:5},(_,i)=>{
         const val=top*i/4,y=topPad+plotHeight*(1-i/4);
         return `<line x1="${left}" x2="${w-right}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="1"/><text x="${left-10}" y="${y+4}" text-anchor="end" fill="var(--muted)" font-size="12">${formatNumber(val)}</text>`;
@@ -4723,62 +4902,49 @@ async function updateRecord(kind, id, payload) {
     }
 
     function renderConsumptionChart(type, container, metaContainer, large = false) {
-      let entries = buildComputedReadings().filter((entry) => entry.type === type && entry.previousValue !== null).slice().reverse();
-      if (type === "wasser") entries = entries.filter((entry) => entry.dailyDelta > 0);
-
+      let entries = buildComputedReadings().filter(e => e.type === type && e.previousValue !== null && Number.isFinite(e.dailyDelta)).slice().reverse();
+      if (type === "wasser") entries = entries.filter(e => e.dailyDelta > 0);
       const cfg = typeConfig[type];
-      const avg = entries.length
-        ? entries.reduce((sum, entry) => sum + Math.max(entry.dailyDelta || 0, 0), 0) / entries.length
-        : 0;
-      const metaText = entries.length
-        ? `${entries.length} Intervalle · Ø ${formatNumber(avg)} ${cfg.unit}/Tag · Jahr ${formatNumber(avg * 365)} ${cfg.unit}`
-        : "Noch keine Differenzen vorhanden";
-
+      // Gewichtung nach Intervalllänge, damit kurze Messintervalle nicht überbewertet werden.
+      const weightedDays = entries.reduce((s,e)=>s+Math.max(0,Number(e.daysBetween)||0),0);
+      const avg = weightedDays ? entries.reduce((s,e)=>s+Math.max(0,e.dailyDelta)*Math.max(0,Number(e.daysBetween)||0),0)/weightedDays : 0;
+      const metaText = entries.length ? `${entries.length} Intervalle · Ø ${formatNumber(avg)} ${cfg.unit}/Tag · Jahr ${formatNumber(avg*365)} ${cfg.unit}` : "Noch keine Differenzen vorhanden";
       if (metaContainer) metaContainer.textContent = metaText;
-
       if (!entries.length) {
         container.innerHTML = '<div class="empty-state" style="height:100%;display:grid;place-items:center;">Noch keine Daten</div>';
         return metaText;
       }
-
       const width = large ? 1200 : 500;
-      const height = large ? 620 : 200;
-      const padding = large ? 28 : 18;
-      const maxValue = Math.max(...entries.map((e) => e.dailyDelta), 1);
-      const range = Math.max(maxValue, 1);
-      const usableWidth = width - padding * 2;
-      const usableHeight = height - padding * 2;
-
-      const points = entries.map((entry, index) => ({
-        x: padding + (entries.length === 1 ? usableWidth / 2 : (index / (entries.length - 1)) * usableWidth),
-        y: padding + usableHeight - (entry.dailyDelta / range) * usableHeight,
-        entry
-      }));
-
-      const polyline = points.map((p) => `${p.x},${p.y}`).join(" ");
-      const areaPoints = [
-        `${points[0].x},${height - padding}`,
-        ...points.map((p) => `${p.x},${p.y}`),
-        `${points[points.length - 1].x},${height - padding}`
-      ].join(" ");
-
-      const circles = points.map((p) => `<circle cx="${p.x}" cy="${p.y}" r="${large ? 6 : 4.5}" fill="${cfg.color}"><title>${formatDateShort(p.entry.date)}: ${formatNumber(p.entry.dailyDelta)} ${cfg.unit}/Tag</title></circle>`).join("");
-      const labels = buildChartLabels(entries, width, height, padding, large);
-
-      container.innerHTML = `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-label="${cfg.label} Chart"><defs><linearGradient id="grad-${type}-${large ? "lg" : "sm"}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${cfg.color}" stop-opacity="0.32"></stop><stop offset="100%" stop-color="${cfg.color}" stop-opacity="0.02"></stop></linearGradient></defs><polygon points="${areaPoints}" fill="url(#grad-${type}-${large ? "lg" : "sm"})"></polygon><polyline points="${polyline}" fill="none" stroke="${cfg.color}" stroke-width="${large ? 4 : 3}" stroke-linecap="round" stroke-linejoin="round"></polyline>${circles}${labels}</svg>`;
+      const height = large ? 620 : 240;
+      const left = large ? 94 : 65;
+      const right = large ? 38 : 18;
+      const top = large ? 58 : 38;
+      const bottom = large ? 55 : 38;
+      const plotWidth = width-left-right, plotHeight = height-top-bottom;
+      const maxVal = Math.max(0.01,...entries.map(e=>e.dailyDelta));
+      const magnitude = Math.pow(10,Math.floor(Math.log10(maxVal)));
+      const rawStep = maxVal / 4 / magnitude;
+      const niceStep = (rawStep<=1?1:rawStep<=2?2:rawStep<=2.5?2.5:rawStep<=5?5:10)*magnitude;
+      const ceiling = Math.max(niceStep,Math.ceil(maxVal/niceStep)*niceStep);
+      const grid = Array.from({length:Math.round(ceiling/niceStep)+1},(_,i)=>{
+        const val = i*niceStep, y=top+plotHeight-(val/ceiling)*plotHeight;
+        return `<line x1="${left}" x2="${width-right}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="1"/><text x="${left-9}" y="${y+4}" fill="var(--muted)" font-size="${large?17:12}" text-anchor="end">${formatNumber(round4(val))}</text>`;
+      }).join("");
+      const points=entries.map((entry,i)=>({x:left+(entries.length===1?plotWidth/2:i/(entries.length-1)*plotWidth),y:top+plotHeight-entry.dailyDelta/ceiling*plotHeight,entry}));
+      const line=points.map(p=>`${p.x},${p.y}`).join(" ");
+      const area=[`${points[0].x},${top+plotHeight}`,...points.map(p=>`${p.x},${p.y}`),`${points[points.length-1].x},${top+plotHeight}`].join(" ");
+      const ticks=[0,Math.floor((entries.length-1)/2),entries.length-1].filter((i,k,a)=>a.indexOf(i)===k).map(i=>{
+        const p=points[i]; return `<text x="${p.x}" y="${height-9}" text-anchor="middle" fill="var(--muted)" font-size="${large?16:11}">${escapeHtml(formatDateShort(p.entry.date))}</text>`;
+      }).join("");
+      const circles=points.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="${large?5:3.5}" fill="${cfg.color}" stroke="var(--card-solid)" stroke-width="1.5"><title>${formatDateShort(p.entry.date)}: ${formatNumber(p.entry.dailyDelta)} ${cfg.unit}/Tag</title></circle>`).join("");
+      const grad=`grad-${type}-${large?'lg':'sm'}`;
+      container.innerHTML=`<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${cfg.label} in ${cfg.unit} pro Tag mit Skala">
+        <defs><linearGradient id="${grad}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${cfg.color}" stop-opacity="0.28"/><stop offset="100%" stop-color="${cfg.color}" stop-opacity="0.02"/></linearGradient></defs>
+        <text x="${left}" y="${top-16}" fill="var(--muted)" font-size="${large?18:12}">${cfg.unit}/Tag</text>
+        ${grid}<polygon points="${area}" fill="url(#${grad})"/>
+        <polyline points="${line}" fill="none" stroke="${cfg.color}" stroke-width="${large?4:2.5}" stroke-linecap="round" stroke-linejoin="round"/>
+        ${circles}${ticks}</svg>`;
       return metaText;
-    }
-
-    function buildChartLabels(entries, width, height, padding, large = false) {
-      if (!entries.length) return "";
-      const fontSize = large ? 16 : 11;
-      if (entries.length === 1) {
-        return `<text x="${width / 2}" y="${height - 6}" fill="#99a8c7" font-size="${fontSize}" text-anchor="middle">${escapeHtml(formatDateShort(entries[0].date))}</text>`;
-      }
-      return `
-        <text x="${padding}" y="${height - 6}" fill="#99a8c7" font-size="${fontSize}" text-anchor="start">${escapeHtml(formatDateShort(entries[0].date))}</text>
-        <text x="${width - padding}" y="${height - 6}" fill="#99a8c7" font-size="${fontSize}" text-anchor="end">${escapeHtml(formatDateShort(entries[entries.length - 1].date))}</text>
-      `;
     }
 
     function openChartOverlay(type) {
@@ -4956,22 +5122,52 @@ async function updateRecord(kind, id, payload) {
     }
 
     function buildMonthlyStats() {
-      const computed = buildComputedReadings().filter((entry) => entry.previousValue !== null && entry.delta !== null);
+      // Messintervalle werden nach tatsächlicher Zeitdauer auf Kalendermonate verteilt.
+      // So erscheinen 14 Tage und zwei Monate im Diagramm als vergleichbare Tagesmittelwerte.
+      // Da keine täglichen Messwerte vorliegen, ist die Verteilung innerhalb eines
+      // Ableseintervalls eine lineare Schätzung, keine gemessene Tageslast.
+      const computed = buildComputedReadings().filter((entry) =>
+        entry.previousDate && Number.isFinite(entry.delta) && Number.isFinite(entry.cost)
+      );
       const result = { strom: {}, wasser: {}, pellets: {} };
+      const dayMs = 86400000;
+
       computed.forEach((entry) => {
-        const d = new Date(entry.date);
-        const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-        if (!result[entry.type][monthKey]) result[entry.type][monthKey] = { total: 0, cost: 0, totalDays: 0 };
-        result[entry.type][monthKey].total += Math.max(entry.delta || 0, 0);
-        result[entry.type][monthKey].cost += entry.cost || 0;
-        result[entry.type][monthKey].totalDays += entry.daysBetween || 0;
+        const start = new Date(entry.previousDate).getTime();
+        const end = new Date(entry.date).getTime();
+        if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return;
+        const intervalDays = (end - start) / dayMs;
+        let cursor = start;
+
+        while (cursor < end) {
+          const date = new Date(cursor);
+          const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+          const nextMonth = new Date(date.getFullYear(), date.getMonth() + 1, 1).getTime();
+          const sliceEnd = Math.min(end, nextMonth);
+          const partDays = (sliceEnd - cursor) / dayMs;
+          const fraction = partDays / intervalDays;
+          if (!(partDays > 0)) break;
+
+          if (!result[entry.type][monthKey]) {
+            result[entry.type][monthKey] = { total: 0, cost: 0, totalDays: 0 };
+          }
+          const month = result[entry.type][monthKey];
+          month.total += Math.max(0, entry.delta) * fraction;
+          month.cost += Math.max(0, entry.cost) * fraction;
+          month.totalDays += partDays;
+          cursor = sliceEnd;
+        }
       });
+
       Object.keys(result).forEach((type) => Object.keys(result[type]).forEach((monthKey) => {
         const item = result[type][monthKey];
+        const days = item.totalDays;
+        item.avgPerDay = days > 0 ? round4(item.total / days) : 0;
+        item.avgCostPerDay = days > 0 ? round4(item.cost / days) : 0;
+        item.coveredDays = round2(days);
+        item.dayCount = days;
         item.total = round2(item.total);
         item.cost = round2(item.cost);
-        item.dayCount = item.totalDays || 1;
-        item.avgPerDay = round4(item.total / item.dayCount);
       }));
       return result;
     }
