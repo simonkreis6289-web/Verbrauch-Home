@@ -14,6 +14,7 @@ from bs4 import BeautifulSoup
 
 ROOT = Path(__file__).resolve().parent
 FILE = ROOT / 'market-prices.json'
+HISTORY_FILE = ROOT / 'market-price-history.json'
 NOW = dt.datetime.now(dt.timezone(dt.timedelta(hours=2))) # German summer time fallback below
 try:
     from zoneinfo import ZoneInfo
@@ -88,6 +89,7 @@ def parse_prices(key, text):
 def update():
     data = json.loads(FILE.read_text(encoding='utf-8'))
     success = 0
+    confirmed = {}
     for key, url in URLS.items():
         try:
             text = get_text(url)
@@ -104,11 +106,33 @@ def update():
                 continue
             data['prices'][key].update(price=price, checked_at=NOW.isoformat(timespec='seconds'), source_url=url)
             success += 1
+            confirmed[key] = price
             print(f'{key}: {price:.2f} {data["prices"][key]["unit"]} ({TODAY.isoformat()})')
         except Exception as err:
             print(f'{key}: Abruf fehlgeschlagen: {type(err).__name__}: {err}')
     data['generated_at'] = NOW.isoformat(timespec='seconds')
     FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    # Separate day-by-day history, retaining the last verified price for each day.
+    # No fabricated points and no duplicate daily records from twice-daily runs.
+    history = {'region': '57489 Drolshagen', 'records': []}
+    if HISTORY_FILE.exists():
+        try:
+            old = json.loads(HISTORY_FILE.read_text(encoding='utf-8'))
+            if isinstance(old.get('records'), list): history = old
+        except (ValueError, OSError, AttributeError) as err:
+            print('Warnung: bisherige Preis-Historie nicht lesbar:', err)
+    if confirmed:
+        date = TODAY.isoformat()
+        records = [r for r in history['records'] if isinstance(r, dict)]
+        current = next((r for r in records if r.get('date') == date), None)
+        if current is None:
+            current = {'date': date, 'checked_at': NOW.isoformat(timespec='seconds'), 'prices': {}}
+            records.append(current)
+        current['prices'].update(confirmed)
+        current['checked_at'] = NOW.isoformat(timespec='seconds')
+        history['records'] = sorted(records, key=lambda r: r.get('date', ''))
+        HISTORY_FILE.write_text(json.dumps(history, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+        print(f'Preis-Historie aktualisiert: {date} ({len(confirmed)} verifizierte Preise)')
     print(f'Ergebnis: {success}/3 Preise bestätigt')
     # Raise explicit failure when all sources are unavailable, rather than green success with nulls.
     if success == 0:
