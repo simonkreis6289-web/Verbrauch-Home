@@ -609,6 +609,40 @@
     html[data-theme="light"] #findFuelStationsBtn { background: #ffffff; color: #12315d; }
     .theme-toggle { white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; justify-content: center; }
     .theme-toggle:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+
+/* Dashboard v59: responsiv, hell/dunkel, ohne externe Chart-Abhängigkeit */
+#dashboardView .dash-intro {display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+#dashboardView .dash-intro h2 {font-size:clamp(1.4rem,2.5vw,2rem);margin:4px 0 0;letter-spacing:-.025em}
+#dashboardView .dash-kpis {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+#dashboardView .dash-kpi {position:relative;overflow:hidden;padding:20px;border:1px solid var(--line);border-radius:20px;background:var(--card-solid);box-shadow:var(--shadow);min-width:0}
+#dashboardView .dash-kpi::before{content:"";position:absolute;inset:0 auto auto 0;height:4px;width:100%;background:var(--kpi-accent,var(--primary))}
+#dashboardView .dash-kpi-head {display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--muted);font-size:.83rem;font-weight:700}
+#dashboardView .dash-kpi-icon {display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:color-mix(in srgb,var(--kpi-accent,var(--primary)) 14%,transparent);font-size:1.2rem}
+#dashboardView .dash-kpi-val {font-size:clamp(1.25rem,2vw,1.9rem);font-weight:850;margin:12px 0 8px;font-variant-numeric:tabular-nums;line-height:1.15;overflow-wrap:anywhere}
+#dashboardView .dash-kpi-foot{color:var(--muted);font-size:.83rem;line-height:1.55}
+#dashboardView .dash-trend {font-size:.77rem;font-weight:750;border-radius:30px;padding:4px 8px;display:inline-block;margin-top:8px;background:var(--app-inner)}
+#dashboardView .dash-trend.up {color:#ef8080} #dashboardView .dash-trend.down {color:#3abe83} #dashboardView .dash-trend.flat {color:var(--muted)}
+#dashboardView .dash-totals {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+#dashboardView .dash-total {padding:18px;border:1px solid var(--line);border-radius:17px;background:var(--app-inner)}
+#dashboardView .dash-total b{display:block;font-size:1.45rem;line-height:1.3;margin:8px 0;color:var(--text)}
+#dashboardView .dash-total span{color:var(--muted);font-size:.84rem}
+#dashboardView .dash-section-header{display:flex;gap:12px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+#dashboardView .dash-section-header h2{margin:4px 0 0}
+#dashboardView .dash-chart-controls{display:flex;align-items:center;gap:8px}
+#dashboardView .dash-chart-controls select{width:auto;min-width:140px;padding:8px 12px}
+#dashboardView .dash-month-chart{width:100%;min-height:275px;overflow:hidden}
+#dashboardView .dash-month-chart svg{width:100%;height:290px;display:block;overflow:visible}
+#dashboardView .dash-month-legend {display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:.85rem;color:var(--muted)}
+#dashboardView .dash-month-legend i {display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px}
+#dashboardView .dash-month-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+#dashboardView .dash-month-card{padding:17px;border:1px solid var(--line);background:var(--app-inner);border-radius:18px}
+#dashboardView .dash-month-card h3{font-size:1rem;margin:0 0 10px}
+#dashboardView .dash-month-row{display:flex;justify-content:space-between;align-items:center;gap:14px;border-top:1px solid var(--line);padding:9px 0;font-size:.84rem}
+#dashboardView .dash-month-row .muted{line-height:1.5;text-align:right}
+@media(max-width:1120px){#dashboardView .dash-kpis,#dashboardView .dash-totals{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:720px){#dashboardView .dash-kpis,#dashboardView .dash-totals,#dashboardView .dash-month-cards{grid-template-columns:1fr}#dashboardView .dash-month-chart svg{height:250px}#dashboardView .dash-month-chart{overflow-x:auto}}
+html[data-theme="light"] #dashboardView .dash-trend.up{color:#b91c1c} html[data-theme="light"] #dashboardView .dash-trend.down{color:#15803d}
+
   </style>
 </head>
 <body>
@@ -619,7 +653,7 @@
         <h1>Zählerstände, Pellets und Kosten im Blick</h1>
         <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
         <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du den Haushalt wechseln oder neu anlegen.</p>
-        <p class="hero-copy">Version 1.3.1.103</p>
+        <p class="hero-copy">Version 1.3.1.104</p>
       </div>
       <div class="hero-actions">
         <button id="themeToggleBtn" class="btn ghost theme-toggle" type="button" aria-label="Design wechseln" aria-pressed="false"><span id="themeToggleIcon" aria-hidden="true">☀️</span> <span id="themeToggleLabel">Helles Design</span></button>
@@ -646,9 +680,18 @@
             </div>
             <span id="syncBadge" class="badge warn">lokal / Firestore noch aus</span>
           </div>
-          <div id="dashboardStats" class="summary-grid four"></div>
+          <div id="dashboardStats" class="dash-kpis"></div>
         </section>
 
+        <section class="card wide" aria-label="Kostenüberblick">
+          <div class="dash-section-header"><div><p class="section-kicker">Kostenblick</p><h2>Monatskosten und Trends</h2></div></div>
+          <div id="dashboardCostTotals" class="dash-totals" aria-live="polite"></div>
+        </section>
+        <section class="card wide" aria-label="Monatsvergleich">
+          <div class="dash-section-header"><div><p class="section-kicker">Entwicklung</p><h2>Monatsvergleich</h2></div><div class="dash-chart-controls"><label for="dashboardChartMetric">Anzeigen</label><select id="dashboardChartMetric"><option value="cost">Kosten (€)</option><option value="strom">Strom (kWh)</option><option value="wasser">Wasser (m³)</option><option value="pellets">Pellets (kg)</option></select></div></div>
+          <div id="dashboardMonthlyChart" class="dash-month-chart" aria-live="polite"></div>
+          <div id="dashboardMonthlyChartLegend" class="dash-month-legend"></div>
+        </section>
         <section class="card wide">
           <div class="card-head">
             <div>
@@ -656,7 +699,7 @@
               <h2>Verbrauch pro Monat und Durchschnitt pro Tag</h2>
             </div>
           </div>
-          <div id="monthlyOverview" class="summary-grid"></div>
+          <div id="monthlyOverview" class="dash-month-cards"></div>
         </section>
 
         <section class="card wide">
@@ -1827,6 +1870,7 @@
 
     function registerEvents() {
       els.mainTabs?.addEventListener("click", handleTabClick);
+      document.getElementById("dashboardChartMetric")?.addEventListener("change", renderDashboardMonthlyChart);
       els.exportBackupBtn?.addEventListener("click", exportBackup);
 
       els.quickUseNow?.addEventListener("change", syncQuickNowUi);
@@ -4371,6 +4415,8 @@ async function updateRecord(kind, id, payload) {
 
     function renderDashboard() {
       renderDashboardStats();
+      renderDashboardCostTotals();
+      renderDashboardMonthlyChart();
       renderConsumptionHistory();
       renderPelletSummary();
       renderPelletActivity();
@@ -4382,7 +4428,7 @@ async function updateRecord(kind, id, payload) {
       const types = ["strom", "wasser", "pellets"];
       els.monthlyOverview.innerHTML = types.map((type) => {
         const months = Object.entries(monthly[type]).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 6);
-        return `<div class="stat-box"><div class="stat-label">${typeConfig[type].label}</div>${months.length ? months.map(([month, data]) => `<div style="margin-bottom:10px;"><strong>${month}</strong><br>${formatNumber(data.total)} ${typeConfig[type].unit}<br><span class="muted">Ø ${formatNumber(data.avgPerDay)} ${typeConfig[type].unit}/Tag · ${formatCurrency(data.cost)}</span></div>`).join("") : `<div class="muted">Noch keine Monatsdaten</div>`}</div>`;
+        return `<div class="dash-month-card"><h3>${type === "strom" ? "⚡" : type === "wasser" ? "💧" : "🔥"} ${typeConfig[type].label}</h3>${months.length ? months.map(([month, data]) => `<div class="dash-month-row"><strong>${month}</strong><span class="muted">${formatNumber(data.total)} ${typeConfig[type].unit}<br>Ø ${formatNumber(data.avgPerDay)}/Tag · ${formatCurrency(data.cost)}</span></div>`).join("") : `<div class="muted">Noch keine Monatsdaten</div>`}</div>`;
       }).join("");
     }
 
@@ -4419,7 +4465,74 @@ async function updateRecord(kind, id, payload) {
           sub: `${formatNumber(totalRefillKg())} kg nachgefüllt · ${formatNumber(totalPurchasedKg())} kg gekauft`
         }
       ];
-      els.dashboardStats.innerHTML = cards.map((card) => `<div class="stat-box"><div class="stat-label">${card.label}</div><div class="stat-value">${card.value}</div><div class="stat-label">${card.sub}</div></div>`).join("");
+      const icons = ["⚡", "💧", "🔥", "📦"];
+      const colors = ["#38bdf8", "#22c55e", "#f59e0b", "#a78bfa"];
+      els.dashboardStats.innerHTML = cards.map((card, i) => `<div class="dash-kpi" style="--kpi-accent:${colors[i]}"><div class="dash-kpi-head"><span>${card.label}</span><span class="dash-kpi-icon">${icons[i]}</span></div><div class="dash-kpi-val">${card.value}</div><div class="dash-kpi-foot">${card.sub}</div></div>`).join("");
+    }
+
+
+    // Dashboard-Kosten basieren auf den vorhandenen Monatssummen, ohne Zählerdaten zu verändern.
+    function renderDashboardCostTotals() {
+      const container = document.getElementById("dashboardCostTotals");
+      if (!container) return;
+      const monthly = buildMonthlyStats();
+      const now = new Date();
+      const current = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+      const prior = new Date(now.getFullYear(), now.getMonth()-1, 1);
+      const previous = `${prior.getFullYear()}-${String(prior.getMonth()+1).padStart(2,"0")}`;
+      const types = ["strom", "wasser", "pellets"];
+      const labels = ["Strom", "Wasser", "Pellets"];
+      const icons = ["⚡", "💧", "🔥"];
+      const sumMonth = (key) => types.reduce((s,type) => s + (monthly[type][key]?.cost || 0), 0);
+      const rows = types.map((type,i)=>({label:labels[i],icon:icons[i],value:monthly[type][current]?.cost || 0,prev:monthly[type][previous]?.cost || 0,has:!!monthly[type][current]}));
+      rows.push({label:"Gesamtkosten",icon:"💶",value:sumMonth(current),prev:sumMonth(previous),has:types.some(type=>!!monthly[type][current])});
+      container.innerHTML = rows.map((row)=>{
+        const trend = row.prev > 0 && row.has ? ((row.value-row.prev)/row.prev)*100 : null;
+        const cls = trend == null ? "flat" : trend > 0.5 ? "up" : trend < -0.5 ? "down" : "flat";
+        const trendHtml = trend === null ? "Kein Vergleich verfügbar" : `${trend > 0 ? "+" : ""}${formatNumber(trend)} % zum Vormonat`;
+        return `<div class="dash-total"><span>${row.icon} ${row.label} · aktueller Monat</span><b>${row.has ? formatCurrency(row.value) : "–"}</b><span>Vormonat: ${row.prev ? formatCurrency(row.prev) : "keine Daten"}</span><br><span class="dash-trend ${cls}">${trendHtml}</span></div>`;
+      }).join("");
+    }
+
+    function renderDashboardMonthlyChart() {
+      const target = document.getElementById("dashboardMonthlyChart");
+      const legend = document.getElementById("dashboardMonthlyChartLegend");
+      if (!target) return;
+      const monthly = buildMonthlyStats();
+      const metric = document.getElementById("dashboardChartMetric")?.value || "cost";
+      const dates = [...new Set(["strom","wasser","pellets"].flatMap(t=>Object.keys(monthly[t])))].sort().slice(-8);
+      if (!dates.length) {
+        target.innerHTML = '<div class="empty-state">Sobald Zählerstände für mindestens ein Verbrauchsintervall vorhanden sind, erscheint hier die Monatsentwicklung.</div>';
+        if(legend)legend.textContent="";
+        return;
+      }
+      const types = metric === "cost" ? ["strom","wasser","pellets"] : [metric];
+      const colors = {strom:"#38bdf8",wasser:"#22c55e",pellets:"#f59e0b"};
+      const getVal = (type,date)=>Math.max(0,monthly[type][date]?.[metric==="cost"?"cost":"total"] || 0);
+      const max = Math.max(1,...dates.map(d=>types.reduce((s,t)=>s+getVal(t,d),0)));
+      const scale = 10**Math.floor(Math.log10(max));
+      const step = Math.max(scale/2, Math.ceil(max / 4 / (scale/2))*(scale/2));
+      const top = Math.ceil(max / step)*step;
+      const w=900,h=280,left=68,right=18,topPad=22,bottom=42,plotHeight=h-topPad-bottom;
+      const plotWidth=w-left-right;
+      const unit = metric==="cost"?"€":typeConfig[metric].unit;
+      const grid=Array.from({length:5},(_,i)=>{
+        const val=top*i/4,y=topPad+plotHeight*(1-i/4);
+        return `<line x1="${left}" x2="${w-right}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="1"/><text x="${left-10}" y="${y+4}" text-anchor="end" fill="var(--muted)" font-size="12">${formatNumber(val)}</text>`;
+      }).join("");
+      const colWidth=plotWidth/dates.length, barWidth=Math.min(60,colWidth*.65);
+      const bars=dates.map((date,i)=>{
+        const cx=left+colWidth*(i+.5),x=cx-barWidth/2;
+        let y=topPad+plotHeight;
+        const rects=types.map(type=>{
+          const val=getVal(type,date); const bh=(val/top)*plotHeight; y-=bh;
+          return `<rect x="${x}" y="${y}" width="${barWidth}" height="${Math.max(0,bh)}" rx="3" fill="${colors[type]}"><title>${date} · ${typeConfig[type].label}: ${formatNumber(val)} ${unit}</title></rect>`;
+        }).join("");
+        const label=date.substring(5)+"/"+date.substring(2,4);
+        return rects+`<text x="${cx}" y="${h-13}" text-anchor="middle" font-size="12" fill="var(--muted)">${label}</text>`;
+      }).join("");
+      target.innerHTML=`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Monatsentwicklung ${metric==='cost'?'Kosten':typeConfig[metric].label} in ${unit}"><text x="${left}" y="14" fill="var(--muted)" font-size="12">${unit}</text>${grid}${bars}</svg>`;
+      if(legend) legend.innerHTML=types.map(t=>`<span><i style="background:${colors[t]}"></i>${typeConfig[t].label}</span>`).join("");
     }
 
     function renderConsumptionHistory() {
@@ -5006,7 +5119,21 @@ stationDisplayName: selectedStation?.displayName ?? form.get("locationText").tri
           pricePeriods: state.pricePeriods,
           settings: state.settings,
           cars: state.cars,
-          fuelEntries: state.fuelEntries
+          fuelEntries: state.fuelEntries,
+          bagSizes: state.bagSizes,
+          // Stationen sind bisher in den Tank- und Ladeeinträgen gespeichert.
+          // Zusätzlich als abgeleiteter Katalog exportieren, ohne die Datenstruktur zu verändern.
+          stations: [...new Map([...state.fuelEntries.map(e => ({
+            id: e.stationId || null, name: e.stationName || "", brand: e.stationBrand || "",
+            address: e.stationAddress || e.stationDisplayName || e.locationText || "",
+            latitude: e.latitude, longitude: e.longitude, kind: "fuel"
+          })), ...state.chargeEntries.map(e => ({
+            id: e.chargeStationId || null, name: e.chargeStationName || "", brand: e.chargeStationBrand || "",
+            address: e.chargeStationAddress || e.chargeStationDisplayName || e.locationText || "",
+            latitude: e.latitude, longitude: e.longitude, kind: "charge"
+          }))].filter(e => e.id || e.name || e.address).map(e => [
+            `${e.kind}|${e.id || `${e.latitude},${e.longitude}`}|${e.address}`, e
+          ])).values()]
         };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
       downloadBlob(blob, `verbrauch-backup-${dateStamp()}.json`);
