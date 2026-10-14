@@ -1,4 +1,4 @@
-const CACHE_NAME = "verbrauch-app-v55";
+const CACHE_NAME = "verbrauch-app-v56";
 
 const urlsToCache = [
   "./",
@@ -45,13 +45,9 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      )
+      Promise.all(keys.map((key) => {
+        if (key !== CACHE_NAME) return caches.delete(key);
+      }))
     ).then(() => self.clients.claim())
   );
 });
