@@ -801,7 +801,7 @@ html[data-theme="light"] #dashboardView .dash-trend.up{color:#b91c1c} html[data-
         <h1>Zählerstände, Pellets und Kosten im Blick</h1>
         <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
         <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du den Haushalt wechseln oder neu anlegen.</p>
-        <p class="hero-copy">Version 1.3.1.116</p>
+        <p class="hero-copy">Version 1.3.1.117</p>
       </div>
       <div class="hero-actions">
         <button id="themeToggleBtn" class="btn ghost theme-toggle" type="button" aria-label="Design wechseln" aria-pressed="false"><span id="themeToggleIcon" aria-hidden="true">☀️</span> <span id="themeToggleLabel">Helles Design</span></button>
@@ -5199,32 +5199,66 @@ async function updateRecord(kind, id, payload) {
       }).join("");
     }
 
+
+    // Eine Jahreshochrechnung setzt mindestens 300 von 365 erfassten Tagen voraus.
+    // Zeitanteilig geschnittene Intervalle verhindern, dass kurze Ableseabstände
+    // den Jahreswert dominieren. Maßgeblich ist die letzte vorhandene Ablesung.
+    function annualReadingAverage(type) {
+      const data = buildComputedReadings().filter(e => e.type === type && e.previousDate &&
+        Number.isFinite(e.delta) && e.delta >= 0);
+      if (!data.length) return null;
+      const lastEnd = Math.max(...data.map(e => Date.parse(e.date)).filter(Number.isFinite));
+      if (!Number.isFinite(lastEnd)) return null;
+      const cutoff = new Date(lastEnd);
+      cutoff.setFullYear(cutoff.getFullYear() - 1);
+      let quantity = 0, days = 0, euro = 0;
+      for (const e of data) {
+        const start = Date.parse(e.previousDate), end = Date.parse(e.date);
+        if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) continue;
+        const overlap = Math.max(0, Math.min(lastEnd,end) - Math.max(cutoff.getTime(),start));
+        if (!overlap) continue;
+        const fraction = overlap/(end-start);
+        quantity += e.delta*fraction;
+        if (Number.isFinite(e.cost)) euro += e.cost*fraction;
+        days += overlap/86400000;
+      }
+      // Wenige Tage oder ein einzelnes kurzes Intervall sind kein Jahreswert.
+      if (days < 300) return {reliable:false, days, annual:null, daily:null, dailyCost:null};
+      return {reliable:true, days, annual:quantity/days*365, daily:quantity/days,
+        dailyCost:euro/days};
+    }
+
     function renderDashboardStats() {
       const latest = {
         strom: latestReadingOfType("strom"),
         wasser: latestReadingOfType("wasser"),
         pellets: latestReadingOfType("pellets")
       };
-      const lastDiffs = {
-        strom: latestConsumptionOfType("strom"),
-        wasser: latestConsumptionOfType("wasser"),
-        pellets: latestConsumptionOfType("pellets")
+      const annual = {
+        strom: annualReadingAverage("strom"),
+        wasser: annualReadingAverage("wasser"),
+        pellets: annualReadingAverage("pellets")
+      };
+      const annualText = (type,unit) => {
+        const value = annual[type];
+        if (!value?.reliable) return `Jahreshochrechnung: noch nicht belastbar (${formatNumber(value?.days || 0)} von mindestens 300 Tagen)`;
+        return `Ø ${formatNumber(value.daily)} ${unit}/Tag · Jahresbasis ${formatNumber(value.annual)} ${unit} · ${formatNumber(value.days)} Tage`;
       };
       const cards = [
         {
           label: "Strom aktuell",
           value: latest.strom ? `${formatNumber(latest.strom.value)} kWh` : "–",
-          sub: lastDiffs.strom ? `Ø ${formatNumber(lastDiffs.strom.dailyDelta)} kWh/Tag · Jahr ${formatNumber(lastDiffs.strom.yearProjection)} kWh` : "noch keine Differenz"
+          sub: annualText("strom","kWh")
         },
         {
           label: "Wasser aktuell",
           value: latest.wasser ? `${formatNumber(latest.wasser.value)} m³` : "–",
-          sub: lastDiffs.wasser ? `Ø ${formatNumber(lastDiffs.wasser.dailyDelta)} m³/Tag · Jahr ${formatNumber(lastDiffs.wasser.yearProjection)} m³` : "noch keine Differenz"
+          sub: annualText("wasser","m³")
         },
         {
           label: "Pellets Verbrauchszähler",
           value: latest.pellets ? `${formatNumber(latest.pellets.value)} kg` : "–",
-          sub: lastDiffs.pellets ? `Ø ${formatNumber(lastDiffs.pellets.dailyDelta)} kg/Tag · Jahr ${formatNumber(lastDiffs.pellets.yearProjection)} kg` : "noch keine Differenz"
+          sub: annualText("pellets","kg")
         },
         {
           label: "Pellets Lager grob",
@@ -5241,27 +5275,13 @@ async function updateRecord(kind, id, payload) {
     // Kostenprognose auf Basis der jüngsten 365 Tage mit zeitgewichteten Messintervallen.
     // Ohne neue Ablesung im aktuellen Monat wird der Wert klar als Prognose markiert.
     function getRecentCostRates() {
-      const now = Date.now();
-      const cutoff = new Date(now); cutoff.setFullYear(cutoff.getFullYear() - 1);
-      const out = {};
+      const output = {};
       for (const type of ["strom", "wasser", "pellets"]) {
-        let euro = 0, days = 0;
-        const entries = buildComputedReadings().filter(e => e.type === type && e.previousDate && Number.isFinite(e.cost));
-        for (const e of entries) {
-          const start = new Date(e.previousDate).getTime();
-          const end = new Date(e.date).getTime();
-          if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) continue;
-          const overlap = Math.max(0, Math.min(end, now) - Math.max(start, cutoff.getTime()));
-          if (!overlap) continue;
-          const proportion = overlap / (end - start);
-          euro += Math.max(0, e.cost) * proportion;
-          days += overlap / 86400000;
-        }
-        out[type] = days > 0 ? { daily: euro / days, days } : null;
+        const reading = annualReadingAverage(type);
+        output[type] = reading?.reliable ? {daily:reading.dailyCost, days:reading.days} : null;
       }
-      return out;
+      return output;
     }
-
 
     // Der Marktkurs ist eine klar gekennzeichnete Momentaufnahme, kein Live-API-Preis.
     function readPelletMarketQuote() {
@@ -5284,18 +5304,10 @@ async function updateRecord(kind, id, payload) {
       showToast('Angebotspreis als Information gespeichert.','success');
     }
     function pelletYearConsumptionEstimate() {
-      // Letzte zwölf Monate, gewichtet nach der zeitlichen Überlappung der Ableseintervalle.
-      const now = Date.now(), from = new Date(); from.setFullYear(from.getFullYear()-1);
-      let quantity = 0, days = 0;
-      for(const entry of buildComputedReadings().filter(e => e.type === 'pellets' && e.previousDate && Number.isFinite(e.delta) && e.delta >= 0)) {
-        const start=Date.parse(entry.previousDate),end=Date.parse(entry.date);
-        if(!Number.isFinite(start)||!Number.isFinite(end)||end<=start) continue;
-        const overlap=Math.max(0,Math.min(now,end)-Math.max(from.getTime(),start));
-        if(!overlap) continue;
-        quantity += entry.delta * overlap/(end-start);
-        days += overlap/86400000;
-      }
-      return days > 0 ? {daily:quantity/days,annual:quantity/days*365,coveredDays:days} : null;
+      const reading = annualReadingAverage('pellets');
+      return reading?.reliable ? {
+        daily:reading.daily, annual:reading.annual, coveredDays:reading.days
+      } : null;
     }
     function renderPelletPriceComparisons() {
       const latest = [...state.purchases].filter(e => Number(e.totalKg)>0 && Number(e.totalPrice)>=0)
@@ -5332,10 +5344,13 @@ async function updateRecord(kind, id, payload) {
         // Der Monatswert wird auf Basis aller verfügbaren abgeschlossenen Intervalle
         // und einer zeitgewichteten Tagesrate geschätzt, niemals als Messwert ausgegeben.
         const covered = Math.min(monthDays, observed?.coveredDays || 0);
-        const forecast = rate ? (observed?.cost || 0) + Math.max(0, monthDays-covered)*rate.daily : null;
+        const forecast = rate ? monthDays * rate.daily : null;
         const priorDaily = prior?.avgCostPerDay ?? null;
-        const trend = rate && priorDaily !== null && priorDaily > 0 ? (rate.daily / priorDaily - 1)*100 : null;
-        return { label:labels[type], icon:icons[type], forecast, previousCost:prior?.cost ?? null,
+        const previousDays = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+        const completePrior = (prior?.coveredDays || 0) >= previousDays - 1;
+        const trend = rate && completePrior && priorDaily !== null && priorDaily > 0
+          ? (rate.daily / priorDaily - 1)*100 : null;
+        return { label:labels[type], icon:icons[type], forecast, previousCost:(completePrior ? prior?.cost : null),
           rate, trend, known:observed?.cost ?? null, covered };
       });
       const complete = rows.every(row => row.forecast !== null);
@@ -5378,7 +5393,14 @@ async function updateRecord(kind, id, payload) {
       const types = metric === "cost" ? ["strom","wasser","pellets"] : [metric];
       const colors = {strom:"#38bdf8",wasser:"#22c55e",pellets:"#f59e0b"};
       // Tagesdurchschnitt je Monat statt ungleich langer Ableseintervalle.
-      const getVal = (type,date)=>Math.max(0,monthly[type][date]?.[metric==="cost"?"avgCostPerDay":"avgPerDay"] || 0);
+      const getVal = (type,date)=>{
+        const item = monthly[type][date];
+        if (!item) return 0;
+        const [yy,mm] = date.split('-').map(Number);
+        const daysInMonth = new Date(yy,mm,0).getDate();
+        return item.coveredDays >= daysInMonth * .5
+          ? Math.max(0,item[metric==="cost"?"avgCostPerDay":"avgPerDay"] || 0) : 0;
+      };
       const max = Math.max(1,...dates.map(d=>types.reduce((s,t)=>s+getVal(t,d),0)));
       const scale = 10**Math.floor(Math.log10(max));
       const step = Math.max(scale/2, Math.ceil(max / 4 / (scale/2))*(scale/2));
