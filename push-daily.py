@@ -21,12 +21,14 @@ def send(title, body):
     req = Request(endpoint + '/broadcast', data=payload, method='POST', headers={
         'Authorization': 'Bearer ' + secret,
         'Content-Type': 'application/json; charset=utf-8',
+        'Accept': 'application/json',
+        'User-Agent': 'VerbrauchZuhause-Push/1.0 (+GitHub-Actions; personal notifications)',
     })
     try:
         with urlopen(req, timeout=25) as response:
             result = json.load(response)
     except HTTPError as e:
-        raise RuntimeError(f'Push-Server HTTP {e.code}: {e.read().decode("utf-8", "replace")[:250]}') from e
+        raise RuntimeError(f'Push-Server HTTP {e.code}; Content-Type={e.headers.get("Content-Type", "unbekannt")}; CF-Ray={e.headers.get("CF-Ray", "unbekannt")}: {e.read().decode("utf-8", "replace")[:300]}') from e
     print('Push:', title, result)
     if not result.get('ok', False) or result.get('failed', 0):
         raise RuntimeError('Nicht alle angemeldeten Geräte wurden erreicht')
