@@ -792,7 +792,25 @@ html[data-theme="light"] #dashboardView .dash-trend.up{color:#b91c1c} html[data-
 .market-history-point:hover,.market-history-point:focus {stroke-width:4;}
 @media(max-width:650px){.market-history-panel{padding:15px;}.market-history-chart{min-height:250px;padding:7px;}.market-history-chart svg{min-height:230px;}.market-history-backdrop{padding:8px;}}
 
-  </style>
+  
+/* Tankhistorie: moderner Editor mit eigenständiger responsiver Darstellung */
+.fuel-edit-backdrop{position:fixed;inset:0;background:rgba(7,15,30,.75);backdrop-filter:blur(7px);z-index:5000;display:flex;align-items:center;justify-content:center;padding:16px}
+.fuel-edit-panel{width:min(780px,100%);max-height:min(94dvh,950px);overflow:auto;background:var(--card-solid);border:1px solid var(--line);border-radius:24px;box-shadow:0 25px 80px rgba(0,0,0,.3);color:var(--text)}
+.fuel-edit-header{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;padding:25px 26px 20px;border-bottom:1px solid var(--line);background:linear-gradient(130deg,rgba(56,189,248,.10),transparent)}
+.fuel-edit-header h2{font-size:clamp(1.35rem,2.7vw,1.8rem);margin:7px 0}.fuel-edit-subtitle{margin:0;color:var(--muted);font-size:.9rem}
+.fuel-edit-close{border:1px solid var(--line);background:rgba(148,163,184,.1);color:var(--text);border-radius:11px;width:42px;height:42px;flex-shrink:0;cursor:pointer}
+.fuel-edit-form{padding:20px 26px 24px}.fuel-edit-section-title{font-weight:800;margin:5px 0 14px;color:var(--text)}
+.fuel-edit-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:20px}
+.fuel-edit-fields label{min-width:0;gap:7px;font-size:.86rem}.fuel-edit-fields input,.fuel-edit-fields select,.fuel-edit-fields textarea{min-width:0;padding:12px;border-radius:12px}
+.fuel-edit-wide{grid-column:1/-1}.fuel-edit-search{display:flex;gap:10px}.fuel-edit-search input{flex:1}.fuel-edit-search button{white-space:nowrap}
+.fuel-edit-live-summary{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px 16px;margin-bottom:22px;border:1px solid var(--line);border-radius:15px;background:rgba(56,189,248,.07)}
+.fuel-edit-live-summary div{display:grid;gap:4px}.fuel-edit-live-summary small{font-size:.78rem}.fuel-edit-live-summary strong{font-size:1.24rem;font-variant-numeric:tabular-nums}
+.fuel-edit-error{color:#ef4444;border:1px solid rgba(239,68,68,.4);background:rgba(239,68,68,.08);padding:12px;border-radius:12px}
+.fuel-edit-footer{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:19px}.fuel-edit-footer>span{color:var(--muted);font-size:.79rem;max-width:260px}.fuel-edit-buttons{display:flex;gap:10px;flex-wrap:wrap}
+html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="light"] .fuel-edit-backdrop{background:rgba(19,39,65,.58)}
+@media(max-width:600px){.fuel-edit-backdrop{padding:8px;align-items:flex-end}.fuel-edit-panel{border-radius:20px 20px 0 0;max-height:95dvh}.fuel-edit-header{padding:18px}.fuel-edit-form{padding:16px}.fuel-edit-fields{grid-template-columns:1fr;gap:12px}.fuel-edit-footer>span{max-width:unset}.fuel-edit-buttons{width:100%}.fuel-edit-buttons button{flex:1}.fuel-edit-search{flex-wrap:wrap}.fuel-edit-search button{width:100%}}
+
+</style>
 </head>
 <body>
   <div class="app-shell">
@@ -802,7 +820,7 @@ html[data-theme="light"] #dashboardView .dash-trend.up{color:#b91c1c} html[data-
         <h1>Zählerstände, Pellets und Kosten im Blick</h1>
         <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
         <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du den Haushalt wechseln oder neu anlegen.</p>
-        <p class="hero-copy">Version 1.3.1.118</p>
+        <p class="hero-copy">Version 1.3.1.120</p>
       </div>
       <div class="hero-actions">
         <button id="themeToggleBtn" class="btn ghost theme-toggle" type="button" aria-label="Design wechseln" aria-pressed="false"><span id="themeToggleIcon" aria-hidden="true">☀️</span> <span id="themeToggleLabel">Helles Design</span></button>
@@ -4033,34 +4051,115 @@ if (!car || car.fuelType === "electric") {
 }
 
 // Ein PDF je Tankvorgang. Die App-Daten sind kein Kassenbon des Tankstellenbetreibers.
-let receiptJsPdfPromise = null;
-function loadReceiptPdfLibrary() {
-  if (window.jspdf?.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
-  if (receiptJsPdfPromise) return receiptJsPdfPromise;
-  receiptJsPdfPromise = new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js';
-    script.async = true;
-    script.onload = () => window.jspdf?.jsPDF ? resolve(window.jspdf.jsPDF) : reject(new Error('PDF-Bibliothek konnte nicht initialisiert werden'));
-    script.onerror = () => reject(new Error('PDF-Bibliothek konnte nicht geladen werden'));
-    document.head.appendChild(script);
-  }).catch(err => { receiptJsPdfPromise = null; throw err; });
-  return receiptJsPdfPromise;
+// Kleiner PDF-Generator direkt im Browser: keine externe Bibliothek, kein CDN.
+// Standard-PDF-Fonts mit WinAnsi unterstützen u.a. deutsche Umlaute und Euro.
+class LocalReceiptPDF {
+  constructor() {
+    this.commands = [];
+    this.fontSize = 10;
+    this.bold = false;
+    this.drawColor = [0, 0, 0];
+    this.fillColor = [255, 255, 255];
+    this.textColor = [0, 0, 0];
+    this.pageHeight = 297 * 72 / 25.4;
+  }
+  pt(mm) { return Number(mm) * 72 / 25.4; }
+  rgb(rgb) { return rgb.map(x => (Math.max(0, Math.min(255, Number(x))) / 255).toFixed(3)).join(' '); }
+  setFont(_family, weight) { this.bold = weight === 'bold'; return this; }
+  setFontSize(value) { this.fontSize = Number(value) || 10; return this; }
+  setTextColor(r, g, b) { this.textColor = [r, g, b]; return this; }
+  setFillColor(r, g, b) { this.fillColor = [r, g, b]; return this; }
+  setDrawColor(r, g, b) { this.drawColor = [r, g, b]; return this; }
+  // PDF WinAnsiEncoding. Unsupported characters are transliterated where possible.
+  encode(value) {
+    const cp1252 = new Map([[0x20AC,128],[0x201A,130],[0x0192,131],[0x201E,132],[0x2026,133],
+      [0x2020,134],[0x2021,135],[0x02C6,136],[0x2030,137],[0x0160,138],[0x2039,139],
+      [0x0152,140],[0x017D,142],[0x2018,145],[0x2019,146],[0x201C,147],[0x201D,148],
+      [0x2022,149],[0x2013,150],[0x2014,151],[0x02DC,152],[0x2122,153],[0x0161,154],
+      [0x203A,155],[0x0153,156],[0x017E,158],[0x0178,159]]);
+    let result = '';
+    for (const character of String(value ?? '–')) {
+      const n = character.codePointAt(0);
+      let byte = n < 256 ? n : cp1252.get(n);
+      if (byte === undefined) {
+        const fallback = character.normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
+        byte = fallback.length === 1 && fallback.charCodeAt(0) <= 255 ? fallback.charCodeAt(0) : 63;
+      }
+      result += byte.toString(16).padStart(2, '0');
+    }
+    return result.toUpperCase();
+  }
+  text(value, x, y) {
+    const font = this.bold ? '/F2' : '/F1';
+    this.commands.push(`${this.rgb(this.textColor)} rg BT ${font} ${this.fontSize.toFixed(2)} Tf 1 0 0 1 ${this.pt(x).toFixed(2)} ${(this.pageHeight - this.pt(y)).toFixed(2)} Tm <${this.encode(value)}> Tj ET`);
+  }
+  line(x1, y1, x2, y2) {
+    this.commands.push(`${this.rgb(this.drawColor)} RG 0.7 w ${this.pt(x1).toFixed(2)} ${(this.pageHeight-this.pt(y1)).toFixed(2)} m ${this.pt(x2).toFixed(2)} ${(this.pageHeight-this.pt(y2)).toFixed(2)} l S`);
+  }
+  rect(x, y, w, h, style) {
+    this.commands.push(`${style === 'F' ? this.rgb(this.fillColor) + ' rg' : this.rgb(this.drawColor) + ' RG'} ${this.pt(x).toFixed(2)} ${(this.pageHeight - this.pt(y + h)).toFixed(2)} ${this.pt(w).toFixed(2)} ${this.pt(h).toFixed(2)} re ${style === 'F' ? 'f' : 'S'}`);
+  }
+  splitTextToSize(value, widthMm) {
+    const maxPoints = this.pt(widthMm);
+    const pieces = String(value ?? '').split(/\s+/);
+    const lines = [];
+    let current = '';
+    const lengthPt = value => Array.from(value).reduce((sum, letter) => sum + (letter === ' ' ? 0.25 : /[ilI.,!|:;]/.test(letter) ? 0.24 : /[MW@]/.test(letter) ? 0.9 : 0.53), 0) * this.fontSize;
+    for (const word of pieces) {
+      const candidate = current ? `${current} ${word}` : word;
+      if (lengthPt(candidate) <= maxPoints || !current) current = candidate;
+      else { lines.push(current); current = word; }
+      while (lengthPt(current) > maxPoints && current.length > 1) {
+        let n = current.length - 1;
+        while (n > 1 && lengthPt(current.slice(0, n)) > maxPoints) n--;
+        lines.push(current.slice(0, n)); current = current.slice(n);
+      }
+    }
+    if (current) lines.push(current);
+    return lines.length ? lines : [''];
+  }
+  toBlob() {
+    const stream = this.commands.join('\n') + '\n';
+    const objects = [
+      '<< /Type /Catalog /Pages 2 0 R >>',
+      '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+      '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>',
+      '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>',
+      '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>',
+      `<< /Length ${stream.length} >>\nstream\n${stream}endstream`
+    ];
+    let result = '%PDF-1.4\n';
+    const offsets = [0];
+    for (let i = 0; i < objects.length; i++) {
+      offsets.push(result.length);
+      result += `${i + 1} 0 obj\n${objects[i]}\nendobj\n`;
+    }
+    const xref = result.length;
+    result += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+    for (let i = 1; i < offsets.length; i++) result += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
+    result += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+    return new Blob([result], {type: 'application/pdf'});
+  }
+  save(filename) {
+    const blob = this.toBlob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.style.display = 'none';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
 }
 
 async function exportFuelEntryPdf(entryId) {
   const entry = buildComputedFuelEntriesForCar(state.selectedAnalyticsCarId).find(e => e.id === entryId);
   if (!entry) return showToast('Tankvorgang nicht mehr gefunden.', 'error');
   const car = state.cars.find(c => c.id === entry.carId);
-  let jsPDF;
-  try { jsPDF = await loadReceiptPdfLibrary(); }
-  catch (error) {
-    console.warn('PDF-Bibliothek nicht erreichbar:', error);
-    showToast('PDF-Modul nicht geladen. Bitte Internetverbindung prüfen.', 'error');
-    return;
-  }
   try {
-    const pdf = new jsPDF({orientation:'portrait', unit:'mm', format:'a4'});
+    const pdf = new LocalReceiptPDF();
     const navy=[21,41,70], blue=[2,132,199], gray=[89,107,130];
     const drawText=(value,x,y,size=10,bold=false,color=navy)=>{
       pdf.setFont('helvetica',bold?'bold':'normal'); pdf.setFontSize(size); pdf.setTextColor(...color);
@@ -5967,167 +6066,138 @@ async function updateRecord(kind, id, payload) {
       function openEntryEditor(kind, id) {
   const entry = state[kind]?.find((item) => item.id === id);
   if (!entry) return;
-
-  if (kind !== "fuelEntries") {
-    showToast("Bearbeiten ist aktuell für Tankvorgänge vorbereitet.", "error");
+  if (kind !== 'fuelEntries') {
+    showToast('Bearbeiten ist derzeit für Tankvorgänge verfügbar.', 'error');
     return;
   }
-
-  const overlay = document.createElement("div");
-  overlay.className = "chart-overlay active";
+  const car = state.cars.find(c => c.id === entry.carId);
+  const originalLocation = String(entry.stationDisplayName || entry.locationText || '');
+  const overlay = document.createElement('div');
+  overlay.className = 'fuel-edit-backdrop';
+  overlay.setAttribute('role','presentation');
   overlay.innerHTML = `
-    <div class="chart-modal" style="max-width:720px;">
-      <div class="chart-modal-head">
-        <div>
-          <h3>Tankvorgang bearbeiten</h3>
-          <p class="muted">${formatDateTime(entry.date)}</p>
+    <section class="fuel-edit-panel" role="dialog" aria-modal="true" aria-labelledby="fuelEditTitle">
+      <header class="fuel-edit-header">
+        <div><p class="section-kicker">TANKHISTORIE · EINTRAG ÄNDERN</p>
+          <h2 id="fuelEditTitle">⛽ Tankvorgang bearbeiten</h2>
+          <p class="fuel-edit-subtitle">${escapeHtml(car?.name || 'Fahrzeug')} · ${escapeHtml(formatDateTime(entry.date))}</p>
         </div>
-        <button class="icon-btn" type="button" data-close>✕</button>
-      </div>
-
-      <form id="editFuelForm" class="form-grid">
-        <label>Datum / Uhrzeit
-          <input name="date" type="datetime-local" value="${toDatetimeLocal(entry.date)}" required>
-        </label>
-
-        <label>Liter
-          <input name="liters" type="number" step="0.01" value="${entry.liters ?? ""}" required>
-        </label>
-
-        <label>Gesamtpreis
-          <input name="totalPrice" type="number" step="0.01" value="${entry.totalPrice ?? ""}" required>
-        </label>
-
-        <label>Kilometerstand
-          <input name="mileage" type="number" step="1" value="${entry.mileage ?? ""}" required>
-        </label>
-
-        <label>Restreichweite vorher
-          <input name="rangeBefore" type="number" step="1" value="${entry.rangeBefore ?? ""}">
-        </label>
-
-        <label>Reichweite nachher
-          <input name="rangeAfter" type="number" step="1" value="${entry.rangeAfter ?? ""}">
-        </label>
-
-          <label class="full-width">Tankstelle suchen
-          <input name="stationSearch" type="text" placeholder="z. B. Shell Köln, Aral München">
-        </label>
-
-        <div class="form-actions full-width">
-          <button class="btn ghost" type="button" data-search-station>Tankstelle suchen</button>
+        <button type="button" class="fuel-edit-close" data-close aria-label="Dialog schließen">✕</button>
+      </header>
+      <form id="editFuelForm" class="fuel-edit-form" novalidate>
+        <div class="fuel-edit-section-title">Tankdaten</div>
+        <div class="fuel-edit-fields">
+          <label>Datum und Uhrzeit<input name="date" type="datetime-local" value="${escapeHtml(toDatetimeLocal(entry.date))}" required></label>
+          <label>Tankmenge (Liter)<input name="liters" type="number" min="0.01" step="0.01" value="${escapeHtml(String(entry.liters ?? ''))}" required></label>
+          <label>Gesamtpreis (€)<input name="totalPrice" type="number" min="0" step="0.01" value="${escapeHtml(String(entry.totalPrice ?? ''))}" required></label>
+          <label>Kilometerstand (km)<input name="mileage" type="number" min="0" step="1" value="${escapeHtml(String(entry.mileage ?? ''))}" required></label>
+          <label>Restreichweite vorher (km)<input name="rangeBefore" type="number" min="0" step="1" value="${escapeHtml(String(entry.rangeBefore ?? ''))}"></label>
+          <label>Reichweite nachher (km)<input name="rangeAfter" type="number" min="0" step="1" value="${escapeHtml(String(entry.rangeAfter ?? ''))}"></label>
         </div>
-
-        <label class="full-width">Gefundene Tankstelle
-          <select name="stationSelect">
-            <option value="">Keine neue Tankstelle gewählt</option>
-          </select>
-        </label>
-  
-        <label class="full-width">Tankstelle / Ort
-          <input name="locationText" type="text" value="${escapeHtml(entry.stationDisplayName || entry.locationText || "")}">
-        </label>
-
-        <label class="full-width">Notiz
-          <textarea name="note">${escapeHtml(entry.note || "")}</textarea>
-        </label>
-
-        <div class="form-actions full-width">
-          <button class="ghost-btn" type="button" data-close>Abbrechen</button>
-          <button class="primary-btn" type="submit">Speichern</button>
+        <div class="fuel-edit-live-summary" aria-live="polite"><div><small>Berechneter Literpreis</small><strong data-unit-price>–</strong></div><div><small>Gesamtbetrag</small><strong data-total>–</strong></div></div>
+        <div class="fuel-edit-section-title">Tankstelle und Notiz</div>
+        <div class="fuel-edit-fields">
+          <label class="fuel-edit-wide">Tankstelle suchen
+            <div class="fuel-edit-search"><input name="stationSearch" type="search" placeholder="z. B. Aral Olpe"><button class="btn ghost" type="button" data-search-station>Suchen</button></div>
+          </label>
+          <label class="fuel-edit-wide">Suchergebnis
+            <select name="stationSelect"><option value="">Vorhandene Tankstelle beibehalten</option></select>
+          </label>
+          <label class="fuel-edit-wide">Tankstelle / Ort<input name="locationText" type="text" value="${escapeHtml(originalLocation)}" maxlength="240" placeholder="Name und Adresse"></label>
+          <label class="fuel-edit-wide">Notiz<textarea name="note" rows="3" maxlength="500">${escapeHtml(entry.note || '')}</textarea></label>
         </div>
+        <p class="fuel-edit-error" role="alert" hidden></p>
+        <footer class="fuel-edit-footer"><span>Änderungen werden im bestehenden Eintrag gespeichert.</span><div class="fuel-edit-buttons"><button type="button" class="btn ghost" data-close>Abbrechen</button><button type="submit" class="btn primary" data-save>Änderungen speichern</button></div></footer>
       </form>
-    </div>
-  `;
-
+    </section>`;
   document.body.appendChild(overlay);
-    let editorStations = [];
-
-    overlay.querySelector("[data-search-station]")?.addEventListener("click", async () => {
-      const text = overlay.querySelector('[name="stationSearch"]')?.value?.trim() || "";
-      if (!text) return showToast("Bitte Suchtext eingeben.", "error");
-
-      editorStations = await fetchFuelStationsByText(text);
-
-      const select = overlay.querySelector('[name="stationSelect"]');
-      if (!editorStations.length) {
-        select.innerHTML = '<option value="">Keine Tankstelle gefunden</option>';
-        return showToast("Keine passende Tankstelle gefunden.", "error");
-      }
-
-      select.innerHTML = '<option value="">Bitte wählen</option>' + editorStations.map((station) => `
-        <option value="${escapeHtml(station.id)}">${escapeHtml(station.displayName)}</option>
-      `).join("");
-
-      showToast("Tankstellen gefunden.", "success");
-    });
-
-    overlay.querySelector('[name="stationSelect"]')?.addEventListener("change", () => {
-      const selected = editorStations.find(
-        (station) => station.id === overlay.querySelector('[name="stationSelect"]').value
-      );
-      if (selected) {
-        overlay.querySelector('[name="locationText"]').value = selected.displayName;
-      }
-    });
-
-  document.body.style.overflow = "hidden";
-
+  const previousOverflow = document.body.style.overflow;
+  document.body.style.overflow = 'hidden';
+  const formElement = overlay.querySelector('#editFuelForm');
+  const field = name => formElement.elements.namedItem(name);
+  const errorLabel = overlay.querySelector('.fuel-edit-error');
+  const saveBtn = overlay.querySelector('[data-save]');
+  let editorStations = [];
+  let isSaving = false;
+  let selectedStation = null;
+  const showEditorError = message => {errorLabel.textContent=message;errorLabel.hidden=false;};
   const close = () => {
-    overlay.remove();
-    document.body.style.overflow = "";
+    if(isSaving) return;
+    overlay.remove(); document.body.style.overflow=previousOverflow;
+    document.removeEventListener('keydown', onKeydown);
   };
-
-  overlay.querySelectorAll("[data-close]").forEach((btn) =>
-    btn.addEventListener("click", close)
-  );
-
-  overlay.addEventListener("click", (event) => {
-    if (event.target === overlay) close();
+  const onKeydown = event => {if(event.key==='Escape') close();};
+  document.addEventListener('keydown',onKeydown);
+  overlay.querySelectorAll('[data-close]').forEach(btn=>btn.addEventListener('click',close));
+  overlay.addEventListener('click',event=>{if(event.target===overlay)close();});
+  const refreshPrice = () => {
+    const liters=toNumber(field('liters').value), total=toNumber(field('totalPrice').value);
+    overlay.querySelector('[data-unit-price]').textContent=liters>0&&total>=0 ? `${formatCurrency(round4(total/liters))}/l`:'–';
+    overlay.querySelector('[data-total]').textContent=total>=0 ? formatCurrency(total):'–';
+  };
+  ['liters','totalPrice'].forEach(name=>field(name).addEventListener('input',refreshPrice));
+  refreshPrice();
+  field('locationText').addEventListener('input',()=>{selectedStation=null;field('stationSelect').value='';});
+  overlay.querySelector('[data-search-station]').addEventListener('click',async()=>{
+    const query=field('stationSearch').value.trim();
+    if(!query)return showEditorError('Bitte einen Suchbegriff eingeben.');
+    const btn=overlay.querySelector('[data-search-station]');
+    btn.disabled=true;btn.textContent='Suche läuft …';errorLabel.hidden=true;
+    try {
+      editorStations=await fetchFuelStationsByText(query);
+      field('stationSelect').innerHTML='<option value="">Vorhandene Tankstelle beibehalten</option>'+editorStations.map((s,i)=>`<option value="${i}">${escapeHtml(s.displayName||s.name||'Tankstelle')}</option>`).join('');
+      if(!editorStations.length)showEditorError('Keine passenden Tankstellen gefunden.');
+    } catch(err){console.error(err);showEditorError('Tankstellensuche fehlgeschlagen.');}
+    finally{btn.disabled=false;btn.textContent='Suchen';}
   });
-
-  overlay.querySelector("#editFuelForm").addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    const form = new FormData(event.target);
-    const liters = toNumber(form.get("liters"));
-    const totalPrice = toNumber(form.get("totalPrice"));
-    const mileage = toNumber(form.get("mileage"));
-    const dt = new Date(form.get("date"));
-
-    if (Number.isNaN(dt.getTime())) return showToast("Datum ist ungültig.", "error");
-    if (!Number.isFinite(liters) || liters <= 0) return showToast("Bitte gültige Liter eingeben.", "error");
-    if (!Number.isFinite(totalPrice) || totalPrice < 0) return showToast("Bitte gültigen Preis eingeben.", "error");
-    if (!Number.isFinite(mileage) || mileage < 0) return showToast("Bitte gültigen Kilometerstand eingeben.", "error");
-
-const selectedStation = editorStations.find(
-  (station) => station.id === form.get("stationSelect")
-) || null;
-
-    await updateRecord("fuelEntries", id, {
-      date: dt.toISOString(),
-      liters: round2(liters),
-      totalPrice: round2(totalPrice),
-      pricePerLiter: liters > 0 ? round4(totalPrice / liters) : 0,
-      mileage,
-      rangeBefore: Number.isFinite(toNumber(form.get("rangeBefore"))) ? toNumber(form.get("rangeBefore")) : null,
-      rangeAfter: Number.isFinite(toNumber(form.get("rangeAfter"))) ? toNumber(form.get("rangeAfter")) : null,
-      locationText: form.get("locationText").trim(),
-latitude: selectedStation?.latitude ?? entry.latitude ?? null,
-longitude: selectedStation?.longitude ?? entry.longitude ?? null,
-stationId: selectedStation?.id ?? entry.stationId ?? null,
-stationName: selectedStation?.name ?? entry.stationName ?? "",
-stationBrand: selectedStation?.brand ?? entry.stationBrand ?? "",
-stationAddress: selectedStation?.address ?? entry.stationAddress ?? "",
-stationDisplayName: selectedStation?.displayName ?? form.get("locationText").trim(),
-      note: form.get("note").trim()
-    });
-
-    close();
-    showToast("Tankvorgang aktualisiert.", "success");
+  field('stationSelect').addEventListener('change',()=>{
+    const idx=field('stationSelect').value;
+    selectedStation=idx===''?null:editorStations[Number(idx)]||null;
+    if(selectedStation)field('locationText').value=selectedStation.displayName||selectedStation.name||'';
+  });
+  formElement.addEventListener('submit',async event=>{
+    event.preventDefault();if(isSaving)return;
+    errorLabel.hidden=true;
+    const liters=toNumber(field('liters').value), totalPrice=toNumber(field('totalPrice').value), mileage=toNumber(field('mileage').value);
+    const dt=new Date(field('date').value);
+    if(Number.isNaN(dt.getTime()))return showEditorError('Bitte ein gültiges Datum eingeben.');
+    if(!Number.isFinite(liters)||liters<=0)return showEditorError('Die Tankmenge muss größer als 0 sein.');
+    if(!Number.isFinite(totalPrice)||totalPrice<0)return showEditorError('Bitte einen gültigen Gesamtpreis eingeben.');
+    if(!Number.isFinite(mileage)||mileage<0)return showEditorError('Bitte einen gültigen Kilometerstand eingeben.');
+    const rangeBefore=toNumber(field('rangeBefore').value),rangeAfter=toNumber(field('rangeAfter').value);
+    if((rangeBefore!==null&&rangeBefore<0)||(rangeAfter!==null&&rangeAfter<0))return showEditorError('Reichweiten dürfen nicht negativ sein.');
+    const other=state.fuelEntries.filter(e=>e.carId===entry.carId&&e.id!==id);
+    if(other.some(e=>new Date(e.date).getTime()===dt.getTime()))return showEditorError('Für das Fahrzeug existiert bereits eine Tankung zu diesem Zeitpunkt.');
+    const earlier=other.filter(e=>new Date(e.date)<dt).sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
+    const later=other.filter(e=>new Date(e.date)>dt).sort((a,b)=>new Date(a.date)-new Date(b.date))[0];
+    if((earlier&&mileage<Number(earlier.mileage))||(later&&mileage>Number(later.mileage)))return showEditorError('Kilometerstand passt nicht zwischen die vorherige und nächste Tankung.');
+    const newLocation=field('locationText').value.trim();
+    const stationChanged=newLocation!==originalLocation;
+    const keepOriginal=!selectedStation&&!stationChanged;
+    const payload={
+      date:dt.toISOString(), liters:round2(liters), totalPrice:round2(totalPrice), pricePerLiter:round4(totalPrice/liters), mileage,
+      rangeBefore,rangeAfter,locationText:newLocation,
+      latitude:selectedStation?.latitude??(keepOriginal?entry.latitude:null)??null,
+      longitude:selectedStation?.longitude??(keepOriginal?entry.longitude:null)??null,
+      stationId:selectedStation?.id??(keepOriginal?entry.stationId:null)??null,
+      stationName:selectedStation?.name??(keepOriginal?entry.stationName:'')??'',
+      stationBrand:selectedStation?.brand??(keepOriginal?entry.stationBrand:'')??'',
+      stationAddress:selectedStation?.address??(keepOriginal?entry.stationAddress:'')??'',
+      stationDisplayName:selectedStation?.displayName??newLocation,
+      note:field('note').value.trim()
+    };
+    isSaving=true;saveBtn.disabled=true;saveBtn.textContent='Wird gespeichert …';
+    try {
+      await updateRecord('fuelEntries',id,payload);
+      if(selectedStation)try{await rememberStation(selectedStation,'fuel');}catch(err){console.warn('Tankstelle konnte nicht zum Katalog hinzugefügt werden',err);}
+      // Firestore schreibt in denselben Dokumentpfad; die onSnapshot-Abfrage aktualisiert die Ansichten.
+      // Lokale Änderungen werden direkt über updateRecord gerendert.
+      isSaving=false;close();showToast('Tankvorgang erfolgreich aktualisiert.','success');
+    } catch(err){console.error('Tankvorgang konnte nicht aktualisiert werden:',err);showEditorError(`Speichern fehlgeschlagen: ${err?.message||'Bitte Verbindung prüfen.'}`);}
+    finally{isSaving=false;saveBtn.disabled=false;saveBtn.textContent='Änderungen speichern';}
   });
 }
-      
+
     function exportBackup() {
         const payload = {
           exportedAt: new Date().toISOString(),
