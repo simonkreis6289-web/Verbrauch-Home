@@ -1,26 +1,26 @@
 {
-  "generated_at": "2026-10-15T10:22:40+02:00",
+  "generated_at": "2026-10-15T10:56:53+02:00",
   "region": "57489 Drolshagen",
   "prices": {
     "pellets_loose": {
-      "price": 417.75,
+      "price": 444.18,
       "unit": "EUR/1000kg",
-      "scope": "regional",
-      "checked_at": "2026-10-15T10:22:40+02:00",
-      "source_url": "https://www.heizpellets24.de/pelletpreise/nordrhein-westfalen/olpe/drolshagen-57489"
+      "scope": "national",
+      "checked_at": "2026-10-15T10:56:53+02:00",
+      "source_url": "https://www.holzpellets.net/pelletspreise/"
     },
     "pellets_bag": {
-      "price": 510.68,
+      "price": 527.41,
       "unit": "EUR/1000kg",
-      "scope": "regional",
-      "checked_at": "2026-10-15T10:22:40+02:00",
-      "source_url": "https://www.holzpellets.net/pelletspreise/Nordrhein-Westfalen/Olpe/pellets-Drolshagen"
+      "scope": "national",
+      "checked_at": "2026-10-15T10:56:53+02:00",
+      "source_url": "https://www.holzpellets.net/pelletspreise/"
     },
     "heating_oil": {
-      "price": 176.0,
+      "price": 176.6,
       "unit": "EUR/100l",
       "scope": "national",
-      "checked_at": "2026-10-14T20:03:04+02:00",
+      "checked_at": "2026-10-15T10:56:53+02:00",
       "source_url": "https://www.tecson.de/de/heizoelpreise.html"
     }
   }
