@@ -827,7 +827,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
         <h1>Zählerstände, Pellets und Kosten im Blick</h1>
         <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
         <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du den Haushalt wechseln oder neu anlegen.</p>
-        <p class="hero-copy">Version 1.3.1.125</p>
+        <p class="hero-copy">Version 1.3.1.126</p>
       </div>
       <div class="hero-actions">
         <button id="themeToggleBtn" class="btn ghost theme-toggle" type="button" aria-label="Design wechseln" aria-pressed="false"><span id="themeToggleIcon" aria-hidden="true">☀️</span> <span id="themeToggleLabel">Helles Design</span></button>
@@ -2096,6 +2096,8 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       renderSavedStationOptions();
       if (state.householdId) await connectFirebase(FIREBASE_CONFIG, state.householdId, false);
       else updateFirebaseStatus();
+      // Vordergrund-Push nach jedem Start aktivieren, ohne erneute Registrierung.
+      void enablePushWhileOpen();
     }
 
     // Anzeige einer vom GitHub-Workflow gepflegten Datei. Keine Marktwerte fließen in Kostenberechnungen ein.
@@ -2496,12 +2498,12 @@ function formatStationShort(station) {
       if(!value){ value=crypto.randomUUID();localStorage.setItem(key,value); }
       return value;
     }
-    async function pushPrepareMessaging(){
+    async function pushPrepareMessaging(askPermission=true){
       if(!('serviceWorker' in navigator)||!('Notification' in window)||!('PushManager' in window))
         throw new Error('Dieser Browser unterstützt keine Web-Push-Nachrichten. Bei iOS die App zum Home-Bildschirm hinzufügen.');
       if(!await isSupported()) throw new Error('Firebase Web-Push wird auf diesem Gerät nicht unterstützt.');
       if(!state.app)throw new Error('Firebase ist nicht verbunden.');
-      const permission=await Notification.requestPermission();
+      const permission=askPermission ? await Notification.requestPermission() : Notification.permission;
       if(permission!=='granted')throw new Error('Benachrichtigungen wurden nicht erlaubt. Bitte in den Geräteeinstellungen freigeben.');
       const sw=await navigator.serviceWorker.register('./sw.js');
       await navigator.serviceWorker.ready;
@@ -2522,6 +2524,13 @@ function formatStationShort(station) {
         pushForegroundListener=true;
       }
       return sw;
+    }
+    // Wird bei jedem Öffnen automatisch gestartet, falls Push bereits erlaubt ist.
+    // Kein erneutes Token und kein Zugangscode erforderlich, nur der Empfang im Vordergrund.
+    async function enablePushWhileOpen(){
+      if(!state.app || !('Notification' in window) || Notification.permission!=='granted')return;
+      try{await pushPrepareMessaging(false);}
+      catch(error){console.warn('Push-Empfang im Vordergrund nicht aktiviert:',error);}
     }
     async function registerPushDevice(){
       try{
