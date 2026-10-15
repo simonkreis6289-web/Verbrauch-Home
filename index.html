@@ -834,6 +834,49 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 .pellet-forecast-months span{display:grid;align-content:end;gap:4px;text-align:center;font-size:.7rem;color:var(--muted)}
 .pellet-forecast-months i{display:block;background:#f59e0b;border-radius:5px 5px 2px 2px;min-height:3px}
 
+
+/* v89: Push-Regel-Cockpit, nur UI. Bestehende IDs und Endpunkte bleiben unveraendert. */
+.push-rule-panel{position:relative;overflow:hidden}
+.push-rule-panel:before{content:"";position:absolute;right:-100px;top:-165px;width:380px;height:380px;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(14,165,233,.10),transparent 68%)}
+.push-rules-heading{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;position:relative}
+.push-rules-eyebrow{font-size:.76rem;letter-spacing:.13em;font-weight:800;text-transform:uppercase;color:var(--muted)}
+.push-rules-heading h2{margin:6px 0;font-size:clamp(1.3rem,2.4vw,1.85rem)}
+.push-rules-heading p{margin:0;max-width:760px;line-height:1.55;color:var(--muted)}
+.push-rules-summary{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.push-rules-chip{padding:8px 11px;border:1px solid var(--line);border-radius:999px;background:var(--card-solid);font-size:.79rem;font-weight:750;white-space:nowrap}
+.push-rules-chip.is-on{border-color:rgba(34,197,94,.35);background:rgba(34,197,94,.10);color:var(--text)}
+.push-rules-grid-v89{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;margin:21px 0}
+.push-rule-v89{display:flex;flex-direction:column;justify-content:space-between;gap:20px;min-height:157px;padding:19px;border:1px solid var(--line);border-radius:19px;background:var(--card-solid);transition:border-color .16s,box-shadow .16s,background .16s;cursor:pointer;position:relative}
+.push-rule-v89:has(input:checked){border-color:rgba(16,185,129,.40);background:linear-gradient(150deg,rgba(16,185,129,.055),var(--card-solid) 72%)}
+.push-rule-v89:hover{box-shadow:0 7px 22px rgba(15,23,42,.07)}
+.push-rule-v89:focus-within{outline:2px solid #38bdf8;outline-offset:3px}
+.push-rule-top{display:flex;align-items:flex-start;gap:12px}
+.push-rule-icon{display:grid;place-items:center;width:46px;height:46px;flex-shrink:0;border-radius:14px;font-size:1.4rem;background:rgba(245,158,11,.13)}
+.push-rule-icon.purple{background:rgba(139,92,246,.12)}.push-rule-icon.red{background:rgba(239,68,68,.10)}.push-rule-icon.blue{background:rgba(14,165,233,.10)}
+.push-rule-content{min-width:0}.push-rule-content strong{display:block;font-size:1.02rem;line-height:1.35;margin-top:1px}.push-rule-content small{display:block;color:var(--muted);font-size:.83rem;line-height:1.5;margin-top:5px}
+.push-rule-bottom{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-top:11px;border-top:1px solid var(--line)}
+.push-rule-state{display:flex;align-items:center;gap:7px;font-size:.79rem;font-weight:750;color:var(--muted)}
+.push-rule-state:before{content:"";height:7px;width:7px;background:#94a3b8;border-radius:50%}
+.push-rule-v89:has(input:checked) .push-rule-state{color:#15803d}.push-rule-v89:has(input:checked) .push-rule-state:before{background:#22c55e}
+.push-rule-state-on{display:none}.push-rule-v89:has(input:checked) .push-rule-state-on{display:inline}.push-rule-v89:has(input:checked) .push-rule-state-off{display:none}
+.push-rule-v89 .push-switch{margin:0;outline-offset:4px}
+.push-rules-controls{border:1px solid var(--line);border-radius:17px;padding:19px;background:rgba(125,145,175,.055)}
+.push-rules-control-head{display:flex;gap:12px;align-items:start;justify-content:space-between;flex-wrap:wrap;margin-bottom:13px}
+.push-rules-control-head strong{display:block;font-size:1rem}.push-rules-control-head small{display:block;color:var(--muted);font-size:.82rem;line-height:1.5;margin-top:4px}
+.push-rules-threshold{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.push-rules-threshold input[type=range]{flex:1;min-width:125px;accent-color:#0284c7;cursor:pointer}
+.push-rules-value{display:flex;align-items:center;border:1px solid var(--line);border-radius:12px;background:var(--card-solid);padding:0 11px}
+.push-rules-value input{width:63px;text-align:right;border:0;background:transparent;color:var(--text);font:inherit;font-weight:800;font-size:1.18rem;padding:9px 0;outline-offset:2px}
+.push-rules-value b{font-size:1rem;color:var(--muted);padding-left:4px}
+.push-rules-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:16px 0 11px}
+.push-rules-note{font-size:.81rem;color:var(--muted);max-width:450px;line-height:1.5}
+.push-rules-actions{display:flex;gap:10px;flex-wrap:wrap}
+.push-rules-message{display:flex;gap:11px;align-items:flex-start;padding:13px 15px;border:1px solid rgba(59,130,246,.22);border-radius:13px;background:rgba(59,130,246,.055);line-height:1.5;font-size:.87rem;color:var(--muted)}
+.push-rules-message[data-state=success]{border-color:rgba(34,197,94,.35);background:rgba(34,197,94,.07);color:var(--text)}
+.push-rules-message[data-state=error]{border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.065);color:var(--text)}
+.push-rules-message-icon{font-size:1rem;flex-shrink:0}
+@media(max-width:700px){.push-rules-grid-v89{grid-template-columns:1fr}.push-rule-v89{min-height:145px}.push-rules-footer{align-items:stretch}.push-rules-actions{width:100%}.push-rules-actions button{flex:1}.push-rules-value input{width:54px}}
+
 </style>
 </head>
 <body>
@@ -844,7 +887,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
         <h1>Zählerstände, Pellets und Kosten im Blick</h1>
         <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
         <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du den Haushalt wechseln oder neu anlegen.</p>
-        <p class="hero-copy">Version 1.3.1.128</p>
+        <p class="hero-copy">Version 1.3.1.129</p>
       </div>
       <div class="hero-actions">
         <button id="themeToggleBtn" class="btn ghost theme-toggle" type="button" aria-label="Design wechseln" aria-pressed="false"><span id="themeToggleIcon" aria-hidden="true">☀️</span> <span id="themeToggleLabel">Helles Design</span></button>
@@ -1462,18 +1505,38 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
     </section>
 
 
-    <section class="card glass wide" id="pushRulesPanel">
-      <div class="card-head"><div><p class="section-kicker">Benachrichtigungen · v86</p><h2>Meine Push-Regeln 🔔</h2></div><span class="badge">Haushaltweit</span></div>
-      <p class="muted">Welche automatischen Meldungen sollen an alle angemeldeten Geräte gehen? Die Regeln werden geschützt beim Push-Server gespeichert, damit sie auch bei geschlossener App gelten.</p>
-      <div class="push-rule-grid">
-        <label class="push-rule"><span><strong>🔥 Tägliche Energiepreise</strong><small>Lose Pellets, Sackware und Heizöl. Einmal täglich.</small></span><input class="push-switch" id="rulePrices" type="checkbox" checked></label>
-        <label class="push-rule"><span><strong>📆 Monatsende-Erinnerung</strong><small>Am letzten Kalendertag an die Zählerstände denken.</small></span><input class="push-switch" id="ruleReminder" type="checkbox" checked></label>
-        <label class="push-rule"><span><strong>⚠️ Verbrauchswarnungen</strong><small>Strom und Wasser bei auffälligem Tagesverbrauch.</small></span><input class="push-switch" id="ruleWarnings" type="checkbox" checked></label>
-        <label class="push-rule"><span><strong>⛽ Neue Tankvorgänge</strong><small>Nach neuem Firestore-Eintrag mit Fahrzeug und Tankdaten.</small></span><input class="push-switch" id="ruleFuel" type="checkbox" checked></label>
+    <section class="card glass wide push-rule-panel" id="pushRulesPanel">
+      <div class="push-rules-heading">
+        <div><div class="push-rules-eyebrow">Benachrichtigungen · v89</div><h2>Meine Push-Regeln 🔔</h2>
+          <p>Steuere, welche Meldungen deine Geräte erreichen. Gespeicherte Regeln gelten für den gesamten Haushalt, auch wenn die App geschlossen ist.</p></div>
+        <div class="push-rules-summary"><span class="push-rules-chip">🏠 Haushaltweit</span><span class="push-rules-chip is-on" id="pushRulesActiveCount">4 von 4 aktiv</span></div>
       </div>
-      <div class="push-options"><label>Warnung ab Abweichung in %<input type="number" id="ruleThreshold" min="10" max="200" step="5" value="30"><small>Mindestens 7 Tage Ableseintervall und 90 Tage Historie</small></label>
-      <button type="button" id="pushRulesLoad" class="btn ghost">↻ Vom Server laden</button><button type="button" id="pushRulesSave" class="btn primary">Regeln speichern</button></div>
-      <div id="pushRulesStatus" class="push-state" role="status" aria-live="polite">Zum Laden oder Speichern den Push-Zugangscode unten eingeben. Bis dahin sind die Schalter nur Vorschlagswerte.</div>
+      <div class="push-rules-grid-v89">
+        <label class="push-rule-v89">
+          <span class="push-rule-top"><span class="push-rule-icon">🔥</span><span class="push-rule-content"><strong>Tägliche Energiepreise</strong><small>Lose Pellets, Sackware und Heizöl. Einmal täglich als kompakte Preisübersicht.</small></span></span>
+          <span class="push-rule-bottom"><span class="push-rule-state"><span class="push-rule-state-on">Aktiviert</span><span class="push-rule-state-off">Deaktiviert</span></span><input class="push-switch" id="rulePrices" type="checkbox" checked aria-label="Tägliche Energiepreise aktivieren"></span>
+        </label>
+        <label class="push-rule-v89">
+          <span class="push-rule-top"><span class="push-rule-icon purple">📅</span><span class="push-rule-content"><strong>Monatsende-Erinnerung</strong><small>Erinnert am letzten Kalendertag daran, Strom, Wasser und Pellets abzulesen.</small></span></span>
+          <span class="push-rule-bottom"><span class="push-rule-state"><span class="push-rule-state-on">Aktiviert</span><span class="push-rule-state-off">Deaktiviert</span></span><input class="push-switch" id="ruleReminder" type="checkbox" checked aria-label="Monatsende-Erinnerung aktivieren"></span>
+        </label>
+        <label class="push-rule-v89">
+          <span class="push-rule-top"><span class="push-rule-icon red">⚠️</span><span class="push-rule-content"><strong>Verbrauchswarnungen</strong><small>Hinweise bei auffällig hohem Strom- und Wasserverbrauch auf Basis längerer Messintervalle.</small></span></span>
+          <span class="push-rule-bottom"><span class="push-rule-state"><span class="push-rule-state-on">Aktiviert</span><span class="push-rule-state-off">Deaktiviert</span></span><input class="push-switch" id="ruleWarnings" type="checkbox" checked aria-label="Verbrauchswarnungen aktivieren"></span>
+        </label>
+        <label class="push-rule-v89">
+          <span class="push-rule-top"><span class="push-rule-icon blue">⛽</span><span class="push-rule-content"><strong>Neue Tankvorgänge</strong><small>Meldung nach einer neuen Tankung mit Fahrzeug, Menge, Preis und Kilometerstand.</small></span></span>
+          <span class="push-rule-bottom"><span class="push-rule-state"><span class="push-rule-state-on">Aktiviert</span><span class="push-rule-state-off">Deaktiviert</span></span><input class="push-switch" id="ruleFuel" type="checkbox" checked aria-label="Tankvorgang-Meldungen aktivieren"></span>
+        </label>
+      </div>
+      <div class="push-rules-controls">
+        <div class="push-rules-control-head"><div><strong>⚙️ Empfindlichkeit der Verbrauchswarnung</strong><small>Warnung bei einer Abweichung vom historischen Vergleichswert. Mindestens 7 Tage aktuelles Ableseintervall und 90 Tage Historie.</small></div></div>
+        <div class="push-rules-threshold"><input id="ruleThresholdSlider" type="range" min="10" max="200" step="5" value="30" aria-label="Warnschwelle per Schieberegler wählen"><label class="push-rules-value"><input type="number" id="ruleThreshold" min="10" max="200" step="5" value="30" aria-label="Warnschwelle in Prozent"><b>%</b></label></div>
+      </div>
+      <div class="push-rules-footer"><div class="push-rules-note">Änderungen gelten erst nach <strong>Regeln speichern</strong>. Zum Laden und Speichern den Push-Zugangscode unten eingeben.</div>
+        <div class="push-rules-actions"><button type="button" id="pushRulesLoad" class="btn ghost">↻ Vom Server laden</button><button type="button" id="pushRulesSave" class="btn primary">✓ Regeln speichern</button></div>
+      </div>
+      <div id="pushRulesStatus" class="push-rules-message" data-state="info" role="status" aria-live="polite"><span class="push-rules-message-icon" aria-hidden="true">ℹ️</span><span class="push-rules-message-text">Noch keine Serverregeln geladen. Die sichtbaren Schalter sind zunächst Vorschlagswerte.</span></div>
     </section>
 
     <section class="card glass wide" id="pushTestPanel">
@@ -2594,13 +2657,18 @@ function formatStationShort(station) {
     }
     // v86: Push-Regeln liegen zentral beim authentifizierten Cloudflare Worker.
     const PUSH_RULE_DEFAULTS={prices:true,reminder:true,warnings:true,fuel:true,threshold:30};
-    function setRulesStatus(message,bad=false){const el=document.getElementById('pushRulesStatus');if(el){el.textContent=message;el.style.color=bad?'#dc2626':'';}}
+    function setRulesStatus(message,bad=false){const el=document.getElementById('pushRulesStatus');if(el){const success=!bad&&(/geladen|gespeichert/i).test(message);el.dataset.state=bad?'error':success?'success':'info';const txt=el.querySelector('.push-rules-message-text');const ico=el.querySelector('.push-rules-message-icon');if(txt)txt.textContent=message;if(ico)ico.textContent=bad?'❌':success?'✅':'ℹ️';}}
+    function syncRulesView(){const ids=['rulePrices','ruleReminder','ruleWarnings','ruleFuel'];const n=ids.filter(id=>document.getElementById(id)?.checked).length;const count=document.getElementById('pushRulesActiveCount');if(count)count.textContent=n+' von 4 aktiv';const field=document.getElementById('ruleThreshold');const slider=document.getElementById('ruleThresholdSlider');if(field&&slider&&document.activeElement!==slider){const v=Number(field.value);if(Number.isFinite(v)&&v>=10&&v<=200)slider.value=String(v);}}
     function readRulesInputs(){return {prices:document.getElementById('rulePrices').checked,reminder:document.getElementById('ruleReminder').checked,
       warnings:document.getElementById('ruleWarnings').checked,fuel:document.getElementById('ruleFuel').checked,threshold:Number(document.getElementById('ruleThreshold').value)};}
     function applyRulesInputs(rules){const r={...PUSH_RULE_DEFAULTS,...rules};
       for(const [key,id] of [['prices','rulePrices'],['reminder','ruleReminder'],['warnings','ruleWarnings'],['fuel','ruleFuel']])document.getElementById(id).checked=!!r[key];
-      document.getElementById('ruleThreshold').value=r.threshold;}
+      document.getElementById('ruleThreshold').value=r.threshold;syncRulesView();}
     function registerPushRules(){
+      for(const id of ['rulePrices','ruleReminder','ruleWarnings','ruleFuel'])document.getElementById(id)?.addEventListener('change',syncRulesView);
+      document.getElementById('ruleThresholdSlider')?.addEventListener('input',e=>{document.getElementById('ruleThreshold').value=e.target.value;});
+      document.getElementById('ruleThreshold')?.addEventListener('input',syncRulesView);
+      syncRulesView();
       document.getElementById('pushRulesLoad')?.addEventListener('click',async()=>{
         try{setRulesStatus('Lade Regeln vom Push-Server …');const response=await pushRequest('/settings/get',{});applyRulesInputs(response.rules);setRulesStatus('✅ Serverregeln geladen.');}
         catch(e){setRulesStatus('❌ '+e.message,true);}
