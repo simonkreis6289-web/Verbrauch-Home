@@ -1,4 +1,4 @@
-const CACHE_NAME = "verbrauch-app-v76";
+const CACHE_NAME = "verbrauch-app-v77";
 
 const urlsToCache = [
   "./",
@@ -24,13 +24,14 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  const title = payload?.notification?.title || "Verbrauch Zuhause";
-  const body = payload?.notification?.body || "Neue Daten eingetragen.";
+  const title = payload?.data?.title || payload?.notification?.title || "Verbrauch Zuhause";
+  const body = payload?.data?.body || payload?.notification?.body || "Neue Daten eingetragen.";
 
   self.registration.showNotification(title, {
     body,
     icon: "./icon-192.png",
     badge: "./icon-192.png",
+    tag: "verbrauch-test-push",
     data: payload?.data || {}
   });
 });

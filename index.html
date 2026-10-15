@@ -40,6 +40,13 @@
       --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
+
+    .push-panel{display:grid;gap:14px}
+    .push-actions{display:flex;gap:10px;flex-wrap:wrap}
+    .push-state{padding:13px 16px;border:1px solid var(--line);border-radius:13px;background:rgba(56,189,248,.065);color:var(--muted);line-height:1.5}
+    .push-panel .push-helper{font-size:.86rem;color:var(--muted);line-height:1.6}
+    .push-panel input{min-width:0;width:100%}
+
     * { box-sizing: border-box; }
     html { color-scheme: dark; scroll-behavior: smooth; }
     body {
@@ -1435,6 +1442,25 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </form>
     </section>
 
+
+    <section class="card glass wide" id="pushTestPanel">
+      <div class="card-head"><div><p class="section-kicker">Benachrichtigungen</p><h2>Push-Test an alle Geräte 🔔</h2></div><span class="badge">Testbetrieb</span></div>
+      <div class="push-panel">
+        <p class="push-helper">Jedes Gerät muss sich einmal anmelden und Benachrichtigungen erlauben. Danach verschickt „Test-Push an alle“ eine Nachricht an die registrierten Geräte des aktuell ausgewählten Haushalts, auch wenn die App geschlossen ist. Für den Versand wird der geschützte Cloudflare-Worker aus dem Update benötigt.</p>
+        <div class="settings-grid">
+          <label>Push-Server-Adresse<input id="pushEndpoint" type="url" placeholder="https://verbrauch-push.deinname.workers.dev" autocomplete="url"><small>Adresse deines Cloudflare-Workers</small></label>
+          <label>Firebase Web-Push-Schlüssel (VAPID, öffentlich)<input id="pushVapid" type="text" placeholder="Öffentlicher VAPID-Schlüssel" autocomplete="off"></label>
+          <label>Push-Zugangscode<input id="pushCode" type="password" placeholder="Geheimer Zugangscode" autocomplete="off"><small>Wird nicht im Browser gespeichert. Nach Neuladen bei Bedarf erneut eingeben.</small></label>
+        </div>
+        <div class="push-actions">
+          <button type="button" class="btn secondary" id="pushSubscribeBtn">🔔 Dieses Gerät anmelden</button>
+          <button type="button" class="btn primary" id="pushSendBtn">📣 Test-Push an alle Geräte</button>
+          <button type="button" class="btn ghost" id="pushUnsubscribeBtn">Gerät abmelden</button>
+        </div>
+        <div id="pushStatus" class="push-state" role="status" aria-live="polite">Push ist noch nicht eingerichtet.</div>
+      </div>
+    </section>
+
     <section class="card glass wide">
       <div class="card-head">
         <div>
@@ -1795,6 +1821,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 
   <script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getMessaging, getToken, onMessage, deleteToken, isSupported } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-messaging.js";
     import {
       getFirestore,
       doc,
@@ -2042,6 +2069,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       registerEvents();
       registerInstallHandling();
       registerServiceWorker();
+      registerPushTest();
       document.getElementById('energyMarketPrices')?.addEventListener('click', e => {
         if (e.target.closest('a')) return;
         const tile=e.target.closest('[data-market-key]');
@@ -2423,6 +2451,114 @@ function formatStationShort(station) {
         deferredPrompt = null;
         showToast("App wurde installiert.", "success");
       });
+    }
+
+
+    // v77: Web-Push an alle registrierten Geräte, mit geschütztem Serverversand.
+    const PUSH_SETTINGS_KEY = 'verbrauch-push-settings-v1';
+    let pushMessaging = null;
+    let pushForegroundListener = false;
+    let pushKnownToken = null;
+
+    function pushStatus(message, bad=false) {
+      const el = document.getElementById('pushStatus');
+      if(el){el.textContent=message;el.style.borderColor=bad?'rgba(239,68,68,.6)':'var(--line)';}
+    }
+    function pushInputs() {
+      return {
+        endpoint: document.getElementById('pushEndpoint').value.trim().replace(/\/+$/,''),
+        vapid: document.getElementById('pushVapid').value.trim(),
+        code: document.getElementById('pushCode').value,
+        household: state.householdId || DEFAULT_HOUSEHOLD_ID
+      };
+    }
+    function savePushPublicSettings(){
+      const {endpoint,vapid}=pushInputs();
+      localStorage.setItem(PUSH_SETTINGS_KEY,JSON.stringify({endpoint,vapid}));
+    }
+    async function pushRequest(path, payload){
+      const {endpoint,code,household}=pushInputs();
+      if(!/^https:\/\/i.test(endpoint))throw new Error('Bitte eine HTTPS-Adresse des Push-Servers eingeben.');
+      if(!code)throw new Error('Bitte zuerst den Push-Zugangscode eingeben.');
+      const res=await fetch(endpoint+path,{
+        method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+code},
+        body:JSON.stringify({household,...payload})
+      });
+      let data={}; try{data=await res.json();}catch(_){}
+      if(!res.ok)throw new Error(data.error||'Push-Server meldet HTTP '+res.status);
+      return data;
+    }
+    function pushDeviceId(){
+      const key='verbrauch-push-device-id';
+      let value=localStorage.getItem(key);
+      if(!value){ value=crypto.randomUUID();localStorage.setItem(key,value); }
+      return value;
+    }
+    async function pushPrepareMessaging(){
+      if(!('serviceWorker' in navigator)||!('Notification' in window)||!('PushManager' in window))
+        throw new Error('Dieser Browser unterstützt keine Web-Push-Nachrichten. Bei iOS die App zum Home-Bildschirm hinzufügen.');
+      if(!await isSupported()) throw new Error('Firebase Web-Push wird auf diesem Gerät nicht unterstützt.');
+      if(!state.app)throw new Error('Firebase ist nicht verbunden.');
+      const permission=await Notification.requestPermission();
+      if(permission!=='granted')throw new Error('Benachrichtigungen wurden nicht erlaubt. Bitte in den Geräteeinstellungen freigeben.');
+      const sw=await navigator.serviceWorker.register('./sw.js');
+      await navigator.serviceWorker.ready;
+      pushMessaging ||= getMessaging(state.app);
+      if(!pushForegroundListener){
+        onMessage(pushMessaging,(payload)=>{
+          const title=payload?.data?.title||'Verbrauch Zuhause';
+          const body=payload?.data?.body||'Push-Test erfolgreich.';
+          pushStatus('🔔 Empfangen: '+title+' – '+body);
+          showToast('🔔 '+body,'success');
+          // Nur Vordergrund: keine doppelte Benachrichtigung mit dem Service Worker.
+          if(document.visibilityState!=='visible'){
+            sw.showNotification(title,{body,icon:'./icon-192.png',tag:'verbrauch-test-push'});
+          }
+        });
+        pushForegroundListener=true;
+      }
+      return sw;
+    }
+    async function registerPushDevice(){
+      try{
+        savePushPublicSettings();
+        const {vapid}=pushInputs();
+        if(!vapid)throw new Error('Bitte den öffentlichen Web-Push-VAPID-Schlüssel eintragen.');
+        pushStatus('Dieses Gerät wird angemeldet …');
+        const sw=await pushPrepareMessaging();
+        const token=await getToken(pushMessaging,{vapidKey:vapid,serviceWorkerRegistration:sw});
+        if(!token)throw new Error('Firebase hat keinen Push-Token zurückgegeben.');
+        const result=await pushRequest('/register',{deviceId:pushDeviceId(),token});
+        pushKnownToken=token;
+        pushStatus('✅ Gerät angemeldet. Aktuell '+(result.devices??'?')+' Gerät(e) im Haushalt registriert.');
+      }catch(error){console.error('Push-Anmeldung:',error);pushStatus('❌ '+error.message,true);}
+    }
+    async function sendPushTest(){
+      try{
+        savePushPublicSettings();
+        pushStatus('Sende Testbenachrichtigung an alle registrierten Geräte …');
+        const result=await pushRequest('/broadcast',{title:'Verbrauch Zuhause 🔔',body:'Push-Test erfolgreich! Die Nachricht erreicht deine angemeldeten Geräte.'});
+        pushStatus('✅ Versand abgeschlossen: '+result.sent+' von '+result.total+' Gerät(en) an Firebase übergeben'+(result.failed?' ('+result.failed+' Fehler)':'')+'.');
+      }catch(error){console.error('Push-Rundruf:',error);pushStatus('❌ '+error.message,true);}
+    }
+    async function unregisterPushDevice(){
+      try{
+        const result=await pushRequest('/unregister',{deviceId:pushDeviceId()});
+        if(pushMessaging){try{await deleteToken(pushMessaging);}catch(e){console.warn('Token löschen:',e);}}
+        pushKnownToken=null;
+        pushStatus('Gerät abgemeldet. '+(result.devices??'?')+' Gerät(e) verbleiben.');
+      }catch(error){pushStatus('❌ '+error.message,true);}
+    }
+    function registerPushTest(){
+      try{
+        const obj=JSON.parse(localStorage.getItem(PUSH_SETTINGS_KEY)||'{}');
+        document.getElementById('pushEndpoint').value=obj.endpoint||'';
+        document.getElementById('pushVapid').value=obj.vapid||'';
+      }catch(_){}
+      document.getElementById('pushSubscribeBtn')?.addEventListener('click',registerPushDevice);
+      document.getElementById('pushSendBtn')?.addEventListener('click',sendPushTest);
+      document.getElementById('pushUnsubscribeBtn')?.addEventListener('click',unregisterPushDevice);
+      if('Notification' in window&&Notification.permission==='granted')pushStatus('Berechtigung vorhanden. Falls noch nicht geschehen, dieses Gerät anmelden.');
     }
 
     function registerServiceWorker() {
