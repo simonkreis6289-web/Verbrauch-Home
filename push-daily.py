@@ -34,6 +34,17 @@ def send(title, body):
         raise RuntimeError('Nicht alle angemeldeten Geräte wurden erreicht')
 
 
+def load_rules():
+    payload=json.dumps({'household':household}).encode('utf-8')
+    req=Request(endpoint+'/settings/get',data=payload,method='POST',headers={
+        'Authorization':'Bearer '+secret,'Content-Type':'application/json','Accept':'application/json',
+        'User-Agent':'VerbrauchZuhause-Push/1.0 (+GitHub-Actions; personal notifications)'})
+    with urlopen(req,timeout=25) as response:
+        settings=json.load(response)
+    if not settings.get('ok') or not isinstance(settings.get('rules'),dict):
+        raise RuntimeError('Push-Regeln konnten nicht sicher geladen werden')
+    return settings['rules']
+
 def price_text():
     data = json.loads(Path('market-prices.json').read_text(encoding='utf-8'))
     prices = data.get('prices', {})
@@ -63,12 +74,13 @@ def price_text():
     return ' · '.join(snippets)
 
 # Aus GitHub Actions einmal am Tag starten; nur bestätigte, frische Preise senden.
-text = price_text()
+rules=load_rules()
+text = price_text() if rules.get('prices',True) else None
 if text:
     send('Energiepreise · ' + now.strftime('%d.%m.%Y'), text)
 else:
-    print('Keine bestätigten Preise jünger als 36 Stunden. Kein Push gesendet.')
+    print('Preise deaktiviert oder keine bestätigten Preise jünger als 36 Stunden. Kein Push gesendet.')
 
 # Der Job läuft täglich, die Erinnerung wird nur am letzten Monatstag versandt.
-if (now + timedelta(days=1)).month != now.month:
+if rules.get('reminder',True) and (now + timedelta(days=1)).month != now.month:
     send('Monatsende · Zählerstände erfassen', 'Bitte Strom, Wasser und Pellets ablesen und in Verbrauch Zuhause eintragen.')
