@@ -48,7 +48,7 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
             python update_market_prices.py
-            git add market-prices.json market-price-history.json
+            git add market-prices.json market-price-history.json market-price-snapshots.json
             if git diff --cached --quiet; then
               echo "Keine Änderungen vorhanden."
               exit 0
