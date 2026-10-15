@@ -2,7 +2,9 @@ name: Energiepreise prüfen
 
 on:
   schedule:
-    - cron: '17 6,13 * * *'
+    # GitHub-Zeitplaene verwenden UTC. Sommer: 08/15 UTC, Winter: 09/16 UTC.
+    # Ein Zeit-Guard im Job laesst davon nur 10:00 / 17:00 Uhr Berlin durch.
+    - cron: '0 8,9,15,16 * * *'
   workflow_dispatch:
 
 permissions:
@@ -22,7 +24,20 @@ jobs:
           python-version: '3.12'
       - name: Python-Abhängigkeiten installieren
         run: pip install requests beautifulsoup4
+      - name: Nur um 10 und 17 Uhr (Europe/Berlin) laufen
+        id: time_gate
+        shell: bash
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif [[ "$(TZ=Europe/Berlin date +%H)" == "10" || "$(TZ=Europe/Berlin date +%H)" == "17" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Diese UTC-Planung ist nicht fuer die aktuelle Sommer-/Winterzeit."
+          fi
       - name: Marktpreise auf aktuellem main sicher aktualisieren
+        if: steps.time_gate.outputs.run == 'true'
         shell: bash
         run: |
           set -euo pipefail
