@@ -22,17 +22,29 @@ jobs:
           python-version: '3.12'
       - name: Python-Abhängigkeiten installieren
         run: pip install requests beautifulsoup4
-      - name: Energiepreise abrufen
-        run: python update_market_prices.py
-      - name: Preisdateien aktualisieren
+      - name: Marktpreise auf aktuellem main sicher aktualisieren
+        shell: bash
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add market-prices.json market-price-history.json
-          if git diff --cached --quiet; then
-            echo "Keine neuen Preise vorhanden."
-            exit 0
-          fi
-          git commit -m "Marktpreise und Preisverlauf aktualisieren"
-          git pull --rebase origin main
-          git push origin HEAD:main
+          for attempt in 1 2 3 4; do
+            echo "Aktualisierungsversuch $attempt"
+            git fetch origin main
+            git reset --hard origin/main
+            python update_market_prices.py
+            git add market-prices.json market-price-history.json
+            if git diff --cached --quiet; then
+              echo "Keine Änderungen vorhanden."
+              exit 0
+            fi
+            git commit -m "Marktpreise und Preisverlauf aktualisieren"
+            if git push origin HEAD:main; then
+              echo "Marktpreise erfolgreich veröffentlicht."
+              exit 0
+            fi
+            echo "Remote hat sich geändert. Neuer Versuch mit aktuellen Dateien."
+            sleep 2
+          done
+          echo "Konnte nach mehreren Versuchen nicht pushen." >&2
+          exit 1

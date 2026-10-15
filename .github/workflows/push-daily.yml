@@ -1,0 +1,28 @@
+name: Tägliche Energie- und Monatsend-Pushs
+
+on:
+  schedule:
+    - cron: '15 17 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verbrauch-daily-push
+  cancel-in-progress: false
+
+jobs:
+  notifications:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Tagespreise und Monatsend-Erinnerung senden
+        env:
+          PUSH_SECRET: ${{ secrets.PUSH_SECRET }}
+          PUSH_HOUSEHOLD_ID: ${{ secrets.PUSH_HOUSEHOLD_ID }}
+          PUSH_ENDPOINT: https://verbrauch-push.simonkreis6289.workers.dev
+        run: python push-daily.py
