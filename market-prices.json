@@ -1,19 +1,19 @@
 {
-  "generated_at": "2026-10-15T09:45:34+02:00",
+  "generated_at": "2026-10-15T10:22:40+02:00",
   "region": "57489 Drolshagen",
   "prices": {
     "pellets_loose": {
       "price": 417.75,
       "unit": "EUR/1000kg",
       "scope": "regional",
-      "checked_at": "2026-10-15T09:45:34+02:00",
+      "checked_at": "2026-10-15T10:22:40+02:00",
       "source_url": "https://www.heizpellets24.de/pelletpreise/nordrhein-westfalen/olpe/drolshagen-57489"
     },
     "pellets_bag": {
       "price": 510.68,
       "unit": "EUR/1000kg",
       "scope": "regional",
-      "checked_at": "2026-10-15T09:45:34+02:00",
+      "checked_at": "2026-10-15T10:22:40+02:00",
       "source_url": "https://www.holzpellets.net/pelletspreise/Nordrhein-Westfalen/Olpe/pellets-Drolshagen"
     },
     "heating_oil": {
