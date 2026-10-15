@@ -827,7 +827,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
         <h1>Zählerstände, Pellets und Kosten im Blick</h1>
         <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
         <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du den Haushalt wechseln oder neu anlegen.</p>
-        <p class="hero-copy">Version 1.3.1.123</p>
+        <p class="hero-copy">Version 1.3.1.124</p>
       </div>
       <div class="hero-actions">
         <button id="themeToggleBtn" class="btn ghost theme-toggle" type="button" aria-label="Design wechseln" aria-pressed="false"><span id="themeToggleIcon" aria-hidden="true">☀️</span> <span id="themeToggleLabel">Helles Design</span></button>
@@ -1448,10 +1448,11 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       <div class="push-panel">
         <p class="push-helper">Jedes Gerät muss sich einmal anmelden und Benachrichtigungen erlauben. Danach verschickt „Test-Push an alle“ eine Nachricht an die registrierten Geräte des aktuell ausgewählten Haushalts, auch wenn die App geschlossen ist. Für den Versand wird der geschützte Cloudflare-Worker aus dem Update benötigt.</p>
         <div class="settings-grid">
-          <label>Push-Server-Adresse<input id="pushEndpoint" type="url" placeholder="https://verbrauch-push.deinname.workers.dev" autocomplete="url"><small>Adresse deines Cloudflare-Workers</small></label>
-          <label>Firebase Web-Push-Schlüssel (VAPID, öffentlich)<input id="pushVapid" type="text" placeholder="Öffentlicher VAPID-Schlüssel" autocomplete="off"></label>
+          <label>Push-Server-Adresse<input id="pushEndpoint" type="url" readonly title="Fest in der App hinterlegt" placeholder="https://verbrauch-push.deinname.workers.dev" autocomplete="url"><small>Fest hinterlegt, auch nach App-Updates</small></label>
+          <label>Firebase Web-Push-Schlüssel (VAPID, öffentlich, fest hinterlegt)<input id="pushVapid" type="text" readonly title="Öffentlicher Schlüssel fest in der App hinterlegt" placeholder="Öffentlicher VAPID-Schlüssel" autocomplete="off"></label>
           <label>Push-Zugangscode<input id="pushCode" type="password" placeholder="Geheimer Zugangscode" autocomplete="off"><small>Wird nicht im Browser gespeichert. Nach Neuladen bei Bedarf erneut eingeben.</small></label>
         </div>
+        <p class="push-helper" style="margin-top:10px">🔔 Für ein Android-Pop-up muss die Benachrichtigungskategorie dieser App auf <strong>Warnend</strong> stehen und <strong>Als Pop-up anzeigen</strong> aktiviert sein. Das Einschalten des Displays lässt sich durch eine Web-App nicht erzwingen.</p>
         <div class="push-actions">
           <button type="button" class="btn secondary" id="pushSubscribeBtn">🔔 Dieses Gerät anmelden</button>
           <button type="button" class="btn primary" id="pushSendBtn">📣 Test-Push an alle Geräte</button>
@@ -2455,7 +2456,9 @@ function formatStationShort(station) {
 
 
     // v77: Web-Push an alle registrierten Geräte, mit geschütztem Serverversand.
-    const PUSH_SETTINGS_KEY = 'verbrauch-push-settings-v1';
+    // v80: Öffentliche Verbindungseinstellungen sind fest integriert. Zugangscode bleibt flüchtig.
+    const PUSH_ENDPOINT = 'https://verbrauch-push.simonkreis6289.workers.dev';
+    const PUSH_VAPID = 'BCifuRnuLzoDL5f7jnfgv-cWdtHNAeN4QD5BaAYtHAcBgYn69JGvksIaOsZX-daVnL7bC_vRFP2pSvzqKpWxR3I';
     let pushMessaging = null;
     let pushForegroundListener = false;
     let pushKnownToken = null;
@@ -2466,15 +2469,14 @@ function formatStationShort(station) {
     }
     function pushInputs() {
       return {
-        endpoint: document.getElementById('pushEndpoint').value.trim().replace(/\/+$/,''),
-        vapid: document.getElementById('pushVapid').value.trim(),
+        endpoint: PUSH_ENDPOINT,
+        vapid: PUSH_VAPID,
         code: document.getElementById('pushCode').value,
         household: state.householdId || DEFAULT_HOUSEHOLD_ID
       };
     }
     function savePushPublicSettings(){
-      const {endpoint,vapid}=pushInputs();
-      localStorage.setItem(PUSH_SETTINGS_KEY,JSON.stringify({endpoint,vapid}));
+      // Kein Speichern nötig: Endpoint und VAPID-Schlüssel sind öffentliche Konstanten.
     }
     async function pushRequest(path, payload){
       const {endpoint,code,household}=pushInputs();
@@ -2510,9 +2512,11 @@ function formatStationShort(station) {
           const body=payload?.data?.body||'Push-Test erfolgreich.';
           pushStatus('🔔 Empfangen: '+title+' – '+body);
           showToast('🔔 '+body,'success');
-          // Nur Vordergrund: keine doppelte Benachrichtigung mit dem Service Worker.
-          if(document.visibilityState!=='visible'){
-            sw.showNotification(title,{body,icon:'./icon-192.png',badge:'./push-badge-72.png',vibrate:[180,100,180],silent:false,renotify:true,tag:'verbrauch-test-push'});
+          // v80: auch bei geöffneter App als Betriebssystem-Mitteilung anzeigen.
+          // Bei Hintergrundzustand übernimmt Firebase onBackgroundMessage im Service Worker.
+          if(document.visibilityState==='visible' && Notification.permission==='granted'){
+            sw.showNotification(title,{body,icon:'./icon-192.png',badge:'./push-badge-72.png',vibrate:[180,100,180],silent:false,tag:'verbrauch-push-'+Date.now(),timestamp:Date.now()})
+              .catch(error=>console.warn('Systembenachrichtigung:',error));
           }
         });
         pushForegroundListener=true;
@@ -2550,11 +2554,8 @@ function formatStationShort(station) {
       }catch(error){pushStatus('❌ '+error.message,true);}
     }
     function registerPushTest(){
-      try{
-        const obj=JSON.parse(localStorage.getItem(PUSH_SETTINGS_KEY)||'{}');
-        document.getElementById('pushEndpoint').value=obj.endpoint||'';
-        document.getElementById('pushVapid').value=obj.vapid||'';
-      }catch(_){}
+      document.getElementById('pushEndpoint').value=PUSH_ENDPOINT;
+      document.getElementById('pushVapid').value=PUSH_VAPID;
       document.getElementById('pushSubscribeBtn')?.addEventListener('click',registerPushDevice);
       document.getElementById('pushSendBtn')?.addEventListener('click',sendPushTest);
       document.getElementById('pushUnsubscribeBtn')?.addEventListener('click',unregisterPushDevice);

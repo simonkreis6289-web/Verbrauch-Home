@@ -1,4 +1,4 @@
-const CACHE_NAME = "verbrauch-app-v79";
+const CACHE_NAME = "verbrauch-app-v80";
 
 const urlsToCache = [
   "./",
@@ -34,8 +34,9 @@ messaging.onBackgroundMessage((payload) => {
     badge: "./push-badge-72.png",
     vibrate: [180, 100, 180],
     silent: false,
-    renotify: true,
-    tag: "verbrauch-test-push",
+    renotify: false,
+    tag: "verbrauch-push-" + Date.now(),
+    timestamp: Date.now(),
     data: payload?.data || {}
   });
 });
