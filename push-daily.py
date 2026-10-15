@@ -46,9 +46,16 @@ def load_rules():
     return settings['rules']
 
 def price_text():
+    """Nur Preise, die HEUTE und nach dem vorgesehenen Tagesabruf bestaetigt wurden.
+
+    Bei Ausfall der Preisabfrage versendet der Job keine alten Preiswerte.
+    """
     data = json.loads(Path('market-prices.json').read_text(encoding='utf-8'))
     prices = data.get('prices', {})
     snippets = []
+    # Auch bei manuell gestartetem Job den letzten geplanten Abruf als Grenze nutzen.
+    check_hour = 17 if now.hour >= 17 else 10
+    cutoff = now.replace(hour=check_hour, minute=0, second=0, microsecond=0)
     for key, label, unit in [
         ('pellets_loose', 'Pellets lose', '€/t'),
         ('pellets_bag', 'Sackware', '€/t'),
@@ -63,24 +70,24 @@ def price_text():
             checked = datetime.fromisoformat(checked_at.replace('Z', '+00:00'))
             if checked.tzinfo is None:
                 continue
-            if now.astimezone(timezone.utc) - checked.astimezone(timezone.utc) > timedelta(hours=36):
+            checked_local = checked.astimezone(BERLIN)
+            if not cutoff <= checked_local <= now:
+                print(f'{key}: Keine Bestaetigung seit {cutoff:%H:%M} Uhr, weggelassen.')
                 continue
         except (ValueError, AttributeError):
             continue
         formatted = f'{value:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
         snippets.append(f'{label}: {formatted} {unit}')
-    if not snippets:
-        return None
-    return ' · '.join(snippets)
+    return ' · '.join(snippets) if snippets else None
 
-# Aus GitHub Actions einmal am Tag starten; nur bestätigte, frische Preise senden.
+# Zwei Mal taeglich nach dem jeweiligen Preisabruf senden; nur fuer diesen Abruf bestaetigte Preise.
 rules=load_rules()
-text = price_text() if rules.get('prices',True) else None
+text = price_text() if rules.get('prices',True) and now.hour in (10, 17) else None
 if text:
     send('Energiepreise · ' + now.strftime('%d.%m.%Y'), text)
 else:
-    print('Preise deaktiviert oder keine bestätigten Preise jünger als 36 Stunden. Kein Push gesendet.')
+    print('Preise deaktiviert oder seit dem geplanten Abruf keine frisch bestätigten Preise. Kein Push gesendet.')
 
-# Der Job läuft täglich, die Erinnerung wird nur am letzten Monatstag versandt.
-if rules.get('reminder',True) and (now + timedelta(days=1)).month != now.month:
+# Monatsende-Erinnerung nur am ABEND, nicht doppelt um 10:15 und 17:15.
+if now.hour == 17 and rules.get('reminder',True) and (now + timedelta(days=1)).month != now.month:
     send('Monatsende · Zählerstände erfassen', 'Bitte Strom, Wasser und Pellets ablesen und in Verbrauch Zuhause eintragen.')
