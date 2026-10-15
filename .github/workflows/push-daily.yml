@@ -1,9 +1,10 @@
+
 name: Tägliche Energie- und Monatsend-Pushs
 
 on:
   schedule:
-    # GitHub-Zeitplaene sind UTC; nur 10:15 und 17:15 in Deutschland ausfuehren.
-    - cron: '15 8,9,15,16 * * *'
+    - cron: '15 10,17 * * *'
+      timezone: "Europe/Berlin"
   workflow_dispatch:
 
 permissions:
@@ -18,23 +19,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Nur um 10:15 und 17:15 Uhr (Europe/Berlin) senden
-        id: time_gate
-        shell: bash
-        run: |
-          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          elif [[ "$(TZ=Europe/Berlin date +%H)" == "10" || "$(TZ=Europe/Berlin date +%H)" == "17" ]]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "run=false" >> "$GITHUB_OUTPUT"
-            echo "Diese UTC-Planung ist nicht fuer die aktuelle Sommer-/Winterzeit."
-          fi
+
       - name: Energiepreise und Monatsende-Erinnerung senden
-        if: steps.time_gate.outputs.run == 'true'
         env:
           PUSH_SECRET: ${{ secrets.PUSH_SECRET }}
           PUSH_HOUSEHOLD_ID: ${{ secrets.PUSH_HOUSEHOLD_ID }}
