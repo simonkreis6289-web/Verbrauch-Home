@@ -15,6 +15,7 @@ from bs4 import BeautifulSoup
 ROOT = Path(__file__).resolve().parent
 FILE = ROOT / 'market-prices.json'
 HISTORY_FILE = ROOT / 'market-price-history.json'
+SNAPSHOTS_FILE = ROOT / 'market-price-snapshots.json'
 NOW = dt.datetime.now(dt.timezone(dt.timedelta(hours=2))) # German summer time fallback below
 try:
     from zoneinfo import ZoneInfo
@@ -163,6 +164,26 @@ def update():
         history['records'] = sorted(records, key=lambda r: r.get('date', ''))
         HISTORY_FILE.write_text(json.dumps(history, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
         print(f'Preis-Historie aktualisiert: {date} ({len(confirmed)} verifizierte Preise)')
+    # Zeitlich getrennte, tatsächlich bestätigte Preisabrufe für 10-/17-Uhr-Vergleiche.
+    # Im Gegensatz zur Tageshistorie speichern wir beide Läufe separat.
+    if confirmed:
+        snapshots = {'records': []}
+        if SNAPSHOTS_FILE.exists():
+            try:
+                old = json.loads(SNAPSHOTS_FILE.read_text(encoding='utf-8'))
+                if isinstance(old.get('records'), list):
+                    snapshots = old
+            except (OSError, ValueError, AttributeError) as exc:
+                raise RuntimeError('Abrufhistorie nicht lesbar; nicht überschrieben') from exc
+        entries = [r for r in snapshots['records'] if isinstance(r, dict)]
+        entries.append({
+            'checked_at': NOW.isoformat(timespec='seconds'),
+            'prices': confirmed,
+        })
+        # Max. 2 Jahre bei täglich 2 Läufen plus manuelle Tests.
+        snapshots['records'] = entries[-2000:]
+        SNAPSHOTS_FILE.write_text(json.dumps(snapshots, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+        print(f'Abrufhistorie: {len(snapshots["records"])} bestätigte Preisprüfungen')
     print(f'Ergebnis: {success}/3 Preise bestätigt')
     # Raise explicit failure when all sources are unavailable, rather than green success with nulls.
     if success == 0:
