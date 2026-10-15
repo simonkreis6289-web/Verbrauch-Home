@@ -1,11 +1,12 @@
-const CACHE_NAME = "verbrauch-app-v78";
+const CACHE_NAME = "verbrauch-app-v79";
 
 const urlsToCache = [
   "./",
   "./index.html",
   "./manifest.json",
   "./icon-192.png",
-  "./icon-512.png"
+  "./icon-512.png",
+  "./push-badge-72.png"
 ];
 
 importScripts("https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js");
@@ -30,7 +31,10 @@ messaging.onBackgroundMessage((payload) => {
   self.registration.showNotification(title, {
     body,
     icon: "./icon-192.png",
-    badge: "./icon-192.png",
+    badge: "./push-badge-72.png",
+    vibrate: [180, 100, 180],
+    silent: false,
+    renotify: true,
     tag: "verbrauch-test-push",
     data: payload?.data || {}
   });
