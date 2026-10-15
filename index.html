@@ -817,6 +817,23 @@ html[data-theme="light"] #dashboardView .dash-trend.up{color:#b91c1c} html[data-
 html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="light"] .fuel-edit-backdrop{background:rgba(19,39,65,.58)}
 @media(max-width:600px){.fuel-edit-backdrop{padding:8px;align-items:flex-end}.fuel-edit-panel{border-radius:20px 20px 0 0;max-height:95dvh}.fuel-edit-header{padding:18px}.fuel-edit-form{padding:16px}.fuel-edit-fields{grid-template-columns:1fr;gap:12px}.fuel-edit-footer>span{max-width:unset}.fuel-edit-buttons{width:100%}.fuel-edit-buttons button{flex:1}.fuel-edit-search{flex-wrap:wrap}.fuel-edit-search button{width:100%}}
 
+
+/* v86/87: Push-Verwaltung und Pelletreichweite */
+.push-rule-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:12px;margin:16px 0}
+.push-rule{border:1px solid var(--line);border-radius:16px;padding:16px;background:var(--card-solid);display:flex;justify-content:space-between;gap:15px;align-items:center}
+.push-rule strong{display:block;font-size:1.03rem}.push-rule small{color:var(--muted);display:block;margin-top:5px;line-height:1.45}
+.push-switch{appearance:none;width:48px;height:27px;border-radius:25px;background:#94a3b8;position:relative;cursor:pointer;flex-shrink:0;transition:background .2s}
+.push-switch:after{content:'';position:absolute;left:4px;top:4px;background:white;width:19px;height:19px;border-radius:50%;transition:transform .2s}
+.push-switch:checked{background:#16a34a}.push-switch:checked:after{transform:translateX(21px)}
+.push-options{display:flex;gap:14px;align-items:end;flex-wrap:wrap}.push-options label{max-width:230px;display:grid;gap:6px}
+.pellet-forecast{display:grid;gap:14px}.pellet-forecast-top{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;align-items:end}
+.pellet-forecast-number{font-size:clamp(1.6rem,4vw,2.5rem);font-weight:800;line-height:1.18}
+.pellet-meter{height:19px;background:var(--line);border-radius:20px;overflow:hidden}.pellet-meter>div{height:100%;background:linear-gradient(90deg,#22c55e,#f59e0b);border-radius:20px;transition:width .4s}
+.pellet-forecast-notes{font-size:.88rem;color:var(--muted);line-height:1.6}
+.pellet-forecast-months{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:5px;align-items:end;min-height:76px}
+.pellet-forecast-months span{display:grid;align-content:end;gap:4px;text-align:center;font-size:.7rem;color:var(--muted)}
+.pellet-forecast-months i{display:block;background:#f59e0b;border-radius:5px 5px 2px 2px;min-height:3px}
+
 </style>
 </head>
 <body>
@@ -827,7 +844,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
         <h1>Zählerstände, Pellets und Kosten im Blick</h1>
         <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
         <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du den Haushalt wechseln oder neu anlegen.</p>
-        <p class="hero-copy">Version 1.3.1.126</p>
+        <p class="hero-copy">Version 1.3.1.128</p>
       </div>
       <div class="hero-actions">
         <button id="themeToggleBtn" class="btn ghost theme-toggle" type="button" aria-label="Design wechseln" aria-pressed="false"><span id="themeToggleIcon" aria-hidden="true">☀️</span> <span id="themeToggleLabel">Helles Design</span></button>
@@ -932,6 +949,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
             </div>
           </div>
           <div id="pelletSummary" class="settings-summary-grid"></div>
+          <div class="pellet-forecast" id="pelletRangeDashboard" style="margin-top:16px"></div>
           <div id="pelletActivity" class="list-stack" style="margin-top: 14px;"></div>
         </section>
       </div>
@@ -1082,6 +1100,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
         </div>
       </div>
       <div id="pelletInventoryStats" class="stats-grid"></div>
+      <div class="pellet-forecast" id="pelletRangeForecast" style="margin-top:16px"></div>
     </section>
 
     <section class="card wide">
@@ -1442,6 +1461,20 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </form>
     </section>
 
+
+    <section class="card glass wide" id="pushRulesPanel">
+      <div class="card-head"><div><p class="section-kicker">Benachrichtigungen · v86</p><h2>Meine Push-Regeln 🔔</h2></div><span class="badge">Haushaltweit</span></div>
+      <p class="muted">Welche automatischen Meldungen sollen an alle angemeldeten Geräte gehen? Die Regeln werden geschützt beim Push-Server gespeichert, damit sie auch bei geschlossener App gelten.</p>
+      <div class="push-rule-grid">
+        <label class="push-rule"><span><strong>🔥 Tägliche Energiepreise</strong><small>Lose Pellets, Sackware und Heizöl. Einmal täglich.</small></span><input class="push-switch" id="rulePrices" type="checkbox" checked></label>
+        <label class="push-rule"><span><strong>📆 Monatsende-Erinnerung</strong><small>Am letzten Kalendertag an die Zählerstände denken.</small></span><input class="push-switch" id="ruleReminder" type="checkbox" checked></label>
+        <label class="push-rule"><span><strong>⚠️ Verbrauchswarnungen</strong><small>Strom und Wasser bei auffälligem Tagesverbrauch.</small></span><input class="push-switch" id="ruleWarnings" type="checkbox" checked></label>
+        <label class="push-rule"><span><strong>⛽ Neue Tankvorgänge</strong><small>Nach neuem Firestore-Eintrag mit Fahrzeug und Tankdaten.</small></span><input class="push-switch" id="ruleFuel" type="checkbox" checked></label>
+      </div>
+      <div class="push-options"><label>Warnung ab Abweichung in %<input type="number" id="ruleThreshold" min="10" max="200" step="5" value="30"><small>Mindestens 7 Tage Ableseintervall und 90 Tage Historie</small></label>
+      <button type="button" id="pushRulesLoad" class="btn ghost">↻ Vom Server laden</button><button type="button" id="pushRulesSave" class="btn primary">Regeln speichern</button></div>
+      <div id="pushRulesStatus" class="push-state" role="status" aria-live="polite">Zum Laden oder Speichern den Push-Zugangscode unten eingeben. Bis dahin sind die Schalter nur Vorschlagswerte.</div>
+    </section>
 
     <section class="card glass wide" id="pushTestPanel">
       <div class="card-head"><div><p class="section-kicker">Benachrichtigungen</p><h2>Push-Test an alle Geräte 🔔</h2></div><span class="badge">Testbetrieb</span></div>
@@ -2071,6 +2104,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       registerInstallHandling();
       registerServiceWorker();
       registerPushTest();
+      registerPushRules();
       document.getElementById('energyMarketPrices')?.addEventListener('click', e => {
         if (e.target.closest('a')) return;
         const tile=e.target.closest('[data-market-key]');
@@ -2514,12 +2548,8 @@ function formatStationShort(station) {
           const body=payload?.data?.body||'Push-Test erfolgreich.';
           pushStatus('🔔 Empfangen: '+title+' – '+body);
           showToast('🔔 '+body,'success');
-          // v80: auch bei geöffneter App als Betriebssystem-Mitteilung anzeigen.
-          // Bei Hintergrundzustand übernimmt Firebase onBackgroundMessage im Service Worker.
-          if(document.visibilityState==='visible' && Notification.permission==='granted'){
-            sw.showNotification(title,{body,icon:'./icon-192.png',badge:'./push-badge-72.png',vibrate:[180,100,180],silent:false,tag:'verbrauch-push-'+Date.now(),timestamp:Date.now()})
-              .catch(error=>console.warn('Systembenachrichtigung:',error));
-          }
+          // Die Systembenachrichtigung zeigt ausschließlich der Service Worker an.
+          // Dadurch keine doppelte Anzeige bei geöffneter App.
         });
         pushForegroundListener=true;
       }
@@ -2562,6 +2592,73 @@ function formatStationShort(station) {
         pushStatus('Gerät abgemeldet. '+(result.devices??'?')+' Gerät(e) verbleiben.');
       }catch(error){pushStatus('❌ '+error.message,true);}
     }
+    // v86: Push-Regeln liegen zentral beim authentifizierten Cloudflare Worker.
+    const PUSH_RULE_DEFAULTS={prices:true,reminder:true,warnings:true,fuel:true,threshold:30};
+    function setRulesStatus(message,bad=false){const el=document.getElementById('pushRulesStatus');if(el){el.textContent=message;el.style.color=bad?'#dc2626':'';}}
+    function readRulesInputs(){return {prices:document.getElementById('rulePrices').checked,reminder:document.getElementById('ruleReminder').checked,
+      warnings:document.getElementById('ruleWarnings').checked,fuel:document.getElementById('ruleFuel').checked,threshold:Number(document.getElementById('ruleThreshold').value)};}
+    function applyRulesInputs(rules){const r={...PUSH_RULE_DEFAULTS,...rules};
+      for(const [key,id] of [['prices','rulePrices'],['reminder','ruleReminder'],['warnings','ruleWarnings'],['fuel','ruleFuel']])document.getElementById(id).checked=!!r[key];
+      document.getElementById('ruleThreshold').value=r.threshold;}
+    function registerPushRules(){
+      document.getElementById('pushRulesLoad')?.addEventListener('click',async()=>{
+        try{setRulesStatus('Lade Regeln vom Push-Server …');const response=await pushRequest('/settings/get',{});applyRulesInputs(response.rules);setRulesStatus('✅ Serverregeln geladen.');}
+        catch(e){setRulesStatus('❌ '+e.message,true);}
+      });
+      document.getElementById('pushRulesSave')?.addEventListener('click',async()=>{
+        try{const rules=readRulesInputs();if(!Number.isFinite(rules.threshold)||rules.threshold<10||rules.threshold>200)throw new Error('Grenzwert zwischen 10 und 200 % wählen.');
+          setRulesStatus('Speichere für den gesamten Haushalt …');const response=await pushRequest('/settings/set',{rules});applyRulesInputs(response.rules);
+          setRulesStatus('✅ Regeln zentral gespeichert. Sie gelten für Cron und tägliche GitHub-Pushs.');}
+        catch(e){setRulesStatus('❌ '+e.message,true);}
+      });
+    }
+
+    // v87: Monatsweise saisonale Pellet-Reichweite nur aus echten Messintervallen.
+    function pelletCoverage(){
+      const intervals=buildComputedReadings().filter(e=>e.type==='pellets'&&e.previousDate&&e.delta>=0&&e.daysBetween>0);
+      if(!intervals.length)return null;
+      const end=Math.max(...intervals.map(e=>Date.parse(e.date)).filter(Number.isFinite));
+      if(!Number.isFinite(end))return null;
+      const startLimit=end-365*86400000, monthKg=new Array(12).fill(0),monthDays=new Array(12).fill(0);
+      let total=0,days=0;
+      for(const e of intervals){const from=Math.max(Date.parse(e.previousDate),startLimit),to=Math.min(Date.parse(e.date),end),full=Date.parse(e.date)-Date.parse(e.previousDate);
+        if(!(to>from&&full>0))continue;
+        const rate=e.delta/(full/86400000);
+        for(let t=from;t<to;){const d=new Date(t);const boundary=Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,1);const next=Math.min(to,boundary);
+          const chunk=(next-t)/86400000;monthKg[d.getUTCMonth()]+=rate*chunk;monthDays[d.getUTCMonth()]+=chunk;days+=chunk;total+=rate*chunk;t=next;}
+      }
+      if(days<1)return null;
+      return {end,days,total,daily:total/days,monthKg,monthDays};
+    }
+    function pelletForecastModel(){
+      const coverage=pelletCoverage(),stock=getPelletInventoryKg();
+      if(!coverage)return {stock,reliable:false,note:'Es fehlen abgeschlossene Pellet-Ableseintervalle.'};
+      const reliable=coverage.days>=300&&coverage.monthDays.filter(n=>n>=15).length>=10;
+      if(!reliable)return {stock,reliable:false,coverage,note:`Nur ${Math.round(coverage.days)} Tage erfasst. Für eine saisonale Reichweitenprognose benötigen wir mindestens 300 Tage und Daten aus 10 ausreichend erfassten Monaten.`};
+      const rates=coverage.monthKg.map((kg,i)=>coverage.monthDays[i]>=15?kg/coverage.monthDays[i]:coverage.daily);
+      let remaining=stock,when=new Date(coverage.end),used=0;
+      if(stock<=0)return {stock,reliable:true,coverage,rates,when,days:0};
+      while(remaining>0&&used<1095){const daily=Math.max(0,rates[when.getUTCMonth()]);if(daily>0)remaining-=daily;used++;when=new Date(when.getTime()+86400000);}
+      if(remaining>0)return {stock,reliable:true,coverage,rates,when:null,days:null};
+      return {stock,reliable:true,coverage,rates,when,days:used};
+    }
+    function renderPelletRangeForecast(){
+      const f=pelletForecastModel();const fresh=f.coverage?Math.round((Date.now()-f.coverage.end)/86400000):null;
+      const trustworthy=f.reliable&&fresh!==null&&fresh<=45;
+      const headline=trustworthy?(f.when?f.when.toLocaleDateString('de-DE',{day:'2-digit',month:'long',year:'numeric'}):'Über 3 Jahre'):'Noch keine sichere Reichweite';
+      const annual=f.coverage?f.coverage.daily*365:0;
+      const percent=annual>0?Math.max(0,Math.min(100,f.stock/annual*100)):0;
+      const season=trustworthy?`<div class="pellet-forecast-months">${f.rates.map((r,i)=>`<span><i style="height:${Math.max(4,Math.round((r/Math.max(...f.rates,0.01))*54))}px"></i>${['J','F','M','A','M','J','J','A','S','O','N','D'][i]}</span>`).join('')}</div>`:'';
+      const content=`<div class="pellet-forecast-top"><div><div class="muted">🔥 Pellet-Reichweitenanalyse</div><div class="pellet-forecast-number">${escapeHtml(headline)}</div>
+        <div class="muted">${trustworthy&&f.days!==null?'Voraussichtlich '+f.days+' Tage ab letzter Ablesung':'Schätzung aus realen Zählerintervallen'}</div></div>
+        <div><strong>${formatNumber(f.stock)} kg</strong><div class="muted">Rechnerischer Bestand</div></div></div>
+        <div class="pellet-meter"><div style="width:${percent}%"></div></div>${season}
+        <div class="pellet-forecast-notes">${trustworthy?'Saisonaler Tagesverbrauch je Kalendermonat, aus tatsächlich erfassten Intervallen abgeleitet.':escapeHtml(f.note||'Die letzte Pelletablesung ist älter als 45 Tage; bitte zuerst aktualisieren.')}
+        <br>Bestand = Käufe + Nachfüllungen − erfasster Verbrauch. Bitte prüfen, ob Käufe und Nachfüllungen dieselbe Lieferung doppelt erfassen. Kein gemessener Lagerfüllstand.
+        ${f.coverage?`<br>Datengrundlage: ${Math.round(f.coverage.days)} erfasste Tage bis ${new Date(f.coverage.end).toLocaleDateString('de-DE')}.`:''}</div>`;
+      for(const id of ['pelletRangeForecast','pelletRangeDashboard']){const element=document.getElementById(id);if(element)element.innerHTML=content;}
+    }
+
     function registerPushTest(){
       document.getElementById('pushEndpoint').value=PUSH_ENDPOINT;
       document.getElementById('pushVapid').value=PUSH_VAPID;
@@ -5374,6 +5471,7 @@ async function updateRecord(kind, id, payload) {
       try { renderCars(); } catch (e) { console.error("renderCars", e); }
       try { renderChargeEntries(); } catch (e) { console.error("renderChargeEntries", e); }
       try { renderPelletInventoryStats(); } catch (e) { console.error("renderPelletInventoryStats", e); }
+      try { renderPelletRangeForecast(); } catch (e) { console.error("renderPelletRangeForecast",e); }
       try { renderFuelMap(); } catch (e) { console.error("renderFuelMap", e); }
       try { renderFuelEntries(); } catch (e) { console.error("renderFuelEntries", e); }
     }

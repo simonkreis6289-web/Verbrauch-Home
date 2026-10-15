@@ -1,4 +1,4 @@
-const CACHE_NAME = "verbrauch-app-v83";
+const CACHE_NAME = "verbrauch-app-v86-87";
 
 const urlsToCache = [
   "./",
@@ -9,26 +9,16 @@ const urlsToCache = [
   "./push-badge-72.png"
 ];
 
-importScripts("https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js");
-importScripts("https://www.gstatic.com/firebasejs/10.12.4/firebase-messaging-compat.js");
-
-firebase.initializeApp({
-  apiKey: "AIzaSyBrKjajSNPgmFUwjMghkox1kM8NjbCWZ_Y",
-  authDomain: "verbrauch-zuhause.firebaseapp.com",
-  projectId: "verbrauch-zuhause",
-  storageBucket: "verbrauch-zuhause.firebasestorage.app",
-  messagingSenderId: "546121139332",
-  appId: "1:546121139332:web:b07b58184fb0388565aed1",
-  measurementId: "G-L0GQQ8V785"
-});
-
-const messaging = firebase.messaging();
-
-messaging.onBackgroundMessage((payload) => {
-  const title = payload?.data?.title || payload?.notification?.title || "Verbrauch Zuhause";
-  const body = payload?.data?.body || payload?.notification?.body || "Neue Daten eingetragen.";
-
-  self.registration.showNotification(title, {
+// v84: Jede Push-Nachricht wird im Push-Ereignis selbst sichtbar gemacht.
+// event.waitUntil() verbindet das Anzeigen mit der Lebensdauer des Push-Ereignisses.
+// Dadurch vermeidet Chrome die zusätzliche Standardmeldung über eine Hintergrundaktualisierung.
+self.addEventListener("push", (event) => {
+  let payload = {};
+  try { payload = event.data ? event.data.json() : {}; }
+  catch (_) { payload = { data: { body: event.data ? event.data.text() : "" } }; }
+  const title = String(payload?.data?.title || payload?.notification?.title || "Verbrauch Zuhause");
+  const body = String(payload?.data?.body || payload?.notification?.body || "Neue Benachrichtigung");
+  event.waitUntil(self.registration.showNotification(title, {
     body,
     icon: "./icon-192.png",
     badge: "./push-badge-72.png",
@@ -38,8 +28,23 @@ messaging.onBackgroundMessage((payload) => {
     tag: "verbrauch-push-" + Date.now(),
     timestamp: Date.now(),
     data: payload?.data || {}
-  });
+  }));
 });
+
+// Firebase kann zusätzlich Vordergrund-Nachrichten an die geöffnete App weiterleiten.
+// Hier absichtlich KEIN weiteres showNotification() über onBackgroundMessage.
+importScripts("https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/10.12.4/firebase-messaging-compat.js");
+firebase.initializeApp({
+  apiKey: "AIzaSyBrKjajSNPgmFUwjMghkox1kM8NjbCWZ_Y",
+  authDomain: "verbrauch-zuhause.firebaseapp.com",
+  projectId: "verbrauch-zuhause",
+  storageBucket: "verbrauch-zuhause.firebasestorage.app",
+  messagingSenderId: "546121139332",
+  appId: "1:546121139332:web:b07b58184fb0388565aed1",
+  measurementId: "G-L0GQQ8V785"
+});
+const messaging = firebase.messaging();
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
