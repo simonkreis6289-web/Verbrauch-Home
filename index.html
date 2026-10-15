@@ -344,6 +344,7 @@
     .muted { color: var(--muted); }
     .list-stack { display: grid; gap: 14px; }
 
+    .pdf-receipt-btn { width:auto; min-width:56px; padding:0 10px; display:inline-flex; gap:5px; align-items:center; justify-content:center; font-weight:800; font-size:.78rem; border-color:rgba(14,165,233,.4); color:var(--primary); }
     .entry-item {
       display: flex;
       justify-content: space-between;
@@ -801,7 +802,7 @@ html[data-theme="light"] #dashboardView .dash-trend.up{color:#b91c1c} html[data-
         <h1>Zählerstände, Pellets und Kosten im Blick</h1>
         <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
         <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du den Haushalt wechseln oder neu anlegen.</p>
-        <p class="hero-copy">Version 1.3.1.117</p>
+        <p class="hero-copy">Version 1.3.1.118</p>
       </div>
       <div class="hero-actions">
         <button id="themeToggleBtn" class="btn ghost theme-toggle" type="button" aria-label="Design wechseln" aria-pressed="false"><span id="themeToggleIcon" aria-hidden="true">☀️</span> <span id="themeToggleLabel">Helles Design</span></button>
@@ -4013,10 +4014,107 @@ if (!car || car.fuelType === "electric") {
         ].filter(Boolean).join(" · ") || "Keine Notiz"
             });
 
+    const actions = node.querySelector('.entry-actions');
+    const exportBtn = document.createElement('button');
+    exportBtn.type = 'button';
+    exportBtn.className = 'icon-btn pdf-receipt-btn';
+    exportBtn.title = 'Tanknachweis als PDF speichern';
+    exportBtn.setAttribute('aria-label', 'PDF-Tanknachweis für diesen Vorgang erstellen');
+    exportBtn.textContent = '📄 PDF';
+    exportBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      void exportFuelEntryPdf(entry.id);
+    });
+    actions.prepend(exportBtn);
     els.fuelList.appendChild(node);
   });
 
   renderFuelStats();
+}
+
+// Ein PDF je Tankvorgang. Die App-Daten sind kein Kassenbon des Tankstellenbetreibers.
+let receiptJsPdfPromise = null;
+function loadReceiptPdfLibrary() {
+  if (window.jspdf?.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+  if (receiptJsPdfPromise) return receiptJsPdfPromise;
+  receiptJsPdfPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js';
+    script.async = true;
+    script.onload = () => window.jspdf?.jsPDF ? resolve(window.jspdf.jsPDF) : reject(new Error('PDF-Bibliothek konnte nicht initialisiert werden'));
+    script.onerror = () => reject(new Error('PDF-Bibliothek konnte nicht geladen werden'));
+    document.head.appendChild(script);
+  }).catch(err => { receiptJsPdfPromise = null; throw err; });
+  return receiptJsPdfPromise;
+}
+
+async function exportFuelEntryPdf(entryId) {
+  const entry = buildComputedFuelEntriesForCar(state.selectedAnalyticsCarId).find(e => e.id === entryId);
+  if (!entry) return showToast('Tankvorgang nicht mehr gefunden.', 'error');
+  const car = state.cars.find(c => c.id === entry.carId);
+  let jsPDF;
+  try { jsPDF = await loadReceiptPdfLibrary(); }
+  catch (error) {
+    console.warn('PDF-Bibliothek nicht erreichbar:', error);
+    showToast('PDF-Modul nicht geladen. Bitte Internetverbindung prüfen.', 'error');
+    return;
+  }
+  try {
+    const pdf = new jsPDF({orientation:'portrait', unit:'mm', format:'a4'});
+    const navy=[21,41,70], blue=[2,132,199], gray=[89,107,130];
+    const drawText=(value,x,y,size=10,bold=false,color=navy)=>{
+      pdf.setFont('helvetica',bold?'bold':'normal'); pdf.setFontSize(size); pdf.setTextColor(...color);
+      pdf.text(String(value ?? '–'),x,y);
+    };
+    const money = value => Number.isFinite(Number(value)) ? formatCurrency(Number(value)) : '–';
+    const number = value => value != null && Number.isFinite(Number(value)) ? formatNumber(Number(value)) : '–';
+    const line=(y)=>{pdf.setDrawColor(222,231,242); pdf.line(18,y,192,y);};
+    const row=(label,value,y)=>{
+      drawText(label,20,y,10,false,gray);
+      const chunks=pdf.splitTextToSize(String(value ?? '–'),105);
+      chunks.forEach((chunk,i)=>drawText(chunk,84,y+i*5,10,true));
+      return y+Math.max(1,chunks.length)*5+5;
+    };
+    pdf.setFillColor(240,247,255);pdf.rect(0,0,210,42,'F');
+    pdf.setFillColor(...blue);pdf.rect(0,0,7,42,'F');
+    drawText('VERBRAUCH ZUHAUSE',19,17,11,true,blue);
+    drawText('Tanknachweis',19,29,21,true);
+    drawText('Eigene Aufzeichnung',141,28,9,false,gray);
+    let y=55;
+    drawText('TANKVORGANG',20,y,10,true,blue);y+=9;
+    y=row('Datum / Uhrzeit',formatDateTime(entry.date),y);
+    y=row('Fahrzeug',car?.name||'Unbekanntes Fahrzeug',y);
+    if(car?.plate)y=row('Kennzeichen',car.plate,y);
+    y=row('Tankstelle',entry.stationDisplayName||entry.locationText||'Nicht erfasst',y);
+    line(y);y+=12;
+    drawText('BETANKUNG & KOSTEN',20,y,10,true,blue);y+=9;
+    y=row('Getankte Menge',`${number(entry.liters)} l`,y);
+    y=row('Preis je Liter',`${money(entry.pricePerLiter)}/l`,y);
+    y=row('Gesamtbetrag',money(entry.totalPrice),y);
+    line(y);y+=12;
+    drawText('FAHRZEUGDATEN',20,y,10,true,blue);y+=9;
+    y=row('Kilometerstand',`${number(entry.mileage)} km`,y);
+    if (entry.distanceKm != null) y=row('Strecke seit letzter Tankung',`${number(entry.distanceKm)} km`,y);
+    if (entry.litersPer100km != null) y=row('Intervallverbrauch',`${number(entry.litersPer100km)} l/100 km`,y);
+    if (entry.costPer100km != null) y=row('Intervallkosten',`${money(entry.costPer100km)}/100 km`,y);
+    if (entry.rangeBefore != null) y=row('Restreichweite vorher',`${number(entry.rangeBefore)} km`,y);
+    if (entry.rangeAfter != null) y=row('Reichweite nachher',`${number(entry.rangeAfter)} km`,y);
+    if (entry.note) {
+      y+=3;drawText('NOTIZ',20,y,10,true,blue);y+=7;
+      for(const t of pdf.splitTextToSize(String(entry.note),169)) { if(y>255) break; drawText(t,20,y,10);y+=5; }
+    }
+    pdf.setDrawColor(222,231,242);pdf.line(18,266,192,266);
+    drawText('Digitaler Nachweis aus selbst erfassten Daten. Kein Original-Tankstellenbeleg.',20,273,8,false,gray);
+    drawText(`Erstellt: ${formatDateTime(new Date().toISOString())}`,20,280,8,false,gray);
+    const date = new Date(entry.date);
+    const day = Number.isNaN(date.getTime()) ? 'Datum' : date.toISOString().slice(0,10);
+    const safeName = String(car?.name||'Auto').normalize('NFKD').replace(/[^a-zA-Z0-9_-]+/g,'_').slice(0,32);
+    pdf.save(`Tanknachweis_${safeName}_${day}_${String(entry.id||'').slice(0,8)}.pdf`);
+    showToast('PDF-Tanknachweis erstellt.', 'success');
+  } catch(error) {
+    console.error('PDF-Erstellung fehlgeschlagen:',error);
+    showToast('PDF konnte nicht erstellt werden.', 'error');
+  }
 }
 
 function renderFuelStats() {
