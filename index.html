@@ -877,6 +877,19 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 .push-rules-message-icon{font-size:1rem;flex-shrink:0}
 @media(max-width:700px){.push-rules-grid-v89{grid-template-columns:1fr}.push-rule-v89{min-height:145px}.push-rules-footer{align-items:stretch}.push-rules-actions{width:100%}.push-rules-actions button{flex:1}.push-rules-value input{width:54px}}
 
+
+/* v91: aufgeräumte Pelletlager-Ansicht und mobile Navigation */
+.tabs {border-radius:18px; display:flex;flex-wrap:wrap;gap:5px;overflow:visible;max-width:100%;box-sizing:border-box}
+.tab {border-radius:12px; flex:0 1 auto;min-width:0;white-space:normal;text-align:center}
+.pellet-overview-summary {padding:15px 17px;background:var(--app-inner,rgba(8,17,32,.35));border:1px solid var(--line);border-radius:17px}
+.pellet-overview-summary strong {display:block;font-size:clamp(1.25rem,3vw,1.7rem);margin:5px 0}
+.pellet-hero-info {display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.pellet-hero-info strong{font-size:clamp(1.15rem,3vw,1.65rem)}
+.pellet-balance-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0}
+.pellet-balance-row>div{background:var(--app-inner,rgba(8,17,32,.3));border:1px solid var(--line);border-radius:14px;padding:13px}
+.pellet-balance-row small{display:block;color:var(--muted);margin-bottom:6px}
+.pellet-balance-row strong{font-size:1.15rem}
+@media(max-width:720px){.tabs{width:100%;overflow:visible!important;border-radius:14px;padding:5px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.tabs .tab{width:100%;border-radius:10px;padding:12px 7px;line-height:1.2;font-size:.86rem;white-space:normal;overflow-wrap:anywhere}.tabs .tab:last-child:nth-child(odd){grid-column:span 2}.pellet-balance-row{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -887,7 +900,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
         <h1>Zählerstände, Pellets und Kosten im Blick</h1>
         <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
         <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du den Haushalt wechseln oder neu anlegen.</p>
-        <p class="hero-copy">Version 1.3.1.129</p>
+        <p class="hero-copy">Version 1.3.1.131</p>
       </div>
       <div class="hero-actions">
         <button id="themeToggleBtn" class="btn ghost theme-toggle" type="button" aria-label="Design wechseln" aria-pressed="false"><span id="themeToggleIcon" aria-hidden="true">☀️</span> <span id="themeToggleLabel">Helles Design</span></button>
@@ -900,6 +913,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       <button class="tab active" type="button" data-view="dashboardView">Übersicht</button>
       <button class="tab" type="button" data-view="readingsView">Zählerstände</button>
       <button class="tab" type="button" data-view="refillsView">Pellets Nachfüllen</button>
+      <button class="tab" type="button" data-view="pelletStoreView">Pelletlager</button>
         <button class="tab" type="button" data-view="carsView">Auto / Tanken</button>
       <button class="tab" type="button" data-view="settingsView">Einstellungen</button>
     </div>
@@ -991,9 +1005,8 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
               <h2>Nachfüllungen und Käufe</h2>
             </div>
           </div>
-          <div id="pelletSummary" class="settings-summary-grid"></div>
-          <div class="pellet-forecast" id="pelletRangeDashboard" style="margin-top:16px"></div>
-          <div id="pelletActivity" class="list-stack" style="margin-top: 14px;"></div>
+          <div id="pelletRangeDashboard" class="pellet-overview-summary" aria-live="polite"></div>
+          <button class="btn ghost" id="openPelletStore" type="button" style="margin-top:14px">Details im Pelletlager ansehen →</button>
         </section>
       </div>
     </section>
@@ -1143,7 +1156,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
         </div>
       </div>
       <div id="pelletInventoryStats" class="stats-grid"></div>
-      <div class="pellet-forecast" id="pelletRangeForecast" style="margin-top:16px"></div>
+      <p class="muted">Ausführliche Reichweite und Bestandsabgleich unter <strong>Pelletlager</strong> im oberen Menü.</p>
     </section>
 
     <section class="card wide">
@@ -1158,6 +1171,50 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
   </div>
 </section>
                     
+<section id="pelletStoreView" class="view">
+  <div class="grid">
+    <section class="card wide glass">
+      <div class="card-head"><div><p class="section-kicker">LAGER & REICHWEITE</p><h2>🔥 Mein Pelletlager</h2><p class="muted">Bunker und Sacklager getrennt · Verbrauchsprofil aus bis zu 24 Monaten. Alle Werte sind Näherungen.</p></div><span class="badge">Schätzung</span></div>
+      <div id="pelletRangeForecast" class="pellet-forecast" aria-live="polite"></div>
+    </section>
+    <section class="card span-6">
+      <div class="card-head"><div><p class="section-kicker">Start der Bilanz</p><h2>Sommerlieferung</h2></div></div>
+      <div id="pelletStartInfo" class="pellet-forecast-notes"></div>
+      <form id="pelletBaselineForm" class="form-grid" style="margin-top:14px">
+        <label>Restbestand vor der ersten Lieferung (kg)
+          <input type="number" id="pelletInitialRest" min="0" max="50000" step="0.1" value="100" required>
+        </label>
+        <label class="span-12"><small>Vor der Sommerlieferung waren ungefähr 100 kg im Bunker. Dies ist eine Schätzung. Hier kannst du einen geschätzten Rest eintragen.</small></label>
+        <div class="form-actions span-12"><button type="submit" class="btn primary">Startbestand speichern</button></div>
+      </form>
+    </section>
+    <section class="card span-6">
+      <div class="card-head"><div><p class="section-kicker">Bunkerwarnung</p><h2>🔔 Bunker kontrollieren</h2></div></div>
+      <p class="muted">Ab dem errechneten Bunkerbestand unterhalb der Schwelle erhältst du täglich eine Push-Nachricht. Die Prüfung nutzt die saisonalen Durchschnittswerte bis zum aktuellen Tag. Nach einer ausreichenden Nachfüllung endet die tägliche Meldung automatisch.</p>
+      <form id="pelletWarningForm" class="form-grid">
+        <label>Warnschwelle im Bunker (kg)<input id="pelletWarningKg" type="number" min="25" max="950" step="5" required value="200"></label>
+        <label>Fassungsvermögen Bunker (kg)<input id="pelletCapacityKg" type="number" min="100" max="10000" step="10" required value="1000"></label>
+        <label>Übliche Sackgröße (kg)<input id="pelletBagKg" type="number" min="1" max="50" step="0.5" required value="15"></label>
+        <label class="span-12"><input id="pelletWarningEnabled" type="checkbox" checked> Tägliche Warnung aktivieren</label>
+        <div class="form-actions span-12"><button class="btn primary" type="submit">Bunkerwarnung speichern</button></div>
+      </form>
+      <p class="muted">Voraussetzung: Cloudflare Worker aus diesem Update installieren, Cron-Trigger beibehalten und angemeldete Push-Geräte.</p>
+    </section>
+    <section class="card wide">
+      <div class="card-head"><div><p class="section-kicker">Bestandsabgleich</p><h2>Bestände korrigieren</h2></div></div>
+      <p class="muted">Der Heizungszähler ist nicht hundertprozentig genau. Bei einer Sichtprüfung kannst du den Bunkerbestand und optional den Sackwarebestand getrennt korrigieren. Frühere Zählerstände und Lieferungen bleiben unverändert.</p>
+      <form id="pelletAdjustmentForm" class="form-grid">
+        <label>Zeitpunkt der Prüfung<input id="pelletAdjustmentDate" type="datetime-local" required></label>
+        <label>Bunkerbestand (kg)<input id="pelletAdjustmentKg" type="number" min="0" max="10000" step="0.1" required placeholder="z. B. 120"></label>
+        <label>Sackwarebestand (kg, optional)<input id="pelletAdjustmentSacksKg" type="number" min="0" max="100000" step="0.1" placeholder="leer lassen = rechnerisch"></label>
+        <label class="span-12">Bemerkung<input id="pelletAdjustmentNote" maxlength="150" placeholder="z. B. Bunker fast leer, Säcke gezählt"></label>
+        <div class="form-actions span-12"><button type="submit" class="btn primary">Bestände abgleichen</button></div>
+      </form>
+      <div id="pelletAdjustmentHistory" class="list-stack" style="margin-top:16px"></div>
+    </section>
+  </div>
+</section>
+
 <section id="carsView" class="view">
   <div class="grid">
       <section class="card wide glass">
@@ -2379,6 +2436,11 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 
     function registerEvents() {
       els.mainTabs?.addEventListener("click", handleTabClick);
+      document.getElementById('openPelletStore')?.addEventListener('click',()=>document.querySelector('.tab[data-view="pelletStoreView"]')?.click());
+      document.getElementById('pelletBaselineForm')?.addEventListener('submit',handlePelletBaselineSave);
+      document.getElementById('pelletWarningForm')?.addEventListener('submit',handlePelletWarningSave);
+      document.getElementById('pelletAdjustmentForm')?.addEventListener('submit',handlePelletAdjustmentSave);
+      document.getElementById('pelletAdjustmentDate').value=toDatetimeLocal(new Date());
       document.getElementById("dashboardChartMetric")?.addEventListener("change", renderDashboardMonthlyChart);
       els.exportBackupBtn?.addEventListener("click", exportBackup);
 
@@ -2681,50 +2743,144 @@ function formatStationShort(station) {
       });
     }
 
-    // v87: Monatsweise saisonale Pellet-Reichweite nur aus echten Messintervallen.
-    function pelletCoverage(){
-      const intervals=buildComputedReadings().filter(e=>e.type==='pellets'&&e.previousDate&&e.delta>=0&&e.daysBetween>0);
-      if(!intervals.length)return null;
-      const end=Math.max(...intervals.map(e=>Date.parse(e.date)).filter(Number.isFinite));
-      if(!Number.isFinite(end))return null;
-      const startLimit=end-365*86400000, monthKg=new Array(12).fill(0),monthDays=new Array(12).fill(0);
-      let total=0,days=0;
-      for(const e of intervals){const from=Math.max(Date.parse(e.previousDate),startLimit),to=Math.min(Date.parse(e.date),end),full=Date.parse(e.date)-Date.parse(e.previousDate);
-        if(!(to>from&&full>0))continue;
-        const rate=e.delta/(full/86400000);
-        for(let t=from;t<to;){const d=new Date(t);const boundary=Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,1);const next=Math.min(to,boundary);
-          const chunk=(next-t)/86400000;monthKg[d.getUTCMonth()]+=rate*chunk;monthDays[d.getUTCMonth()]+=chunk;days+=chunk;total+=rate*chunk;t=next;}
+    // v92: zwei reale Vorratsorte, keine Doppelzählung von Umbuchungen.
+    const PELLET_DAY=86400000;
+    function pelletBaselineDate(){
+      const ps=state.purchases.filter(p=>Number(p.totalKg)>0&&Number.isFinite(Date.parse(p.date))).sort((a,b)=>Date.parse(a.date)-Date.parse(b.date));
+      return ps.length?new Date(ps[0].date):null;
+    }
+    function pelletConsumptionAfter(startMs,endMs=Date.now()){
+      let total=0;
+      for(const e of buildComputedReadings()){
+        if(e.type!=='pellets'||!e.previousDate||!Number.isFinite(e.delta)||e.delta<0)continue;
+        const a=Date.parse(e.previousDate),b=Date.parse(e.date);
+        if(!(b>a))continue;
+        const overlap=Math.max(0,Math.min(b,endMs)-Math.max(a,startMs));
+        if(overlap>0)total+=e.delta*overlap/(b-a);
       }
-      if(days<1)return null;
-      return {end,days,total,daily:total/days,monthKg,monthDays};
+      return total;
+    }
+    function pelletSetting(){return {initialRestKg:100,capacityKg:1000,bagKg:15,warningKg:200,warningEnabled:true,adjustments:[],...(state.settings.pelletBalance||{})};}
+    function pelletBalanceModel(){
+      const baseline=pelletBaselineDate(),cfg=pelletSetting();
+      if(!baseline)return {ready:false,note:'Noch kein Pelletskauf mit Lieferdatum vorhanden.'};
+      const start=baseline.getTime(),now=Date.now();
+      const purchases=state.purchases.filter(p=>Number(p.totalKg)>0&&Date.parse(p.date)>=start&&Date.parse(p.date)<=now).sort((a,b)=>Date.parse(a.date)-Date.parse(b.date));
+      const refills=state.refills.filter(r=>Number(r.totalKg)>0&&Date.parse(r.date)>=start&&Date.parse(r.date)<=now).sort((a,b)=>Date.parse(a.date)-Date.parse(b.date));
+      const corrections=(cfg.adjustments||[]).filter(a=>Date.parse(a.date)>=start&&Date.parse(a.date)<=now).sort((a,b)=>Date.parse(a.date)-Date.parse(b.date));
+      // Ein Kauf geht immer zuerst ins Sacklager. Jede Nachfüllung ist eine interne Umbuchung.
+      // Für Zeiträume zwischen Ablesungen wird der Zählerverbrauch anteilig verteilt.
+      const events=[...purchases.map(p=>({t:Date.parse(p.date),kind:'purchase',kg:Number(p.totalKg)})),
+        ...refills.map(r=>({t:Date.parse(r.date),kind:'refill',kg:Number(r.totalKg)})),
+        ...corrections.map(a=>({t:Date.parse(a.date),kind:'correction',bunker:Number(a.stockKg),sacks:a.sacksKg===null||a.sacksKg===undefined?null:Number(a.sacksKg)}))]
+        .sort((a,b)=>a.t-b.t||({purchase:0,refill:1,correction:2}[a.kind]-{purchase:0,refill:1,correction:2}[b.kind]));
+      let bunker=Math.max(0,Number(cfg.initialRestKg)||0),sacks=0,previous=start,used=0,refilled=0,bought=0,discrepancy=0;
+      for(const e of [...events,{t:now,kind:'end'}]){
+        const consumed=pelletConsumptionAfter(previous,e.t);
+        bunker-=consumed;used+=consumed;previous=e.t;
+        if(e.kind==='purchase'){sacks+=e.kg;bought+=e.kg;}
+        if(e.kind==='refill'){sacks-=e.kg;bunker+=e.kg;refilled+=e.kg;}
+        if(e.kind==='correction'){
+          discrepancy+=e.bunker-bunker;bunker=e.bunker;
+          if(e.sacks!==null&&Number.isFinite(e.sacks)){discrepancy+=e.sacks-sacks;sacks=e.sacks;}
+        }
+      }
+      const total=bunker+sacks;
+      return {ready:true,baseline,bunker,sacks,total,stock:total,used,bought,refilled,discrepancy,adjustments:corrections,capacity:Number(cfg.capacityKg)||1000,bagKg:Number(cfg.bagKg)||15,cfg,
+        issue:bunker< -10||sacks< -10||bunker>Number(cfg.capacityKg)*1.1?'Rechnerische Abweichung: Bestände und Nachfüllungen prüfen.':'',
+        note:'Kauf = Sacklager +; Nachfüllung = Sacklager − und Bunker +; Heizungsverbrauch = Bunker −. Abweichungen können über Bestandsabgleich korrigiert werden.'};
+    }
+    // Saisonprofil aus bis zu 24 Monaten vor heute. Bezieht ältere Winter ausdrücklich ein.
+    function pelletCoverage(){
+      const now=Date.now(),limit=now-730*PELLET_DAY,monthKg=new Array(12).fill(0),monthDays=new Array(12).fill(0);
+      let total=0,days=0,last=0;
+      for(const e of buildComputedReadings()){
+        if(e.type!=='pellets'||!e.previousDate||!Number.isFinite(e.delta)||e.delta<0)continue;
+        const a=Date.parse(e.previousDate),b=Date.parse(e.date),from=Math.max(a,limit),to=Math.min(b,now);
+        if(!(b>a&&to>from))continue;
+        const rate=e.delta/((b-a)/PELLET_DAY);last=Math.max(last,b);
+        for(let t=from;t<to;){
+          const d=new Date(t),boundary=Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,1),next=Math.min(to,boundary);
+          const chunk=(next-t)/PELLET_DAY;
+          monthKg[d.getUTCMonth()]+=rate*chunk;monthDays[d.getUTCMonth()]+=chunk;days+=chunk;total+=rate*chunk;t=next;
+        }
+      }
+      return days?{days,total,daily:total/days,monthKg,monthDays,end:last}:null;
     }
     function pelletForecastModel(){
-      const coverage=pelletCoverage(),stock=getPelletInventoryKg();
-      if(!coverage)return {stock,reliable:false,note:'Es fehlen abgeschlossene Pellet-Ableseintervalle.'};
-      const reliable=coverage.days>=300&&coverage.monthDays.filter(n=>n>=15).length>=10;
-      if(!reliable)return {stock,reliable:false,coverage,note:`Nur ${Math.round(coverage.days)} Tage erfasst. Für eine saisonale Reichweitenprognose benötigen wir mindestens 300 Tage und Daten aus 10 ausreichend erfassten Monaten.`};
+      const balance=pelletBalanceModel();if(!balance.ready)return {...balance,reliable:false};
+      const coverage=pelletCoverage();if(!coverage||coverage.days<14)return {...balance,coverage,reliable:false,note:'Zu wenige historische Zählerintervalle für eine Reichweitenprognose.'};
+      const reliable=coverage.days>=300&&coverage.monthDays.filter(d=>d>=15).length>=10;
       const rates=coverage.monthKg.map((kg,i)=>coverage.monthDays[i]>=15?kg/coverage.monthDays[i]:coverage.daily);
-      let remaining=stock,when=new Date(coverage.end),used=0;
-      if(stock<=0)return {stock,reliable:true,coverage,rates,when,days:0};
-      while(remaining>0&&used<1095){const daily=Math.max(0,rates[when.getUTCMonth()]);if(daily>0)remaining-=daily;used++;when=new Date(when.getTime()+86400000);}
-      if(remaining>0)return {stock,reliable:true,coverage,rates,when:null,days:null};
-      return {stock,reliable:true,coverage,rates,when,days:used};
+      const now=Date.now(),lastReadingAge=(now-coverage.end)/PELLET_DAY;
+      if(lastReadingAge>75)return {...balance,coverage,rates,reliable:false,note:'Letzte Ablesung älter als 75 Tage. Prognose bitte durch neue Ablesung aktualisieren.'};
+      function travel(amount){
+        if(amount<=0)return {when:new Date(),days:0};
+        if(coverage.daily<=0)return {when:null,days:null};
+        const date=new Date(),max=1095;let remaining=amount,days=0;
+        while(remaining>0&&days<max){
+          const rate=Math.max(0,reliable?rates[date.getMonth()]:coverage.daily);
+          remaining-=rate;date.setDate(date.getDate()+1);days++;
+        }
+        return remaining<=0?{when:date,days}:{when:null,days:null};
+      }
+      // Letzter Zählerstand + Verbrauchsprognose bis heute. Nur Schätzung, nicht nochmal vom Gesamtbestand abziehen.
+      const latestRead=[...state.readings].filter(r=>r.type==='pellets'&&Number.isFinite(Date.parse(r.date))).sort((a,b)=>Date.parse(b.date)-Date.parse(a.date))[0];
+      let projectedBunker=balance.bunker;
+      if(latestRead){let t=Math.max(Date.parse(latestRead.date),balance.baseline.getTime());let estimatedSince=0;
+        while(t<now){const d=new Date(t),next=Math.min(now,t+PELLET_DAY);estimatedSince+=(reliable?rates[d.getMonth()]:coverage.daily)*(next-t)/PELLET_DAY;t=next;}
+        projectedBunker-=estimatedSince;
+      }
+      const totalForecast=travel(Math.max(0,balance.total-(balance.bunker-projectedBunker)));
+      const bunkerForecast=travel(Math.max(0,projectedBunker));
+      const thresholdForecast=travel(Math.max(0,projectedBunker-balance.cfg.warningKg));
+      return {...balance,coverage,reliable,rates,when:totalForecast.when,days:totalForecast.days,
+        bunkerWhen:bunkerForecast.when,bunkerDays:bunkerForecast.days,warningWhen:thresholdForecast.when,projectedBunker,
+        note:reliable?'Saisonale Tagesverbräuche aus bis zu 24 Monaten Zählerhistorie.':'Vorläufige Näherung aus dem verfügbaren Messzeitraum; saisonale Aussage eingeschränkt.'};
     }
+    function pelletDate(d){return d instanceof Date&&!Number.isNaN(d.getTime())?d.toLocaleDateString('de-DE',{day:'2-digit',month:'long',year:'numeric'}):'Noch nicht berechenbar';}
     function renderPelletRangeForecast(){
-      const f=pelletForecastModel();const fresh=f.coverage?Math.round((Date.now()-f.coverage.end)/86400000):null;
-      const trustworthy=f.reliable&&fresh!==null&&fresh<=45;
-      const headline=trustworthy?(f.when?f.when.toLocaleDateString('de-DE',{day:'2-digit',month:'long',year:'numeric'}):'Über 3 Jahre'):'Noch keine sichere Reichweite';
-      const annual=f.coverage?f.coverage.daily*365:0;
-      const percent=annual>0?Math.max(0,Math.min(100,f.stock/annual*100)):0;
-      const season=trustworthy?`<div class="pellet-forecast-months">${f.rates.map((r,i)=>`<span><i style="height:${Math.max(4,Math.round((r/Math.max(...f.rates,0.01))*54))}px"></i>${['J','F','M','A','M','J','J','A','S','O','N','D'][i]}</span>`).join('')}</div>`:'';
-      const content=`<div class="pellet-forecast-top"><div><div class="muted">🔥 Pellet-Reichweitenanalyse</div><div class="pellet-forecast-number">${escapeHtml(headline)}</div>
-        <div class="muted">${trustworthy&&f.days!==null?'Voraussichtlich '+f.days+' Tage ab letzter Ablesung':'Schätzung aus realen Zählerintervallen'}</div></div>
-        <div><strong>${formatNumber(f.stock)} kg</strong><div class="muted">Rechnerischer Bestand</div></div></div>
-        <div class="pellet-meter"><div style="width:${percent}%"></div></div>${season}
-        <div class="pellet-forecast-notes">${trustworthy?'Saisonaler Tagesverbrauch je Kalendermonat, aus tatsächlich erfassten Intervallen abgeleitet.':escapeHtml(f.note||'Die letzte Pelletablesung ist älter als 45 Tage; bitte zuerst aktualisieren.')}
-        <br>Bestand = Käufe + Nachfüllungen − erfasster Verbrauch. Bitte prüfen, ob Käufe und Nachfüllungen dieselbe Lieferung doppelt erfassen. Kein gemessener Lagerfüllstand.
-        ${f.coverage?`<br>Datengrundlage: ${Math.round(f.coverage.days)} erfasste Tage bis ${new Date(f.coverage.end).toLocaleDateString('de-DE')}.`:''}</div>`;
-      for(const id of ['pelletRangeForecast','pelletRangeDashboard']){const element=document.getElementById(id);if(element)element.innerHTML=content;}
+      const f=pelletForecastModel(),date=pelletDate(f.when);const short=document.getElementById('pelletRangeDashboard');
+      if(short)short.innerHTML=`<small class="muted">🔥 Gesamter Pelletvorrat reicht ungefähr bis</small><strong>${escapeHtml(date)}</strong><small class="muted">Bunker und Sacklager zusammen · Details im Menü Pelletlager</small>`;
+      const container=document.getElementById('pelletRangeForecast');
+      if(container){
+        if(!f.ready)container.innerHTML=`<div class="empty-state">${escapeHtml(f.note)}</div>`;
+        else{
+          const pct=Math.max(0,Math.min(100,(Math.max(0,f.projectedBunker??f.bunker)/f.capacity)*100));
+          const fmt=x=>formatNumber(x);
+          const warn=f.projectedBunker!==undefined&&f.projectedBunker<f.cfg.warningKg;
+          container.innerHTML=`<div class="pellet-hero-info"><div><small class="muted">Gesamtvorrat reicht ungefähr bis</small><div class="pellet-forecast-number">${escapeHtml(date)}</div><small class="muted">${f.reliable?'Saisonale 24-Monats-Prognose':'Vorläufige Näherung'}</small></div><div><small class="muted">Gesamtbestand rechnerisch</small><strong>${fmt(f.total)} kg</strong></div></div>
+          <div class="pellet-balance-row"><div><small>🔥 Bunker (ca. ${fmt(f.capacity)} kg Fassungsvermögen)</small><strong>${fmt(f.projectedBunker??f.bunker)} kg</strong><small>Nachfüllen etwa: ${escapeHtml(pelletDate(f.bunkerWhen))}</small></div><div><small>📦 Sackware separat</small><strong>${fmt(f.sacks)} kg</strong><small>Etwa ${fmt(Math.max(0,f.sacks)/f.bagKg)} Säcke à ${fmt(f.bagKg)} kg</small></div><div><small>🔔 Bunkerwarnung unter</small><strong>${fmt(f.cfg.warningKg)} kg</strong><small>${warn?'⚠️ Prognose unter Warnschwelle':`Schwelle etwa: ${escapeHtml(pelletDate(f.warningWhen))}`}</small></div></div>
+          <div class="pellet-meter"><div style="width:${pct}%"></div></div>
+          <div class="pellet-balance-row"><div><small>Gekauft seit Beginn</small><strong>+${fmt(f.bought)} kg</strong></div><div><small>Aus Sacklager nachgefüllt</small><strong>${fmt(f.refilled)} kg</strong></div><div><small>Zählerverbrauch</small><strong>−${fmt(f.used)} kg</strong></div></div>
+          <p class="pellet-forecast-notes">${escapeHtml(f.note)} ${escapeHtml(f.issue||'')} ${f.coverage?`Grundlage: ${Math.round(f.coverage.days)} Tage erfasste historische Intervalle.`:''} ${Math.abs(f.discrepancy)>0.1?`Gespeicherte Bestandskorrekturen: ${fmt(f.discrepancy)} kg.`:''}</p>`;
+        }
+      }
+      const info=document.getElementById('pelletStartInfo');if(info)info.innerHTML=f.ready?`<strong>Erster bekannter Kauf: ${escapeHtml(f.baseline.toLocaleDateString('de-DE'))}</strong><p>Anfangsrest im Bunker als Schätzung. Sämtliche Käufe werden im Sacklager gutgeschrieben, Nachfüllungen in den Bunker umgebucht. Zählerwerte vor diesem Kauf dienen nur dem Saisonprofil.</p>`:'<p>Bitte zuerst einen Pelletskauf erfassen.</p>';
+      for(const [id,key,def] of [['pelletInitialRest','initialRestKg',100],['pelletWarningKg','warningKg',200],['pelletCapacityKg','capacityKg',1000],['pelletBagKg','bagKg',15]]){
+        const node=document.getElementById(id);if(node&&document.activeElement!==node)node.value=String(f.cfg?.[key]??pelletSetting()[key]??def);
+      }
+      const enable=document.getElementById('pelletWarningEnabled');if(enable)enable.checked=!!pelletSetting().warningEnabled;
+      const hist=document.getElementById('pelletAdjustmentHistory');
+      if(hist)hist.innerHTML=!f.ready||!f.adjustments.length?'<div class="muted">Noch kein Bestandsabgleich erfasst.</div>':f.adjustments.slice().reverse().map(a=>`<div class="entry-item" style="padding:10px 12px;margin-bottom:7px"><div><strong>${escapeHtml(new Date(a.date).toLocaleString('de-DE',{dateStyle:'short',timeStyle:'short'}))}: Bunker ${fmtHist(a.stockKg)} kg${a.sacksKg!==null&&a.sacksKg!==undefined?' · Sacklager '+fmtHist(a.sacksKg)+' kg':''}</strong><div class="muted">${escapeHtml(a.note||'Bestandsprüfung')}</div></div></div>`).join('');
+    }
+    function fmtHist(x){return formatNumber(Number(x));}
+    async function savePelletSettings(){
+      persistLocalSnapshot();renderPelletRangeForecast();
+      try{if(state.firebaseEnabled)await saveSettingsToFirestore();showToast('Pelletlager-Einstellungen gespeichert.','success');}
+      catch(e){showToast('Speichern in Firestore fehlgeschlagen: '+e.message,'error');}
+    }
+    async function handlePelletBaselineSave(event){event.preventDefault();const n=Number(document.getElementById('pelletInitialRest').value);if(!Number.isFinite(n)||n<0)return showToast('Anfangsrest prüfen.','error');state.settings.pelletBalance={...pelletSetting(),initialRestKg:n};await savePelletSettings();}
+    async function handlePelletWarningSave(event){
+      event.preventDefault();const cfg=pelletSetting();const kg=Number(document.getElementById('pelletWarningKg').value),cap=Number(document.getElementById('pelletCapacityKg').value),bag=Number(document.getElementById('pelletBagKg').value);
+      if(!Number.isFinite(kg)||kg<25||kg>=cap||!Number.isFinite(cap)||cap<100||cap>10000||!Number.isFinite(bag)||bag<=0||bag>50)return showToast('Warnwert, Bunkerkapazität und Sackgewicht prüfen.','error');
+      state.settings.pelletBalance={...cfg,warningKg:kg,capacityKg:cap,bagKg:bag,warningEnabled:document.getElementById('pelletWarningEnabled').checked};await savePelletSettings();
+    }
+    async function handlePelletAdjustmentSave(event){
+      event.preventDefault();const dt=document.getElementById('pelletAdjustmentDate').value,kg=Number(document.getElementById('pelletAdjustmentKg').value),sackStr=document.getElementById('pelletAdjustmentSacksKg').value.trim(),sacksKg=sackStr===''?null:Number(sackStr),note=document.getElementById('pelletAdjustmentNote').value.trim();const baseline=pelletBaselineDate(),time=Date.parse(dt),cfg=pelletSetting();
+      if(!baseline||!Number.isFinite(time)||time<baseline.getTime()||time>Date.now()||!Number.isFinite(kg)||kg<0||kg>cfg.capacityKg*1.1||(sacksKg!==null&&(!Number.isFinite(sacksKg)||sacksKg<0)))return showToast('Datum und Bestandsmengen prüfen.','error');
+      cfg.adjustments=[...(cfg.adjustments||[]),{date:new Date(time).toISOString(),stockKg:kg,sacksKg,note}].sort((a,b)=>Date.parse(a.date)-Date.parse(b.date));
+      state.settings.pelletBalance=cfg;await savePelletSettings();event.target.reset();document.getElementById('pelletAdjustmentDate').value=toDatetimeLocal(new Date());
     }
 
     function registerPushTest(){
@@ -5175,6 +5331,7 @@ renderFuelMap();
     async function handleSettingsSubmit(event) {
       event.preventDefault();
       state.settings = mergeSettings({
+        ...state.settings,
         strom: { basePrice: toNumber(els.priceStromBase.value) || 0, unitPrice: toNumber(els.priceStromUnit.value) || 0 },
         wasser: { basePrice: toNumber(els.priceWasserBase.value) || 0, unitPrice: toNumber(els.priceWasserUnit.value) || 0 },
         pellets: { basePrice: toNumber(els.pricePelletsBase.value) || 0, unitPrice: toNumber(els.pricePelletsUnit.value) || 0 }
@@ -5482,7 +5639,15 @@ async function updateRecord(kind, id, payload) {
       return {
         strom: { basePrice: toNumber(incoming?.strom?.basePrice) || 0, unitPrice: toNumber(incoming?.strom?.unitPrice) || 0 },
         wasser: { basePrice: toNumber(incoming?.wasser?.basePrice) || 0, unitPrice: toNumber(incoming?.wasser?.unitPrice) || 0 },
-        pellets: { basePrice: toNumber(incoming?.pellets?.basePrice) || 0, unitPrice: toNumber(incoming?.pellets?.unitPrice) || 0 }
+        pellets: { basePrice: toNumber(incoming?.pellets?.basePrice) || 0, unitPrice: toNumber(incoming?.pellets?.unitPrice) || 0 },
+        pelletBalance: {
+          initialRestKg: Math.max(0, Number(incoming?.pelletBalance?.initialRestKg ?? 100) || 0),
+          capacityKg: Math.max(100,Number(incoming?.pelletBalance?.capacityKg ?? 1000)),
+          bagKg: Math.max(1,Number(incoming?.pelletBalance?.bagKg ?? 15)),
+          warningKg: Math.max(25,Number(incoming?.pelletBalance?.warningKg ?? 200)),
+          warningEnabled: incoming?.pelletBalance?.warningEnabled !== false,
+          adjustments: Array.isArray(incoming?.pelletBalance?.adjustments) ? incoming.pelletBalance.adjustments.filter(a=>a&&Number.isFinite(Number(a.stockKg))&&Number.isFinite(Date.parse(a.date))).map(a=>({...a,sacksKg:a.sacksKg===null||a.sacksKg===undefined?null:Number(a.sacksKg)})).slice(-100) : []
+        }
       };
     }
 
@@ -5694,8 +5859,6 @@ async function updateRecord(kind, id, payload) {
       renderPelletPriceComparisons();
       renderDashboardMonthlyChart();
       renderConsumptionHistory();
-      renderPelletSummary();
-      renderPelletActivity();
       renderCharts();
     }
 
@@ -6342,7 +6505,7 @@ async function updateRecord(kind, id, payload) {
     }
 
     function getPelletInventoryKg() {
-      return Math.max(0, round2(totalPurchasedKg() + totalRefillKg() - totalConsumptionOfType("pellets")));
+      return Math.max(0,round2(pelletBalanceModel().stock||0));
     }
 
     function getPreviousReading(type, isoDate) {
