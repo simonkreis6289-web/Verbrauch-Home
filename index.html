@@ -229,8 +229,7 @@
     .summary-grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
     .energy-market-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
-    .energy-market-tile{padding:18px;border:1px solid var(--line);background:var(--app-inner,rgba(8,17,32,.65));border-radius:18px;position:relative;min-width:0}
-    .energy-market-tile:before{content:"";position:absolute;top:0;left:0;width:100%;height:4px;background:var(--market-accent,#f59e0b);border-radius:18px 18px 0 0}
+    .energy-market-tile{padding:18px;border:1px solid var(--line);border-top:4px solid var(--market-accent,#f59e0b);background:var(--app-inner,rgba(8,17,32,.65));border-radius:18px;position:relative;min-width:0;box-sizing:border-box}
     .energy-market-tile h3{font-size:.94rem;margin:4px 0 12px}
     .energy-market-tile .market-value{font-size:clamp(1.1rem,2vw,1.7rem);font-weight:850;letter-spacing:-.02em}
     .energy-market-tile p{font-size:.8rem;color:var(--muted);line-height:1.5;margin:8px 0 0}
@@ -1010,7 +1009,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v102</strong> · 1.3.1.137<br><small>Letzte Änderung: 16.10.2026</small></div>
+        <div class="hero-v94-version">Version <strong>v103</strong> · 1.3.1.138<br><small>Letzte Änderung: 16.10.2026</small></div>
       </div>
     </header>
 
@@ -6991,7 +6990,7 @@ async function updateRecord(kind, id, payload) {
       const btn=els.exportBackupBtn;
       if(btn){btn.disabled=true;btn.textContent='Sicherung wird erstellt …';}
       try{
-        const payload={format:'verbrauch-zuhause-backup',schemaVersion:2,appVersion:'v102',exportedAt:new Date().toISOString(),householdId:state.householdId||null,source:state.firebaseEnabled?'firestore':'local',collections:{},settings:null,bagSizes:structuredClone(state.bagSizes),localPreferences:{theme:document.documentElement.dataset.theme||'dark',lastBagSize:localStorage.getItem(LOCAL_KEYS.lastBagSize)}};
+        const payload={format:'verbrauch-zuhause-backup',schemaVersion:2,appVersion:'v103',exportedAt:new Date().toISOString(),householdId:state.householdId||null,source:state.firebaseEnabled?'firestore':'local',collections:{},settings:null,bagSizes:structuredClone(state.bagSizes),localPreferences:{theme:document.documentElement.dataset.theme||'dark',lastBagSize:localStorage.getItem(LOCAL_KEYS.lastBagSize)}};
         if(state.firebaseEnabled){
           if(!state.db)throw new Error('Firestore-Verbindung nicht bereit.');
           for(const key of BACKUP_COLLECTIONS_V94){const result=await getDocs(collection(state.db,`${householdBasePath()}/${key}`));payload.collections[key]=result.docs.map(mapFirestoreDoc);}
