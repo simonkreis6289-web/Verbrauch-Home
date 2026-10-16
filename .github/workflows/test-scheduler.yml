@@ -1,0 +1,26 @@
+name: TEST - GitHub Zeitsteuerung
+
+on:
+  schedule:
+    # Rein diagnostisch, UTC, alle 15 Minuten. Kein timezone-Feld.
+    - cron: '3,18,33,48 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scheduler-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Zeit und Ausloeser protokollieren
+        env:
+          TRIGGER: ${{ github.event_name }}
+          CRON_EXPRESSION: ${{ github.event.schedule }}
+        run: |
+          echo "Trigger: $TRIGGER"
+          echo "Cron: ${CRON_EXPRESSION:-manuell}"
+          echo "UTC: $(date -u '+%Y-%m-%d %H:%M:%S %Z')"
+          echo "Deutschland: $(TZ=Europe/Berlin date '+%Y-%m-%d %H:%M:%S %Z')"
+          echo "GitHub Ref: $GITHUB_REF"
+          echo "Test OK. Keine Daten geaendert."
