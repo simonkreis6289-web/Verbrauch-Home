@@ -947,7 +947,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v94</strong> · 1.3.1.133<br><small>Letzte Änderung: 16.10.2026</small></div>
+        <div class="hero-v94-version">Version <strong>v97</strong> · 1.3.1.134<br><small>Letzte Änderung: 16.10.2026</small></div>
       </div>
     </header>
 
@@ -2897,17 +2897,14 @@ function formatStationShort(station) {
       return total;
     }
     function pelletDeliveriesAfter(startMs,endMs=Date.now()){
+      // Käufe/Lieferungen bilden den Gesamtvorrat. Nachfüllungen sind interne
+      // Umlagerungen aus dem bereits vorhandenen Sackvorrat in den Heizungsbunker.
+      // Sie erhöhen den Gesamtbestand NICHT noch einmal.
       const buys=state.purchases.filter(p=>Number(p.totalKg)>0&&Date.parse(p.date)>=startMs&&Date.parse(p.date)<=endMs);
-      let bought=buys.reduce((s,p)=>s+Number(p.totalKg),0);
-      let refill=0,ignored=0;
-      for(const r of state.refills){
-        const when=Date.parse(r.date),kg=Number(r.totalKg)||0;
-        if(!(when>=startMs&&when<=endMs&&kg>0))continue;
-        // Käufe und Nachfüllungen derselben Lieferung niemals doppelt zählen.
-        const duplicate=buys.some(p=>Math.abs(Date.parse(p.date)-when)<3*86400000 && Math.abs(Number(p.totalKg)-kg)<Math.max(15,kg*.03));
-        if(duplicate)ignored+=kg;else refill+=kg;
-      }
-      return {bought,refill,ignored,total:bought+refill};
+      const bought=buys.reduce((sum,p)=>sum+Number(p.totalKg),0);
+      const refills=state.refills.filter(r=>Number(r.totalKg)>0&&Date.parse(r.date)>=startMs&&Date.parse(r.date)<=endMs)
+        .reduce((sum,r)=>sum+Number(r.totalKg),0);
+      return {bought,refill:0,internalRefill:refills,ignored:refills,total:bought};
     }
     function pelletBalanceModel(){
       const baseline=pelletBaselineDate(), config=state.settings.pelletBalance||{};
@@ -2925,7 +2922,7 @@ function formatStationShort(station) {
     function pelletCoverage(since){
       const intervals=buildComputedReadings().filter(e=>e.type==='pellets'&&e.previousDate&&Number.isFinite(e.delta)&&e.delta>=0&&e.daysBetween>0);
       if(!intervals.length)return null;
-      const now=Date.now(),startLimit=Math.max(since||0,now-365*86400000),monthKg=new Array(12).fill(0),monthDays=new Array(12).fill(0);
+      const now=Date.now(),startLimit=now-730*86400000,monthKg=new Array(12).fill(0),monthDays=new Array(12).fill(0);
       let total=0,days=0,last=0;
       for(const e of intervals){
         const a=Date.parse(e.previousDate),b=Date.parse(e.date),from=Math.max(a,startLimit),to=Math.min(b,now);
@@ -2943,19 +2940,19 @@ function formatStationShort(station) {
     function pelletForecastModel(){
       const balance=pelletBalanceModel();
       if(!balance.ready)return {...balance,reliable:false,note:balance.note};
-      const coverage=pelletCoverage(balance.baseline.getTime());
-      if(!coverage||coverage.days<7)return {...balance,coverage,reliable:false,note:'Seit der Sommerlieferung fehlen noch ausreichend lange abgeschlossene Ableseintervalle.'};
+      const coverage=pelletCoverage();
+      if(!coverage||coverage.days<7)return {...balance,coverage,reliable:false,note:'Für eine Verbrauchsprognose fehlen noch ausreichend lange abgeschlossene Pellet-Ableseintervalle.'};
       const reliable=coverage.days>=300&&coverage.monthDays.filter(d=>d>=15).length>=10;
       const rates=coverage.monthKg.map((kg,i)=>coverage.monthDays[i]>=15?kg/coverage.monthDays[i]:coverage.daily);
       const freshness=(Date.now()-coverage.end)/86400000;
       if(freshness>60)return {...balance,coverage,reliable:false,note:'Die letzte Verbrauchsablesung liegt mehr als 60 Tage zurück. Bitte aktualisieren.'};
-      if(coverage.daily<=0)return {...balance,coverage,reliable:false,note:'Noch kein messbarer Verbrauch seit der Lieferung.'};
+      if(coverage.daily<=0)return {...balance,coverage,reliable:false,note:'Noch kein messbarer Pelletverbrauch in der vorhandenen Ablesehistorie.'};
       const when=new Date(), remaining0=balance.stock;
       let remaining=remaining0,days=0,estimated=null;
       if(reliable){while(remaining>0&&days<1095){remaining-=Math.max(0,rates[when.getMonth()]);when.setDate(when.getDate()+1);days++;}}
       else {days=Math.ceil(remaining/coverage.daily);when.setDate(when.getDate()+Math.min(days,1095));}
       if(days<=1095)estimated=new Date(when);
-      return {...balance,coverage,reliable,rates,when:estimated,days:days<=1095?days:null,note:reliable?'Saisonale Prognose aus deinen eigenen Monatsverbräuchen.':'Grobe Schätzung aus dem bisherigen Verbrauch seit der Sommerlieferung; der Winter kann deutlich abweichen.'};
+      return {...balance,coverage,reliable,rates,when:estimated,days:days<=1095?days:null,note:reliable?'Saisonale Prognose auf Basis deiner Pellet-Ablesungen der letzten zwei Jahre.':'Vorläufige Schätzung aus den verfügbaren Pellet-Ablesungen. Ohne vollständiges Winterprofil kann die Reichweite deutlich abweichen.'};
     }
     function formatPelletUntil(f){
       if(!f.ready||!f.when)return 'Noch nicht berechenbar';
@@ -2972,8 +2969,8 @@ function formatStationShort(station) {
           const percent=Math.max(0,Math.min(100,(f.stock/Math.max(1,f.opening+f.deliveries.total))*100));
           container.innerHTML=`<div class="pellet-hero-info"><div><small class="muted">Vorrat reicht ungefähr bis</small><div class="pellet-forecast-number">${escapeHtml(date)}</div><small class="muted">${f.reliable?'Saisonale Verbrauchsprognose':'Vorläufige Reichweitenschätzung'}</small></div><div><small class="muted">Rechnerischer Bestand</small><strong>${formatNumber(f.stock)} kg</strong></div></div>
           <div class="pellet-meter"><div style="width:${percent}%"></div></div>
-          <div class="pellet-balance-row"><div><small>Seit ${escapeHtml(f.from.toLocaleDateString('de-DE'))} hinzugekommen</small><strong>+${formatNumber(f.deliveries.total)} kg</strong></div><div><small>Verbrauch seitdem</small><strong>−${formatNumber(f.consumption)} kg</strong></div><div><small>Angenommener Start/Abgleich</small><strong>${formatNumber(f.opening)} kg</strong></div></div>
-          <p class="pellet-forecast-notes">${escapeHtml(f.note)} ${f.coverage?`Berechnungsgrundlage: ${Math.round(f.coverage.days)} Tage abgeschlossene Pellet-Ableseintervalle.`:''} Käufe und Nachfüllungen mit fast gleichem Datum und Gewicht werden nur einmal angerechnet. Bitte manuell überprüfen, falls Lieferungen in mehreren Portionen eingetragen wurden.</p>`;
+          <div class="pellet-balance-row"><div><small>Seit ${escapeHtml(f.from.toLocaleDateString('de-DE'))} gekauft / geliefert</small><strong>+${formatNumber(f.deliveries.total)} kg</strong></div><div><small>Verbrauch seitdem</small><strong>−${formatNumber(f.consumption)} kg</strong></div><div><small>Angenommener Start/Abgleich</small><strong>${formatNumber(f.opening)} kg</strong></div></div>
+          <p class="pellet-forecast-notes">${escapeHtml(f.note)} ${f.coverage?`Berechnungsgrundlage: ${Math.round(f.coverage.days)} Tage abgeschlossene Pellet-Ableseintervalle.`:''} Nachfüllungen (${formatNumber(f.deliveries.internalRefill)} kg seit dem letzten Abgleich) sind interne Umlagerungen aus dem gekauften Vorrat und werden nicht erneut zum Gesamtbestand addiert.</p>`;
         }
       }
       const startInfo=document.getElementById('pelletStartInfo');
@@ -6853,7 +6850,7 @@ async function updateRecord(kind, id, payload) {
       const btn=els.exportBackupBtn;
       if(btn){btn.disabled=true;btn.textContent='Sicherung wird erstellt …';}
       try{
-        const payload={format:'verbrauch-zuhause-backup',schemaVersion:2,appVersion:'v94',exportedAt:new Date().toISOString(),householdId:state.householdId||null,source:state.firebaseEnabled?'firestore':'local',collections:{},settings:null,bagSizes:structuredClone(state.bagSizes),localPreferences:{theme:document.documentElement.dataset.theme||'dark',lastBagSize:localStorage.getItem(LOCAL_KEYS.lastBagSize)}};
+        const payload={format:'verbrauch-zuhause-backup',schemaVersion:2,appVersion:'v97',exportedAt:new Date().toISOString(),householdId:state.householdId||null,source:state.firebaseEnabled?'firestore':'local',collections:{},settings:null,bagSizes:structuredClone(state.bagSizes),localPreferences:{theme:document.documentElement.dataset.theme||'dark',lastBagSize:localStorage.getItem(LOCAL_KEYS.lastBagSize)}};
         if(state.firebaseEnabled){
           if(!state.db)throw new Error('Firestore-Verbindung nicht bereit.');
           for(const key of BACKUP_COLLECTIONS_V94){const result=await getDocs(collection(state.db,`${householdBasePath()}/${key}`));payload.collections[key]=result.docs.map(mapFirestoreDoc);}
