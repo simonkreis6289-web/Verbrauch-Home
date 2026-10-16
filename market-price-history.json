@@ -21,10 +21,11 @@
     },
     {
       "date": "2026-10-16",
-      "checked_at": "2026-10-16T11:24:45+02:00",
+      "checked_at": "2026-10-16T11:31:17+02:00",
       "prices": {
         "pellets_loose": 443.8,
-        "pellets_bag": 526.24
+        "pellets_bag": 526.24,
+        "heating_oil": 174.1
       }
     }
   ]
