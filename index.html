@@ -942,6 +942,55 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 .app-install-v94{padding:10px 4px}.app-install-v94 p{margin:6px 0 12px}
 @media(max-width:720px){.hero-v94{padding:16px;border-radius:15px;flex-direction:row;align-items:flex-start;flex-wrap:wrap}.hero-v94-meta{text-align:left;margin-left:0;white-space:normal}.hero-v94-clock{font-size:.95rem}.nav-v94{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px!important;padding:6px!important}.nav-v94 .main-nav-btn{font-size:.81rem;padding:11px 3px}.subnav-v94{gap:5px;padding:8px}.subnav-v94 .tab{font-size:.79rem;padding:10px 8px;flex:1 1 42%}.backup-layout-v94{grid-template-columns:1fr}}
 
+
+/* v101: Tank-Dashboard mit vier gleich breiten Karten und robuster mobiler Darstellung. */
+.fuel-stats-section{min-width:0}
+.fuel-stats-section .fuel-stats-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+  align-items:stretch;
+}
+.fuel-stats-section .fuel-hero-card,
+.fuel-stats-section .fuel-mini-card{
+  grid-column:auto;
+  min-width:0;
+  min-height:0;
+  padding:20px 22px;
+  border-radius:18px;
+}
+.fuel-stats-section .fuel-card-head > div:first-child{min-width:0}
+.fuel-stats-section .fuel-card-title{
+  font-size:clamp(1.02rem,1.35vw,1.32rem);
+  line-height:1.25;
+  overflow-wrap:normal;
+  word-break:normal;
+  hyphens:none;
+}
+.fuel-stats-section .fuel-card-value{
+  font-size:clamp(1.45rem,2.5vw,2.05rem);
+  line-height:1.2;
+  overflow-wrap:normal;
+  word-break:normal;
+  white-space:normal;
+}
+.fuel-stats-section .fuel-mini-card .fuel-card-value{
+  white-space:nowrap;
+  font-size:clamp(1.32rem,2.1vw,1.85rem);
+}
+.fuel-stats-section .fuel-card-icon{width:40px;height:40px;border-radius:12px}
+.fuel-stats-section .fuel-card-sub{font-size:.86rem}
+.fuel-stats-section .fuel-mini-card .fuel-card-sub{margin-top:8px}
+@media(max-width:720px){
+  .fuel-stats-section .fuel-stats-grid{grid-template-columns:minmax(0,1fr);gap:12px}
+  .fuel-stats-section .fuel-hero-card,
+  .fuel-stats-section .fuel-mini-card{padding:17px 18px}
+  .fuel-stats-section .fuel-mini-card .fuel-card-value{font-size:clamp(1.3rem,5.5vw,1.8rem)}
+}
+@media(min-width:721px) and (max-width:860px){
+  .fuel-stats-section .fuel-stats-grid{grid-template-columns:minmax(0,1fr)}
+}
+
 </style>
 </head>
 <body>
@@ -954,7 +1003,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v100</strong> · 1.3.1.135<br><small>Letzte Änderung: 16.10.2026</small></div>
+        <div class="hero-v94-version">Version <strong>v101</strong> · 1.3.1.136<br><small>Letzte Änderung: 16.10.2026</small></div>
       </div>
     </header>
 
@@ -1479,7 +1528,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 </section>
 
 
-    <section class="card">
+    <section class="card wide fuel-stats-section">
       <div class="card-head">
         <div>
           <p class="section-kicker">Auswertung</p>
@@ -4943,12 +4992,12 @@ function renderFuelStats() {
       <div class="fuel-card-head">
         <div>
           <div class="fuel-card-kicker">Verbrauch</div>
-          <div class="fuel-card-title">Durchschnitt</div>
+          <div class="fuel-card-title">Ø Verbrauch</div>
         </div>
         <div class="fuel-card-icon">📊</div>
       </div>
       <div class="fuel-card-value">${avgValue(avgConsumption) != null ? `${formatNumber(avgValue(avgConsumption))} l/100 km` : '–'}</div>
-      <div class="fuel-card-sub">Berechnet aus ${avgConsumption.length} Intervallen</div>
+      <div class="fuel-card-sub">Basis: ${avgConsumption.length} Tankintervalle</div>
     </article>
 
     <article class="fuel-mini-card" style="--card-accent:#8b5cf6;">
@@ -4956,12 +5005,12 @@ function renderFuelStats() {
       <div class="fuel-card-head">
         <div>
           <div class="fuel-card-kicker">Kosten</div>
-          <div class="fuel-card-title">Durchschnitt</div>
+          <div class="fuel-card-title">Ø Kosten</div>
         </div>
         <div class="fuel-card-icon">💶</div>
       </div>
       <div class="fuel-card-value">${avgValue(avgCost) != null ? `${formatCurrency(avgValue(avgCost))}/100 km` : '–'}</div>
-      <div class="fuel-card-sub">Auf Basis der gespeicherten Tankintervalle</div>
+      <div class="fuel-card-sub">Basis: gespeicherte Tankintervalle</div>
     </article>
   `;
 }
@@ -6920,7 +6969,7 @@ async function updateRecord(kind, id, payload) {
       const btn=els.exportBackupBtn;
       if(btn){btn.disabled=true;btn.textContent='Sicherung wird erstellt …';}
       try{
-        const payload={format:'verbrauch-zuhause-backup',schemaVersion:2,appVersion:'v100',exportedAt:new Date().toISOString(),householdId:state.householdId||null,source:state.firebaseEnabled?'firestore':'local',collections:{},settings:null,bagSizes:structuredClone(state.bagSizes),localPreferences:{theme:document.documentElement.dataset.theme||'dark',lastBagSize:localStorage.getItem(LOCAL_KEYS.lastBagSize)}};
+        const payload={format:'verbrauch-zuhause-backup',schemaVersion:2,appVersion:'v101',exportedAt:new Date().toISOString(),householdId:state.householdId||null,source:state.firebaseEnabled?'firestore':'local',collections:{},settings:null,bagSizes:structuredClone(state.bagSizes),localPreferences:{theme:document.documentElement.dataset.theme||'dark',lastBagSize:localStorage.getItem(LOCAL_KEYS.lastBagSize)}};
         if(state.firebaseEnabled){
           if(!state.db)throw new Error('Firestore-Verbindung nicht bereit.');
           for(const key of BACKUP_COLLECTIONS_V94){const result=await getDocs(collection(state.db,`${householdBasePath()}/${key}`));payload.collections[key]=result.docs.map(mapFirestoreDoc);}
