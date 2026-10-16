@@ -15,7 +15,6 @@ from bs4 import BeautifulSoup
 ROOT = Path(__file__).resolve().parent
 FILE = ROOT / 'market-prices.json'
 HISTORY_FILE = ROOT / 'market-price-history.json'
-SNAPSHOTS_FILE = ROOT / 'market-price-snapshots.json'
 NOW = dt.datetime.now(dt.timezone(dt.timedelta(hours=2))) # German summer time fallback below
 try:
     from zoneinfo import ZoneInfo
@@ -73,14 +72,50 @@ def verify_pellet_date(text):
         return False
 
 
+def oil_reference_match(text):
+    """Return (price EUR/100l, confirmed current date) from TECSON's reference table.
+
+    Only the tightly scoped 'Referenzpreis aktuell' block qualifies. This avoids
+    grabbing the oil-market commentary (which may contain a different price),
+    previous-day comparison prices, or a date elsewhere on the page.
+    """
+    # Soup text is flattened. Stay within the first 380 characters after this
+    # label to prevent crossing into other parts of the page.
+    anchor = re.search(r'Referenzpreis\s+aktuell\s*\*?\)?', text, re.I)
+    if not anchor:
+        return None
+    block = text[anchor.end():anchor.end() + 380]
+    if not re.search(r'DE[-\s]*Mittelpreis\s+für\s+Heizöl', block, re.I):
+        return None
+
+    months = {
+        'jan': 1, 'januar': 1, 'feb': 2, 'februar': 2,
+        'mär': 3, 'märz': 3, 'mae': 3, 'maerz': 3,
+        'apr': 4, 'april': 4, 'mai': 5, 'jun': 6, 'juni': 6,
+        'jul': 7, 'juli': 7, 'aug': 8, 'august': 8,
+        'sep': 9, 'sept': 9, 'september': 9, 'okt': 10, 'oktober': 10,
+        'nov': 11, 'november': 11, 'dez': 12, 'dezember': 12,
+    }
+    # Day/month should be directly ahead of the current reference value.
+    pattern = (r'(?:Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag)'
+               r'\s*,?\s*(\d{1,2})\.\s*([A-Za-zÄÖÜäöüß]+)\.?'
+               r'\s*(?:\|\s*)?Ø\s*([\d.,]+)\s*(?:ct|Cent)\s*/\s*l\b')
+    m = re.search(pattern, block, re.I)
+    if not m:
+        return None
+    day, month_name, price_text = m.groups()
+    month = months.get(month_name.lower().rstrip('.'))
+    if not month:
+        return None
+    # TECSON's displayed table date does not include the year; only accept a
+    # same-day date. Daily checks therefore cannot treat yesterday as fresh.
+    if int(day) != TODAY.day or month != TODAY.month:
+        return None
+    return euro(price_text)
+
+
 def verify_oil_date(text):
-    # The current TECSON market report has a heading of the form
-    # 'Heizölpreis: Ölmarktinfos Donnerstag, 15. Oktober'.
-    months = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli',
-              'August', 'September', 'Oktober', 'November', 'Dezember']
-    month = months[TODAY.month - 1]
-    report_date = r'Heiz\s*öl\s*preis\s*:\s*Ölmarkt\s*infos\s*\w+\s*,?\s*' + str(TODAY.day) + r'\.\s*' + month + r'\b'
-    return bool(re.search(report_date, text, re.I))
+    return oil_reference_match(text) is not None
 
 
 def parse_pellets(text):
@@ -94,12 +129,8 @@ def parse_pellets(text):
 
 
 def parse_heating_oil(text):
-    # TECSON states the *current* DE mean in cents per litre; the same
-    # numerical amount is EUR per 100 litres (176.6 ct/l => 176.6 EUR/100l).
-    m = re.search(r'DE[-\s]*Durchschnittspreis\s+bei\s*([\d.,]+)\s*(?:Cent|ct)\s*/\s*Liter', text, re.I)
-    if not m:
-        m = re.search(r'bundesweite Durchschnittspreis heute Morgen bei\s*([\d.,]+)\s*Cent pro Liter', text, re.I)
-    return euro(m.group(1)) if m else None
+    # 174.1 ct/l and 174.1 EUR/100l are numerically equivalent.
+    return oil_reference_match(text)
 
 
 def update():
@@ -113,7 +144,7 @@ def update():
             text = get_text(url)
             if 'heating_oil' in keys:
                 if not verify_oil_date(text):
-                    print('heating_oil: kein heutiger TECSON-Marktbericht nachweisbar')
+                    print('heating_oil: kein heutiger datierter TECSON-Referenzpreis gefunden')
                     continue
                 readings = {'heating_oil': parse_heating_oil(text)}
             else:
@@ -164,26 +195,6 @@ def update():
         history['records'] = sorted(records, key=lambda r: r.get('date', ''))
         HISTORY_FILE.write_text(json.dumps(history, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
         print(f'Preis-Historie aktualisiert: {date} ({len(confirmed)} verifizierte Preise)')
-    # Zeitlich getrennte, tatsächlich bestätigte Preisabrufe für 10-/17-Uhr-Vergleiche.
-    # Im Gegensatz zur Tageshistorie speichern wir beide Läufe separat.
-    if confirmed:
-        snapshots = {'records': []}
-        if SNAPSHOTS_FILE.exists():
-            try:
-                old = json.loads(SNAPSHOTS_FILE.read_text(encoding='utf-8'))
-                if isinstance(old.get('records'), list):
-                    snapshots = old
-            except (OSError, ValueError, AttributeError) as exc:
-                raise RuntimeError('Abrufhistorie nicht lesbar; nicht überschrieben') from exc
-        entries = [r for r in snapshots['records'] if isinstance(r, dict)]
-        entries.append({
-            'checked_at': NOW.isoformat(timespec='seconds'),
-            'prices': confirmed,
-        })
-        # Max. 2 Jahre bei täglich 2 Läufen plus manuelle Tests.
-        snapshots['records'] = entries[-2000:]
-        SNAPSHOTS_FILE.write_text(json.dumps(snapshots, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-        print(f'Abrufhistorie: {len(snapshots["records"])} bestätigte Preisprüfungen')
     print(f'Ergebnis: {success}/3 Preise bestätigt')
     # Raise explicit failure when all sources are unavailable, rather than green success with nulls.
     if success == 0:
