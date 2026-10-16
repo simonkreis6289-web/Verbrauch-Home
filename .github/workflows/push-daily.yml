@@ -1,10 +1,6 @@
-
 name: Tägliche Energie- und Monatsend-Pushs
 
 on:
-  schedule:
-    - cron: '15 10,17 * * *'
-      timezone: "Europe/Berlin"
   workflow_dispatch:
 
 permissions:
@@ -19,11 +15,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-
+      - name: Aktuellste Preisdatei von main abrufen
+        shell: bash
+        run: |
+          git fetch origin main
+          git checkout origin/main -- market-prices.json
       - name: Energiepreise und Monatsende-Erinnerung senden
         env:
           PUSH_SECRET: ${{ secrets.PUSH_SECRET }}
