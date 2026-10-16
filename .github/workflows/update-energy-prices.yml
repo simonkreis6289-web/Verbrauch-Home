@@ -1,6 +1,10 @@
 name: Energiepreise prüfen
 
 on:
+  schedule:
+    # 06:00-18:00 alle zwei Stunden in deutscher Ortszeit.
+    - cron: '0 6,8,10,12,14,16,18 * * *'
+      timezone: "Europe/Berlin"
   workflow_dispatch:
 
 permissions:
