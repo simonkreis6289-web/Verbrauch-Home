@@ -911,49 +911,54 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 .price-times-bottom{display:flex;align-items:center;gap:13px;flex-wrap:wrap;margin-top:13px}
 .price-times-bottom .muted{font-size:.82rem;flex:1;min-width:180px}
 @media(max-width:720px){.nav-v93{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible!important;padding:6px!important;gap:6px!important;border-radius:12px!important}.nav-v93>.tab,.nav-v93>.nav-dropdown{min-width:0;width:100%;grid-column:auto}.nav-v93>.tab{padding:13px 9px!important}.nav-v93>.nav-dropdown>summary{font-size:.86rem;padding:13px 7px;white-space:normal;text-align:center;line-height:1.3}.nav-v93>.nav-dropdown:last-child{grid-column:span 2}.nav-v93 .nav-popover{left:0;right:auto;min-width:min(80vw,240px);max-width:90vw}.nav-v93>.nav-dropdown:last-child .nav-popover{left:50%;transform:translateX(-50%)}.price-time-row{gap:7px;padding:9px}.price-time-row label{gap:7px;font-size:.84rem}.price-time-row input{min-width:105px;max-width:140px;padding:9px 8px}}
+
+/* v94: kompakter Titel, zweistufige Navigation und Backup-Verwaltung */
+.hero-v94{align-items:center;padding:21px 26px;margin-bottom:14px;border-radius:20px;gap:14px}
+.hero-v94 h1{font-size:clamp(1.45rem,3.3vw,2.3rem);margin:5px 0 7px;line-height:1.12}
+.hero-v94-brand{min-width:0}.hero-v94 .hero-status{font-size:.86rem;line-height:1.35}
+.hero-v94-meta{margin-left:auto;text-align:right;white-space:nowrap;display:grid;gap:6px}
+.hero-v94-clock{font-size:1.1rem;font-weight:800;letter-spacing:.01em}
+.hero-v94-version{font-size:.77rem;color:var(--muted);line-height:1.5}.hero-v94-version strong{color:var(--text)}
+.nav-v94{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px!important;border-radius:14px!important;margin-bottom:0!important;overflow:visible!important;padding:7px!important}
+.nav-v94 .main-nav-btn{min-width:0;width:100%;border:0;color:var(--text);background:transparent;font:inherit;font-weight:760;padding:13px 7px;border-radius:9px;cursor:pointer;white-space:normal}
+.nav-v94 .main-nav-btn.selected{background:rgba(56,189,248,.17);box-shadow:inset 0 0 0 1px rgba(56,189,248,.17)}
+.nav-v94 .main-nav-btn:hover{background:rgba(56,189,248,.13)}
+.subnav-v94{display:flex;flex-wrap:wrap;gap:8px;margin:7px 0 20px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card-solid);box-shadow:0 3px 10px rgba(0,0,0,.045)}
+.subnav-v94[hidden]{display:none!important}
+.subnav-v94 .tab{background:rgba(108,143,170,.09);border:1px solid var(--line);border-radius:8px;padding:9px 13px;white-space:normal;font-size:.89rem;flex:0 1 auto}
+.subnav-v94 .tab.active{background:rgba(56,189,248,.19);border-color:rgba(56,189,248,.4)}
+.backup-layout-v94{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:15px}
+.backup-box-v94{padding:20px;background:var(--app-inner,var(--card-solid));border:1px solid var(--line);border-radius:16px;display:grid;align-content:start;gap:12px;min-width:0}
+.backup-box-v94 h3,.backup-box-v94 p{margin:0}.backup-box-v94 p{color:var(--muted);line-height:1.55}.backup-icon-v94{font-size:1.7rem}
+.backup-file-v94{display:grid;gap:8px;font-weight:650}.backup-file-v94 input{max-width:100%;font-weight:400}
+.backup-note-v94{border:1px solid var(--line);border-radius:12px;padding:13px;margin-top:14px;color:var(--muted);line-height:1.5}
+.app-install-v94{padding:10px 4px}.app-install-v94 p{margin:6px 0 12px}
+@media(max-width:720px){.hero-v94{padding:16px;border-radius:15px;flex-direction:row;align-items:flex-start;flex-wrap:wrap}.hero-v94-meta{text-align:left;margin-left:0;white-space:normal}.hero-v94-clock{font-size:.95rem}.nav-v94{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px!important;padding:6px!important}.nav-v94 .main-nav-btn{font-size:.81rem;padding:11px 3px}.subnav-v94{gap:5px;padding:8px}.subnav-v94 .tab{font-size:.79rem;padding:10px 8px;flex:1 1 42%}.backup-layout-v94{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
   <div class="app-shell">
-    <header class="hero">
-      <div>
-        <p class="eyebrow">Verbrauch Zuhause</p>
-        <h1>Zählerstände, Pellets und Kosten im Blick</h1>
-        <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
-        <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du den Haushalt wechseln oder neu anlegen.</p>
-        <p class="hero-copy">Version 1.3.1.131</p>
+    <header class="hero hero-v94">
+      <div class="hero-v94-brand">
+        <p class="eyebrow">VERBRAUCH ZUHAUSE · HAUSHALTSDASHBOARD</p>
+        <h1>Verbrauch Zuhause</h1>
+        <p class="hero-status" id="firebaseStatus">Verbindung wird aufgebaut …</p>
       </div>
-      <div class="hero-actions">
-        <button id="themeToggleBtn" class="btn ghost theme-toggle" type="button" aria-label="Design wechseln" aria-pressed="false"><span id="themeToggleIcon" aria-hidden="true">☀️</span> <span id="themeToggleLabel">Helles Design</span></button>
-        <button id="installBtn" class="btn secondary hidden" type="button">App installieren</button>
-        <button id="exportBackupBtn" class="btn ghost" type="button">Backup exportieren</button>
+      <div class="hero-v94-meta">
+        <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
+        <div class="hero-v94-version">Version <strong>v94</strong> · 1.3.1.132<br><small>Letzte Änderung: 16.10.2026</small></div>
       </div>
     </header>
 
-    <nav class="tabs nav-v93" id="mainTabs" aria-label="Hauptnavigation">
-      <button class="tab active" type="button" data-view="dashboardView">🏠 Übersicht</button>
-      <details class="nav-dropdown"><summary>📊 Zählerstände <span>▾</span></summary><div class="nav-popover">
-        <button class="tab" type="button" data-view="readingsView">📈 Zählerstände</button>
-        <button class="tab" type="button" data-view="resetView">🔄 Zählerneustart</button>
-      </div></details>
-      <details class="nav-dropdown"><summary>🔥 Pellets <span>▾</span></summary><div class="nav-popover">
-        <button class="tab" type="button" data-view="refillsView">🪣 Nachfüllen</button>
-        <button class="tab" type="button" data-view="pelletStoreView">🏠 Pelletlager</button>
-        <button class="tab" type="button" data-view="bagView">📦 Sackgrößen</button>
-        <button class="tab" type="button" data-view="offersView">🏷️ Angebotsabfragen</button>
-        <button class="tab" type="button" data-view="purchasesView">🧾 Käufe</button>
-      </div></details>
-      <details class="nav-dropdown"><summary>🚗 Auto <span>▾</span></summary><div class="nav-popover">
-        <button class="tab" type="button" data-view="carsView">⛽ Tanken</button>
-        <button class="tab" type="button" data-view="carSettingsView">🚙 Fahrzeugeinstellungen</button>
-        <button class="tab" type="button" data-view="fuelPricesView">💶 Spritpreise <small>demnächst</small></button>
-      </div></details>
-      <details class="nav-dropdown"><summary>⚙️ Einstellungen <span>▾</span></summary><div class="nav-popover">
-        <button class="tab" type="button" data-view="firebaseView">☁️ Firebase</button>
-        <button class="tab" type="button" data-view="notificationsView">🔔 Benachrichtigungen</button>
-        <button class="tab" type="button" data-view="pricesView">💰 Preise</button>
-      </div></details>
+    <nav class="tabs nav-v94" id="mainTabs" aria-label="Hauptnavigation">
+      <button class="main-nav-btn selected" type="button" data-group="dashboardView">🏠 Übersicht</button>
+      <button class="main-nav-btn" type="button" data-group="readingsView">📊 Zählerstände</button>
+      <button class="main-nav-btn" type="button" data-group="refillsView">🔥 Pellets</button>
+      <button class="main-nav-btn" type="button" data-group="carsView">🚗 Auto</button>
+      <button class="main-nav-btn" type="button" data-group="firebaseView">⚙️ Einstellungen</button>
     </nav>
+    <nav id="subTabs" class="subnav-v94" aria-label="Untermenü" hidden></nav>
 
     <section id="dashboardView" class="view active">
       <div class="grid">
@@ -1962,6 +1967,19 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 <section id="firebaseView" class="view"><div class="grid" id="firebaseViewGrid"></div></section>
 <section id="notificationsView" class="view"><div class="grid" id="notificationsViewGrid"></div></section>
 <section id="pricesView" class="view"><div class="grid" id="pricesViewGrid"></div></section>
+<section id="backupView" class="view">
+ <div class="grid">
+  <section class="card wide glass backup-card-v94">
+   <div class="card-head"><div><p class="section-kicker">DATENSICHERUNG</p><h2>Backup & Wiederherstellung</h2><p class="muted">Sichere deine eingegebenen Haushaltsdaten als JSON-Datei und stelle sie bei Bedarf wieder her.</p></div><span class="badge ok">Lokal herunterladbar</span></div>
+   <div class="backup-layout-v94">
+    <div class="backup-box-v94"><div class="backup-icon-v94">⬇️</div><h3>Backup exportieren</h3><p>Erfasst Zählerstände, Pelletlieferungen, Käufe, Tankungen, Fahrzeuge, Einstellungen, Preiszeiträume und Tankstellen.</p><button id="exportBackupBtn" class="btn primary" type="button">Gesamtes Backup herunterladen</button></div>
+    <div class="backup-box-v94"><div class="backup-icon-v94">⬆️</div><h3>Backup wiederherstellen</h3><p>Wähle eine zuvor exportierte JSON-Datei aus. Du erhältst eine Vorschau und bestätigst die Wiederherstellung ausdrücklich.</p><label class="backup-file-v94">Backup-Datei auswählen<input id="backupRestoreFile" type="file" accept=".json,application/json"></label><div id="backupRestorePreview" class="muted" role="status">Noch keine Datei ausgewählt.</div><button id="backupRestoreBtn" class="btn secondary" type="button" disabled>Daten aus Datei wiederherstellen</button><div id="backupRestoreStatus" class="muted" aria-live="polite"></div></div>
+   </div>
+   <div class="backup-note-v94"><strong>Wichtig:</strong> Die Wiederherstellung ergänzt vorhandene Daten und aktualisiert Datensätze mit derselben ID. Andere vorhandene Datensätze werden nicht automatisch gelöscht. Cloudflare-Push-Regeln, GitHub-Workflows und Marktpreis-Historien liegen außerhalb von Firestore und sind nicht Bestandteil dieses Backups.</div>
+  </section>
+  <section class="card wide glass"><p class="section-kicker">DARSTELLUNG UND INSTALLATION</p><h2>App-Einstellungen</h2><div class="settings-grid"><label for="themeSelectV94">Farbschema<select id="themeSelectV94"><option value="light">☀️ Helles Design</option><option value="dark">🌙 Dunkles Design</option></select></label><div class="app-install-v94"><strong>App installieren</strong><p class="muted">Installiere Verbrauch Zuhause als eigenständige App auf deinem Endgerät.</p><button id="installBtn" class="btn secondary hidden" type="button">📲 App installieren</button><small id="installInfoV94" class="muted">Falls kein Button erscheint, nutze die Installationsfunktion deines Browsers.</small></div></div></section>
+ </div>
+</section>
   <div id="marketHistoryModal" class="market-history-backdrop" role="dialog" aria-modal="true" aria-labelledby="marketHistoryTitle" aria-hidden="true" hidden>
     <div class="market-history-panel" role="document">
       <div class="market-history-top">
@@ -2255,8 +2273,32 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
     // init erst am Ende des Moduls aufrufen: Push-Konstanten vorher initialisieren.
 
 
-    // v93: Bereits vorhandene Formulare behalten ihre Original-IDs und Eventhandler.
-    // Wir verschieben nur Karten in sauber getrennte Unteransichten.
+    // v94: Feste Hauptleiste und sichtbare zweite Menüleiste.
+    const NAV_GROUPS_V94 = {
+      dashboardView: [['🏠 Übersicht','dashboardView']],
+      readingsView: [['📈 Zählerstände','readingsView'],['🔄 Zählerneustart','resetView']],
+      refillsView: [['🪣 Nachfüllen','refillsView'],['🏠 Pelletlager','pelletStoreView'],['📦 Sackgrößen','bagView'],['🏷️ Angebotsabfragen','offersView'],['🧾 Käufe','purchasesView']],
+      carsView: [['⛽ Tanken','carsView'],['🚙 Fahrzeugeinstellungen','carSettingsView'],['💶 Spritpreise (geplant)','fuelPricesView']],
+      firebaseView: [['☁️ Firebase','firebaseView'],['🔔 Benachrichtigungen','notificationsView'],['💰 Preise','pricesView'],['💾 Backup','backupView']]
+    };
+    let currentNavGroupV94='dashboardView';
+    function openNavGroupV94(group, target){
+      const options=NAV_GROUPS_V94[group]||NAV_GROUPS_V94.dashboardView;
+      currentNavGroupV94=group;
+      document.querySelectorAll('#mainTabs .main-nav-btn').forEach(b=>b.classList.toggle('selected',b.dataset.group===group));
+      const sub=document.getElementById('subTabs');
+      sub.replaceChildren();
+      for(const [label,view] of options){
+        const b=document.createElement('button');b.type='button';b.className='tab';b.dataset.view=view;b.textContent=label;sub.appendChild(b);
+      }
+      sub.hidden=group==='dashboardView';
+      const selected=sub.querySelector(`[data-view="${target||options[0][1]}"]`) || sub.querySelector('.tab');
+      // Hauptansicht ohne Klick auf verborgenes Menü aktivieren.
+      const viewName=target||options[0][1];
+      sub.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view===viewName));
+      els.views.forEach(v=>v.classList.toggle('active',v.id===viewName));
+      if(viewName==='carsView')setTimeout(()=>{renderFuelMap();refreshFuelMapSize();void refreshStationGps();},150);
+    }
     function prepareStructuredMenus(){
       const locations={
         firebaseView:['firebaseSettingsCard'],notificationsView:['pushRulesPanel','pushTestPanel'],
@@ -2266,16 +2308,14 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
         pricesView:['pricePeriodCard','basePricesCard','currentPriceCard','priceHistoryCard']
       };
       for(const [view,ids] of Object.entries(locations)){
-        const grid=document.getElementById(view+'Grid');
-        if(!grid)continue;
+        const grid=document.getElementById(view+'Grid');if(!grid)continue;
         for(const id of ids){const card=document.getElementById(id);if(card)grid.appendChild(card);}
       }
-      document.addEventListener('click',event=>{
-        if(!event.target.closest('#mainTabs'))document.querySelectorAll('.nav-v93 details[open]').forEach(d=>d.open=false);
-      });
-      document.querySelectorAll('.nav-v93 details').forEach(detail=>{
-        detail.addEventListener('toggle',()=>{if(detail.open)document.querySelectorAll('.nav-v93 details').forEach(other=>{if(other!==detail)other.open=false;});});
-      });
+      document.querySelectorAll('#mainTabs .main-nav-btn').forEach(btn=>btn.addEventListener('click',()=>openNavGroupV94(btn.dataset.group)));
+      openNavGroupV94('dashboardView');
+      const clock=document.getElementById('headerClock');
+      const refreshClock=()=>{if(clock)clock.textContent=new Intl.DateTimeFormat('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}).format(new Date())+' Uhr';};
+      refreshClock();setInterval(refreshClock,30000);
     }
     function activatePriceTimes(times){
       const list=document.getElementById('pricePushTimeList');if(!list)return;
@@ -2530,13 +2570,15 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
     }
 
     function registerEvents() {
-      els.mainTabs?.addEventListener("click", handleTabClick);
-      document.getElementById('openPelletStore')?.addEventListener('click',()=>document.querySelector('.tab[data-view="pelletStoreView"]')?.click());
+      document.getElementById("subTabs")?.addEventListener("click", handleTabClick);
+      document.getElementById('openPelletStore')?.addEventListener('click',()=>openNavGroupV94('refillsView','pelletStoreView'));
       document.getElementById('pelletBaselineForm')?.addEventListener('submit',handlePelletBaselineSave);
       document.getElementById('pelletAdjustmentForm')?.addEventListener('submit',handlePelletAdjustmentSave);
       document.getElementById('pelletAdjustmentDate').value=toDatetimeLocal(new Date());
       document.getElementById("dashboardChartMetric")?.addEventListener("change", renderDashboardMonthlyChart);
-      els.exportBackupBtn?.addEventListener("click", exportBackup);
+      els.exportBackupBtn?.addEventListener("click", ()=>void exportBackup());
+      document.getElementById('backupRestoreFile')?.addEventListener('change',previewBackupV94);
+      document.getElementById('backupRestoreBtn')?.addEventListener('click',()=>void restoreBackupV94());
 
       els.quickUseNow?.addEventListener("change", syncQuickNowUi);
       els.searchFuelStationByTextBtn?.addEventListener("click", searchFuelStationByText);
@@ -2983,28 +3025,11 @@ function formatStationShort(station) {
       }
     }
 
-    function handleTabClick(event) {
-      const button = event.target.closest(".tab");
-      if (!button) return;
-
-      const targetView = button.dataset.view;
-      document.querySelectorAll('.nav-v93 details').forEach(d=>{d.open=false;d.classList.toggle('has-selection',d.contains(button));});
-
-      document.querySelectorAll(".tab").forEach((tab) =>
-        tab.classList.toggle("active", tab === button)
-      );
-
-      els.views.forEach((view) =>
-        view.classList.toggle("active", view.id === targetView)
-      );
-
-    if (targetView === "carsView") {
-      setTimeout(() => {
-        renderFuelMap();
-        refreshFuelMapSize();
-        void refreshStationGps();
-      }, 150);
-    }
+    function handleTabClick(event){
+      const button=event.target.closest('#subTabs .tab');
+      if(!button)return;
+      const view=button.dataset.view;
+      openNavGroupV94(currentNavGroupV94,view);
     }
 
     function syncQuickNowUi() {
@@ -6753,38 +6778,101 @@ async function updateRecord(kind, id, payload) {
   });
 }
 
-    function exportBackup() {
-        const payload = {
-          exportedAt: new Date().toISOString(),
-          firebaseEnabled: state.firebaseEnabled,
-          householdId: state.householdId || null,
-          readings: state.readings,
-          refills: state.refills,
-          purchases: state.purchases,
-          resets: state.resets,
-          chargeEntries: state.chargeEntries,
-          pricePeriods: state.pricePeriods,
-          settings: state.settings,
-          cars: state.cars,
-          fuelEntries: state.fuelEntries,
-          bagSizes: state.bagSizes,
-          // Stationen sind bisher in den Tank- und Ladeeinträgen gespeichert.
-          // Zusätzlich als abgeleiteter Katalog exportieren, ohne die Datenstruktur zu verändern.
-          stations: [...new Map([...state.stations, ...state.fuelEntries.map(e => ({
-            id: e.stationId || null, name: e.stationName || "", brand: e.stationBrand || "",
-            address: e.stationAddress || e.stationDisplayName || e.locationText || "",
-            latitude: e.latitude, longitude: e.longitude, kind: "fuel"
-          })), ...state.chargeEntries.map(e => ({
-            id: e.chargeStationId || null, name: e.chargeStationName || "", brand: e.chargeStationBrand || "",
-            address: e.chargeStationAddress || e.chargeStationDisplayName || e.locationText || "",
-            latitude: e.latitude, longitude: e.longitude, kind: "charge"
-          }))].filter(e => e.id || e.name || e.address).map(e => [
-            `${e.kind}|${e.latitude ?? ""}|${e.longitude ?? ""}|${(e.name || e.address || "").toLowerCase()}`, e
-          ])).values()]
-        };
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-      downloadBlob(blob, `verbrauch-backup-${dateStamp()}.json`);
-      showToast("Backup exportiert.", "success");
+    // v94: Firestore-Backup liest alle Sammlungen direkt aus dem Server,
+    // nicht nur den eventuell noch unvollständig geladenen UI-Cache.
+    const BACKUP_COLLECTIONS_V94=['readings','refills','purchases','resets','chargeEntries','pricePeriods','cars','fuelEntries','stations'];
+    let selectedBackupV94=null;
+    async function exportBackup(){
+      const btn=els.exportBackupBtn;
+      if(btn){btn.disabled=true;btn.textContent='Sicherung wird erstellt …';}
+      try{
+        const payload={format:'verbrauch-zuhause-backup',schemaVersion:2,appVersion:'v94',exportedAt:new Date().toISOString(),householdId:state.householdId||null,source:state.firebaseEnabled?'firestore':'local',collections:{},settings:null,bagSizes:structuredClone(state.bagSizes),localPreferences:{theme:document.documentElement.dataset.theme||'dark',lastBagSize:localStorage.getItem(LOCAL_KEYS.lastBagSize)}};
+        if(state.firebaseEnabled){
+          if(!state.db)throw new Error('Firestore-Verbindung nicht bereit.');
+          for(const key of BACKUP_COLLECTIONS_V94){const result=await getDocs(collection(state.db,`${householdBasePath()}/${key}`));payload.collections[key]=result.docs.map(mapFirestoreDoc);}
+          const settings=await getDoc(doc(state.db,`${householdBasePath()}/settings/main`));payload.settings=settings.exists()?convertFirestoreTimestamps(settings.data()):structuredClone(state.settings);
+        }else{
+          for(const key of BACKUP_COLLECTIONS_V94)payload.collections[key]=structuredClone(state[key]||[]);
+          payload.settings=structuredClone(state.settings);
+        }
+        const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+        downloadBlob(blob,`Verbrauch_Zuhause_Backup_${state.householdId||'lokal'}_${dateStamp()}.json`);
+        showToast('Vollständiges App-Datenbackup erstellt.','success');
+      }catch(error){console.error('Backup fehlgeschlagen:',error);showToast('Backup fehlgeschlagen: '+(error.message||error),'error');}
+      finally{if(btn){btn.disabled=false;btn.textContent='Gesamtes Backup herunterladen';}}
+    }
+    function parseBackupV94(raw){
+      if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('Keine gültige Backup-Datei.');
+      const collections=raw.format==='verbrauch-zuhause-backup'&&raw.collections?raw.collections:raw;
+      const required=['readings','refills','purchases','resets','pricePeriods','cars','fuelEntries'];
+      if(!required.every(k=>Array.isArray(collections[k])))throw new Error('Die Datei enthält nicht alle erwarteten Datensammlungen.');
+      const data={};
+      for(const name of BACKUP_COLLECTIONS_V94){
+        const items=collections[name]||[];
+        if(!Array.isArray(items)||items.length>25000||items.some(v=>!v||typeof v!=='object'||Array.isArray(v)))throw new Error('Ungültige Daten in '+name+'.');
+        data[name]=items;
+      }
+      const settings=raw.settings;
+      if(!settings||typeof settings!=='object'||Array.isArray(settings))throw new Error('Einstellungen fehlen im Backup.');
+      return {data,settings,bagSizes:raw.bagSizes||defaultBagSizes,householdId:raw.householdId||null,preferences:raw.localPreferences||{},exportedAt:raw.exportedAt||null};
+    }
+    async function previewBackupV94(event){
+      selectedBackupV94=null;
+      const btn=document.getElementById('backupRestoreBtn');if(btn)btn.disabled=true;
+      const out=document.getElementById('backupRestorePreview');
+      const file=event.target.files?.[0];if(!file){out.textContent='Noch keine Datei ausgewählt.';return;}
+      try{
+        if(file.size>30*1024*1024)throw new Error('Die Datei ist größer als 30 MB.');
+        const data=parseBackupV94(JSON.parse(await file.text()));selectedBackupV94=data;
+        const rows=Object.entries(data.data).filter(([,items])=>items.length).map(([k,items])=>`${k}: ${items.length}`).join(' · ');
+        out.textContent=`Backup vom ${data.exportedAt?new Date(data.exportedAt).toLocaleString('de-DE'):'unbekannten Datum'} · Haushalt: ${data.householdId||'unbekannt'} · ${rows||'keine Einträge'}`;
+        btn.disabled=false;
+      }catch(e){out.textContent='Dateifehler: '+e.message;}
+    }
+    async function restoreBackupV94(){
+      const data=selectedBackupV94;if(!data)return;
+      const box=document.getElementById('backupRestoreStatus');const btn=document.getElementById('backupRestoreBtn');
+      if(data.householdId&&state.householdId&&data.householdId!==state.householdId){
+        box.textContent=`Abgebrochen: Backup gehört zu ${data.householdId}, ausgewählt ist ${state.householdId}. Bitte zuerst den passenden Haushalt verbinden.`;return;
+      }
+      const count=Object.values(data.data).reduce((n,a)=>n+a.length,0);
+      if(!confirm(`Wiederherstellung starten?\nHaushalt: ${state.householdId}\n${count} Datensätze plus Einstellungen.\nVorhandene IDs werden aktualisiert, andere Daten NICHT gelöscht.\nBitte vorher ein aktuelles Backup exportieren.`))return;
+      btn.disabled=true;box.textContent='Wiederherstellung läuft. Bitte die App nicht schließen …';
+      let done=0;
+      try{
+        if(state.firebaseEnabled){
+          for(const [key,items] of Object.entries(data.data)){
+            for(const item of items){
+              const id=typeof item.id==='string'&&item.id&&item.id.length<400?item.id:generateId();
+              const {id:ignored,...fields}=item;
+              // Firestore-Timestamp-Typen aus dem JSON-Export wiederherstellen.
+              for(const stampKey of ['serverCreatedAt','createdAt','updatedAt']){
+                if(typeof fields[stampKey]==='string' && /^\d{4}-\d{2}-\d{2}T/.test(fields[stampKey])){
+                  const date=new Date(fields[stampKey]);
+                  if(Number.isFinite(date.getTime()))fields[stampKey]=Timestamp.fromDate(date);
+                }
+              }
+              await setDoc(doc(state.db,`${householdBasePath()}/${key}/${id}`),fields,{merge:true});
+              done++;if(done%20===0)box.textContent=`Firestore: ${done} von ${count} Einträgen gespeichert …`;
+            }
+          }
+          await setDoc(doc(state.db,`${householdBasePath()}/settings/main`),data.settings,{merge:true});
+        }else{
+          for(const [key,items] of Object.entries(data.data)){
+            const existing=new Map((state[key]||[]).map(item=>[item.id,item]));
+            for(const item of items){const id=item.id||generateId();existing.set(id,{...item,id});done++;}
+            state[key]=[...existing.values()];
+          }
+          state.settings=mergeSettings(data.settings);
+        }
+        state.bagSizes=normalizeBagSizes(data.bagSizes);
+        if(data.preferences.lastBagSize)localStorage.setItem(LOCAL_KEYS.lastBagSize,String(data.preferences.lastBagSize));
+        if(['light','dark'].includes(data.preferences.theme)){document.documentElement.dataset.theme=data.preferences.theme;localStorage.setItem('verbrauch-theme-v1',data.preferences.theme);document.getElementById('themeSelectV94').value=data.preferences.theme;document.getElementById('appThemeColor')?.setAttribute('content',data.preferences.theme==='light'?'#f4f7fc':'#0f172a');}
+        persistLocalSnapshot();renderAll();
+        box.textContent=`Wiederherstellung abgeschlossen: ${done} Datensätze verarbeitet. Bei Firestore werden die Ansichten automatisch aktualisiert.`;
+        showToast('Backup wiederhergestellt.','success');
+      }catch(e){console.error('Restore fehlgeschlagen',e);box.textContent=`Wiederherstellung nach ${done} Einträgen unterbrochen: ${e.message}. Bereits geschriebene Einträge bleiben bestehen; bitte Fehler prüfen.`;showToast('Wiederherstellung nicht vollständig.','error');}
+      finally{btn.disabled=false;}
     }
 
     function mapFirestoreDoc(docSnap) {
@@ -6915,27 +7003,19 @@ async function updateRecord(kind, id, payload) {
     });
   </script>
   <script>
-    (function () {
-      const btn = document.getElementById("themeToggleBtn");
-      const label = document.getElementById("themeToggleLabel");
-      const icon = document.getElementById("themeToggleIcon");
-      const meta = document.getElementById("appThemeColor");
-      if (!btn) return;
-      function refresh() {
-        const isLight = document.documentElement.dataset.theme === "light";
-        label.textContent = isLight ? "Dunkles Design" : "Helles Design";
-        icon.textContent = isLight ? "🌙" : "☀️";
-        btn.setAttribute("aria-pressed", String(isLight));
-        btn.setAttribute("title", isLight ? "Zum dunklen Design wechseln" : "Zum hellen Design wechseln");
-        if (meta) meta.setAttribute("content", isLight ? "#f4f7fc" : "#0f172a");
-      }
-      btn.addEventListener("click", function () {
-        const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
-        document.documentElement.dataset.theme = next;
-        try { localStorage.setItem("verbrauch-theme-v1", next); } catch (_) {}
-        refresh();
-      });
-      refresh();
+    (()=>{
+      const select=document.getElementById('themeSelectV94');
+      if(!select)return;
+      const meta=document.getElementById('appThemeColor');
+      const apply=value=>{
+        const next=value==='light'?'light':'dark';
+        document.documentElement.dataset.theme=next;
+        select.value=next;
+        try{localStorage.setItem('verbrauch-theme-v1',next);}catch(_){}
+        if(meta)meta.setAttribute('content',next==='light'?'#f4f7fc':'#0f172a');
+      };
+      select.value=document.documentElement.dataset.theme==='light'?'light':'dark';
+      select.addEventListener('change',()=>apply(select.value));
     })();
   </script>
 </body>
