@@ -891,26 +891,26 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 .pellet-balance-row strong{font-size:1.15rem}
 @media(max-width:720px){.tabs{width:100%;overflow:visible!important;border-radius:14px;padding:5px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.tabs .tab{width:100%;border-radius:10px;padding:12px 7px;line-height:1.2;font-size:.86rem;white-space:normal;overflow-wrap:anywhere}.tabs .tab:last-child:nth-child(odd){grid-column:span 2}.pellet-balance-row{grid-template-columns:1fr}}
 
-/* v93: klare Kachelränder, einheitliche Fahrzeug-KPIs und Bunkerwarnung */
-.energy-market-tile {overflow:hidden;isolation:isolate}
-.energy-market-tile::before {left:0;right:0;top:0;width:auto;border-radius:17px 17px 0 0;clip-path:inset(0 round 17px 17px 0 0)}
-#dashboardView .dash-kpi{overflow:hidden;isolation:isolate}
-#dashboardView .dash-kpi::before {left:0;right:0;width:auto;border-radius:19px 19px 0 0;clip-path:inset(0 round 19px 19px 0 0)}
-.fuel-stats-grid {grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}
-.fuel-stats-grid .fuel-hero-card,.fuel-stats-grid .fuel-mini-card{grid-column:auto;min-height:245px;height:100%;padding:19px;min-width:0;display:flex;flex-direction:column}
-.fuel-stats-grid .fuel-card-value{font-size:clamp(1.18rem,2vw,1.7rem);overflow-wrap:anywhere}
-.fuel-stats-grid .fuel-card-foot{margin-top:auto}
-.fuel-stats-grid .fuel-card-title{font-size:clamp(.95rem,1.4vw,1.2rem)}
-.fuel-stats-grid .fuel-card-accent{border-radius:19px 19px 0 0;clip-path:inset(0 round 19px 19px 0 0)}
-.pellet-warning-card {border:1px solid var(--line)}
-.pellet-warning-card .form-grid {margin-top:16px;gap:15px}
-.pellet-warning-card .form-grid > label:not(.pellet-warning-toggle){background:var(--app-inner,rgba(8,17,32,.1));border:1px solid var(--line);border-radius:16px;padding:14px;min-width:0}
-.pellet-warning-card .form-grid > label:not(.pellet-warning-toggle) input{margin-top:8px}
-.pellet-warning-toggle {display:flex!important;align-items:center;justify-content:space-between;gap:12px;padding:15px;border:1px solid var(--line);border-radius:16px;background:var(--app-inner,rgba(8,17,32,.1))}
-.pellet-warning-toggle strong,.pellet-warning-toggle small{display:block}.pellet-warning-toggle small{color:var(--muted);font-weight:400;margin-top:5px}
-.pellet-warning-toggle input {width:23px;height:23px;flex-shrink:0}
-@media(max-width:620px){.fuel-stats-grid{grid-template-columns:1fr}.fuel-stats-grid .fuel-hero-card,.fuel-stats-grid .fuel-mini-card{min-height:195px}}
-
+/* v93: Hauptnavigation mit klaren Untermenüs */
+.nav-v93{display:flex!important;flex-wrap:wrap!important;gap:9px!important;overflow:visible!important;border-radius:16px!important;position:relative;z-index:40;align-items:stretch}
+.nav-v93 > .tab,.nav-v93 > .nav-dropdown{flex:1 1 auto;min-width:130px}
+.nav-v93 .nav-dropdown{position:relative}
+.nav-v93 .nav-dropdown>summary{list-style:none;cursor:pointer;padding:13px 14px;height:100%;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;font-weight:750;user-select:none;white-space:nowrap}
+.nav-v93 .nav-dropdown>summary::-webkit-details-marker{display:none}
+.nav-v93 .nav-dropdown>summary:hover,.nav-v93 .nav-dropdown[open]>summary,.nav-v93 .nav-dropdown.has-selection>summary{background:rgba(56,189,248,.16)}
+.nav-v93 .nav-dropdown>summary span{font-size:.75rem;color:var(--muted)}
+.nav-v93 .nav-popover{position:absolute;top:calc(100% + 7px);left:0;min-width:235px;width:max-content;max-width:min(92vw,330px);display:grid;gap:5px;background:var(--card-solid);border:1px solid var(--line);box-shadow:0 16px 35px rgba(4,25,44,.16);border-radius:14px;padding:8px;z-index:60}
+.nav-v93 .nav-popover .tab{width:100%;display:flex;text-align:left;padding:12px 14px;justify-content:space-between;white-space:normal;min-height:42px}
+.nav-v93 .nav-popover small{font-size:.72rem;color:var(--muted)}
+.price-schedule-box{margin:16px 0}
+.price-times-list{display:grid;gap:9px}
+.price-time-row{display:flex;align-items:center;gap:12px;background:var(--card-solid);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.price-time-row label{flex:1;min-width:0;display:flex;align-items:center;gap:12px;font-weight:700}
+.price-time-row input{max-width:155px;min-width:115px}
+.price-time-row .btn{padding:8px 12px;flex-shrink:0}
+.price-times-bottom{display:flex;align-items:center;gap:13px;flex-wrap:wrap;margin-top:13px}
+.price-times-bottom .muted{font-size:.82rem;flex:1;min-width:180px}
+@media(max-width:720px){.nav-v93{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible!important;padding:6px!important;gap:6px!important;border-radius:12px!important}.nav-v93>.tab,.nav-v93>.nav-dropdown{min-width:0;width:100%;grid-column:auto}.nav-v93>.tab{padding:13px 9px!important}.nav-v93>.nav-dropdown>summary{font-size:.86rem;padding:13px 7px;white-space:normal;text-align:center;line-height:1.3}.nav-v93>.nav-dropdown:last-child{grid-column:span 2}.nav-v93 .nav-popover{left:0;right:auto;min-width:min(80vw,240px);max-width:90vw}.nav-v93>.nav-dropdown:last-child .nav-popover{left:50%;transform:translateX(-50%)}.price-time-row{gap:7px;padding:9px}.price-time-row label{gap:7px;font-size:.84rem}.price-time-row input{min-width:105px;max-width:140px;padding:9px 8px}}
 </style>
 </head>
 <body>
@@ -921,7 +921,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
         <h1>Zählerstände, Pellets und Kosten im Blick</h1>
         <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
         <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du den Haushalt wechseln oder neu anlegen.</p>
-        <p class="hero-copy">Version 1.3.1.132 · Update v93</p>
+        <p class="hero-copy">Version 1.3.1.131</p>
       </div>
       <div class="hero-actions">
         <button id="themeToggleBtn" class="btn ghost theme-toggle" type="button" aria-label="Design wechseln" aria-pressed="false"><span id="themeToggleIcon" aria-hidden="true">☀️</span> <span id="themeToggleLabel">Helles Design</span></button>
@@ -930,14 +930,30 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
     </header>
 
-    <div class="tabs" id="mainTabs">
-      <button class="tab active" type="button" data-view="dashboardView">Übersicht</button>
-      <button class="tab" type="button" data-view="readingsView">Zählerstände</button>
-      <button class="tab" type="button" data-view="refillsView">Pellets Nachfüllen</button>
-      <button class="tab" type="button" data-view="pelletStoreView">Pelletlager</button>
-        <button class="tab" type="button" data-view="carsView">Auto / Tanken</button>
-      <button class="tab" type="button" data-view="settingsView">Einstellungen</button>
-    </div>
+    <nav class="tabs nav-v93" id="mainTabs" aria-label="Hauptnavigation">
+      <button class="tab active" type="button" data-view="dashboardView">🏠 Übersicht</button>
+      <details class="nav-dropdown"><summary>📊 Zählerstände <span>▾</span></summary><div class="nav-popover">
+        <button class="tab" type="button" data-view="readingsView">📈 Zählerstände</button>
+        <button class="tab" type="button" data-view="resetView">🔄 Zählerneustart</button>
+      </div></details>
+      <details class="nav-dropdown"><summary>🔥 Pellets <span>▾</span></summary><div class="nav-popover">
+        <button class="tab" type="button" data-view="refillsView">🪣 Nachfüllen</button>
+        <button class="tab" type="button" data-view="pelletStoreView">🏠 Pelletlager</button>
+        <button class="tab" type="button" data-view="bagView">📦 Sackgrößen</button>
+        <button class="tab" type="button" data-view="offersView">🏷️ Angebotsabfragen</button>
+        <button class="tab" type="button" data-view="purchasesView">🧾 Käufe</button>
+      </div></details>
+      <details class="nav-dropdown"><summary>🚗 Auto <span>▾</span></summary><div class="nav-popover">
+        <button class="tab" type="button" data-view="carsView">⛽ Tanken</button>
+        <button class="tab" type="button" data-view="carSettingsView">🚙 Fahrzeugeinstellungen</button>
+        <button class="tab" type="button" data-view="fuelPricesView">💶 Spritpreise <small>demnächst</small></button>
+      </div></details>
+      <details class="nav-dropdown"><summary>⚙️ Einstellungen <span>▾</span></summary><div class="nav-popover">
+        <button class="tab" type="button" data-view="firebaseView">☁️ Firebase</button>
+        <button class="tab" type="button" data-view="notificationsView">🔔 Benachrichtigungen</button>
+        <button class="tab" type="button" data-view="pricesView">💰 Preise</button>
+      </div></details>
+    </nav>
 
     <section id="dashboardView" class="view active">
       <div class="grid">
@@ -953,7 +969,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
         </section>
 
         <section class="card wide" aria-label="Marktpreise in Drolshagen">
-          <div class="card-head"><div><p class="section-kicker">ENERGIEPREISE · 57489 DROLSHAGEN</p><h2>Aktuelle Marktpreise</h2></div><button class="btn ghost" id="marketRefreshBtn" type="button">Preise aktualisieren</button></div>
+          <div class="card-head"><div><p class="section-kicker">ENERGIEPREISE · 57489 DROLSHAGEN</p><h2>Aktuelle Marktpreise</h2><small class="muted">Nur zur Information. Für die Pellets-Kostenrechnung zählt ausschließlich der letzte gespeicherte Kauf.</small></div><button class="btn ghost" id="marketRefreshBtn" type="button">Preise aktualisieren</button></div>
           <p class="muted" style="margin:-5px 0 12px;font-size:.84rem">Kachel anklicken, um Preisverlauf und Zeitraum auszuwählen.</p>
           <div class="energy-market-grid" id="energyMarketPrices" aria-live="polite"><p class="muted">Preisübersicht wird geladen …</p></div>
           <p class="muted" id="energyMarketUpdated" style="margin:12px 0 0;font-size:.8rem"></p>
@@ -1019,7 +1035,16 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
           <div id="consumptionHistory" class="list-stack"></div>
         </section>
 
-
+        <section class="card span-6">
+          <div class="card-head">
+            <div>
+              <p class="section-kicker">Pellets Lager</p>
+              <h2>Nachfüllungen und Käufe</h2>
+            </div>
+          </div>
+          <div id="pelletRangeDashboard" class="pellet-overview-summary" aria-live="polite"></div>
+          <button class="btn ghost" id="openPelletStore" type="button" style="margin-top:14px">Details im Pelletlager ansehen →</button>
+        </section>
       </div>
     </section>
 
@@ -1186,31 +1211,28 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 <section id="pelletStoreView" class="view">
   <div class="grid">
     <section class="card wide glass">
-      <div class="card-head"><div><p class="section-kicker">LAGER & REICHWEITE</p><h2>🔥 Mein Pelletlager</h2><p class="muted">Bunker und Sacklager getrennt · Verbrauchsprofil aus bis zu 24 Monaten. Alle Werte sind Näherungen.</p></div><span class="badge">Schätzung</span></div>
+      <div class="card-head"><div><p class="section-kicker">LAGER & REICHWEITE</p><h2>🔥 Mein Pelletlager</h2><p class="muted">Rechnerischer Füllstand seit dem ersten bekannten Einkauf. Kein Sensor-Messwert.</p></div><span class="badge">Schätzung</span></div>
       <div id="pelletRangeForecast" class="pellet-forecast" aria-live="polite"></div>
     </section>
-
-    <section class="card wide pellet-warning-card">
-      <div class="card-head"><div><p class="section-kicker">BENACHRICHTIGUNGEN · PELLETLAGER</p><h2>🔔 Bunker kontrollieren</h2></div><span class="badge ok">Tägliche Überwachung</span></div>
-      <p class="muted">Ab dem errechneten Bunkerbestand unterhalb der Schwelle erhältst du täglich eine Push-Nachricht. Die Prüfung nutzt die saisonalen Durchschnittswerte bis zum aktuellen Tag. Nach einer ausreichenden Nachfüllung endet die tägliche Meldung automatisch.</p>
-      <form id="pelletWarningForm" class="form-grid">
-        <label>Warnschwelle im Bunker (kg)<input id="pelletWarningKg" type="number" min="25" max="950" step="5" required value="200"></label>
-        <label>Fassungsvermögen Bunker (kg)<input id="pelletCapacityKg" type="number" min="100" max="10000" step="10" required value="1000"></label>
-        <label>Übliche Sackgröße (kg)<input id="pelletBagKg" type="number" min="1" max="50" step="0.5" required value="15"></label>
-        <label class="span-12 pellet-warning-toggle"><span><strong>Tägliche Warnung aktivieren</strong><small>Bei Unterschreitung der Warnschwelle täglich erinnern, bis nachgefüllt wird.</small></span><input id="pelletWarningEnabled" type="checkbox" checked></label>
-        <div class="form-actions span-12"><button class="btn primary" type="submit">Bunkerwarnung speichern</button></div>
+    <section class="card span-6">
+      <div class="card-head"><div><p class="section-kicker">Start der Bilanz</p><h2>Sommerlieferung</h2></div></div>
+      <div id="pelletStartInfo" class="pellet-forecast-notes"></div>
+      <form id="pelletBaselineForm" class="form-grid" style="margin-top:14px">
+        <label>Restbestand vor der ersten Lieferung (kg)
+          <input type="number" id="pelletInitialRest" min="0" max="50000" step="0.1" value="0" required>
+        </label>
+        <label class="span-12"><small>Dein Bunker war fast leer. Daher sind 0 kg zunächst unsere Annahme. Hier kannst du einen geschätzten Rest eintragen.</small></label>
+        <div class="form-actions span-12"><button type="submit" class="btn primary">Startbestand speichern</button></div>
       </form>
-      <p class="muted">Voraussetzung: Cloudflare Worker aus diesem Update installieren, Cron-Trigger beibehalten und angemeldete Push-Geräte.</p>
     </section>
-    <section class="card wide">
-      <div class="card-head"><div><p class="section-kicker">Bestandsabgleich</p><h2>Bestände korrigieren</h2></div></div>
-      <p class="muted">Der Heizungszähler ist nicht hundertprozentig genau. Bei einer Sichtprüfung korrigierst du ausschließlich den Bunkerbestand. Der Sackwarebestand ergibt sich immer automatisch aus Lieferungen minus Nachfüllungen. Frühere Zählerstände und Lieferungen bleiben unverändert.</p>
+    <section class="card span-6">
+      <div class="card-head"><div><p class="section-kicker">Bestandsabgleich</p><h2>Tatsächlichen Rest schätzen</h2></div></div>
+      <p class="muted">Bei einer Sichtprüfung oder vor einer neuen Lieferung kannst du den Restbestand korrigieren. Die Korrektur gilt ab ihrem Datum und wird mit deinem Haushalt synchronisiert.</p>
       <form id="pelletAdjustmentForm" class="form-grid">
-        <label>Zeitpunkt der Prüfung<input id="pelletAdjustmentDate" type="datetime-local" required></label>
-        <label>Bunkerbestand (kg)<input id="pelletAdjustmentKg" type="number" min="0" max="10000" step="0.1" required placeholder="z. B. 120"></label>
-
-        <label class="span-12">Bemerkung<input id="pelletAdjustmentNote" maxlength="150" placeholder="z. B. Bunker ungefähr halb voll"></label>
-        <div class="form-actions span-12"><button type="submit" class="btn primary">Bunkerbestand korrigieren</button></div>
+        <label>Zeitpunkt der Bestandsprüfung<input id="pelletAdjustmentDate" type="datetime-local" required></label>
+        <label>Geschätzter Bestand in kg<input id="pelletAdjustmentKg" type="number" min="0" max="100000" step="0.1" required placeholder="z. B. 400"></label>
+        <label class="span-12">Bemerkung<input id="pelletAdjustmentNote" maxlength="150" placeholder="z. B. Sichtprüfung vor Lieferung"></label>
+        <div class="form-actions span-12"><button type="submit" class="btn primary">Bestand abgleichen</button></div>
       </form>
       <div id="pelletAdjustmentHistory" class="list-stack" style="margin-top:16px"></div>
     </section>
@@ -1523,7 +1545,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       
 <section id="settingsView" class="view">
   <div class="grid">
-    <section class="card glass wide">
+    <section id="firebaseSettingsCard" class="card glass wide">
       <div class="card-head">
         <div>
           <p class="section-kicker">Firebase</p>
@@ -1566,13 +1588,13 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 
     <section class="card glass wide push-rule-panel" id="pushRulesPanel">
       <div class="push-rules-heading">
-        <div><div class="push-rules-eyebrow">Benachrichtigungen · v89</div><h2>Meine Push-Regeln 🔔</h2>
+        <div><div class="push-rules-eyebrow">Benachrichtigungen · Zeitplan</div><h2>Meine Push-Regeln 🔔</h2>
           <p>Steuere, welche Meldungen deine Geräte erreichen. Gespeicherte Regeln gelten für den gesamten Haushalt, auch wenn die App geschlossen ist.</p></div>
         <div class="push-rules-summary"><span class="push-rules-chip">🏠 Haushaltweit</span><span class="push-rules-chip is-on" id="pushRulesActiveCount">4 von 4 aktiv</span></div>
       </div>
       <div class="push-rules-grid-v89">
         <label class="push-rule-v89">
-          <span class="push-rule-top"><span class="push-rule-icon">🔥</span><span class="push-rule-content"><strong>Tägliche Energiepreise</strong><small>Lose Pellets, Sackware und Heizöl. Einmal täglich als kompakte Preisübersicht.</small></span></span>
+          <span class="push-rule-top"><span class="push-rule-icon">🔥</span><span class="push-rule-content"><strong>Energiepreise zum Wunschzeitpunkt</strong><small>Lose Pellets, Sackware und Heizöl zu deinen eingestellten Uhrzeiten.</small></span></span>
           <span class="push-rule-bottom"><span class="push-rule-state"><span class="push-rule-state-on">Aktiviert</span><span class="push-rule-state-off">Deaktiviert</span></span><input class="push-switch" id="rulePrices" type="checkbox" checked aria-label="Tägliche Energiepreise aktivieren"></span>
         </label>
         <label class="push-rule-v89">
@@ -1587,6 +1609,12 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
           <span class="push-rule-top"><span class="push-rule-icon blue">⛽</span><span class="push-rule-content"><strong>Neue Tankvorgänge</strong><small>Meldung nach einer neuen Tankung mit Fahrzeug, Menge, Preis und Kilometerstand.</small></span></span>
           <span class="push-rule-bottom"><span class="push-rule-state"><span class="push-rule-state-on">Aktiviert</span><span class="push-rule-state-off">Deaktiviert</span></span><input class="push-switch" id="ruleFuel" type="checkbox" checked aria-label="Tankvorgang-Meldungen aktivieren"></span>
         </label>
+      </div>
+      <div class="push-rules-controls price-schedule-box" id="pricePushSchedulePanel">
+        <div class="push-rules-control-head"><div><strong>🕒 Energiepreis-Push: Uhrzeiten</strong><small>Gilt für alle angemeldeten Geräte. Uhrzeiten nach Europe/Berlin. Füge eine oder mehrere tägliche Benachrichtigungen hinzu.</small></div><span class="push-rules-chip" id="priceTimeCounter">2 Zeiten</span></div>
+        <div id="pricePushTimeList" class="price-times-list" aria-live="polite"></div>
+        <div class="price-times-bottom"><button class="btn secondary" type="button" id="addPricePushTime">＋ Uhrzeit hinzufügen</button><span class="muted">Die Preisprüfung läuft unabhängig davon alle 2 Stunden von 06:00 bis 18:00 Uhr.</span></div>
+        <p class="muted" style="margin:12px 0 0;font-size:.82rem">Auch ohne Preisänderung wird zur gewählten Uhrzeit der zuletzt bestätigte Preis mit seinem Datenstand gemeldet. Bei fehlgeschlagenem Abruf wird das ausdrücklich gekennzeichnet.</p>
       </div>
       <div class="push-rules-controls">
         <div class="push-rules-control-head"><div><strong>⚙️ Empfindlichkeit der Verbrauchswarnung</strong><small>Warnung bei einer Abweichung vom historischen Vergleichswert. Mindestens 7 Tage aktuelles Ableseintervall und 90 Tage Historie.</small></div></div>
@@ -1617,7 +1645,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
     </section>
 
-    <section class="card glass wide">
+    <section id="carSettingsCard" class="card glass wide">
       <div class="card-head">
         <div>
           <p class="section-kicker">Autos</p>
@@ -1679,7 +1707,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       <div id="carList" class="list-stack" style="margin-top:14px;"></div>
     </section>
 
-    <section class="card wide">
+    <section id="pricePeriodCard" class="card wide">
       <div class="card-head">
         <div>
           <p class="section-kicker">Preiszeiträume</p>
@@ -1728,7 +1756,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </form>
     </section>
 
-    <section class="card wide">
+    <section id="bagSizesCard" class="card wide">
       <div class="card-head">
         <div>
           <p class="section-kicker">Sackgrößen</p>
@@ -1761,7 +1789,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       <small class="muted">Ein direkter Live-Preisabruf aus der externen Webseite ist nicht verfügbar. Der hinterlegte Preis wird auf diesem Gerät gespeichert und bleibt als Angebot mit Datum gekennzeichnet.</small>
       <div id="pelletComparisonSettings" class="pellet-compare-grid" style="margin-top:16px"></div>
     </section>
-    <section class="card glass">
+    <section id="basePricesCard" class="card glass">
       <div class="card-head">
         <div>
           <p class="section-kicker">Aktuelle Basispreise</p>
@@ -1805,7 +1833,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </form>
     </section>
 
-    <section class="card glass">
+    <section id="resetCard" class="card glass">
       <div class="card-head">
         <div>
           <p class="section-kicker">Zählerwechsel / Reset</p>
@@ -1848,7 +1876,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </form>
     </section>
 
-    <section class="card glass">
+    <section id="purchaseCard" class="card glass">
       <div class="card-head">
         <div>
           <p class="section-kicker">Pellets Einkauf</p>
@@ -1893,7 +1921,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </form>
     </section>
 
-    <section class="card">
+    <section id="currentPriceCard" class="card">
       <div class="card-head">
         <div>
           <p class="section-kicker">Aktive Preislage</p>
@@ -1903,7 +1931,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       <div id="settingsSummary" class="settings-summary-grid"></div>
     </section>
 
-    <section class="card wide">
+    <section id="priceHistoryCard" class="card wide">
       <div class="card-head">
         <div>
           <p class="section-kicker">Preis-Historie</p>
@@ -1913,7 +1941,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       <div id="pricePeriodList" class="list-stack"></div>
     </section>
 
-    <section class="card wide">
+    <section id="purchaseHistoryCard" class="card wide">
       <div class="card-head">
         <div>
           <p class="section-kicker">Pellets Käufe</p>
@@ -1925,6 +1953,15 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
   </div>
 </section>
 
+<section id="resetView" class="view"><div class="grid" id="resetViewGrid"></div></section>
+<section id="bagView" class="view"><div class="grid" id="bagViewGrid"></div></section>
+<section id="offersView" class="view"><div class="grid" id="offersViewGrid"></div></section>
+<section id="purchasesView" class="view"><div class="grid" id="purchasesViewGrid"></div></section>
+<section id="carSettingsView" class="view"><div class="grid" id="carSettingsViewGrid"></div></section>
+<section id="fuelPricesView" class="view"><div class="grid"><section class="card wide glass"><p class="section-kicker">IN PLANUNG</p><h2>⛽ Aktuelle Tankstellenpreise</h2><p class="muted">Hier ergänzen wir später aktuelle Diesel-, E5- und E10-Preise mit Entfernungssortierung und Kartenansicht.</p></section></div></section>
+<section id="firebaseView" class="view"><div class="grid" id="firebaseViewGrid"></div></section>
+<section id="notificationsView" class="view"><div class="grid" id="notificationsViewGrid"></div></section>
+<section id="pricesView" class="view"><div class="grid" id="pricesViewGrid"></div></section>
   <div id="marketHistoryModal" class="market-history-backdrop" role="dialog" aria-modal="true" aria-labelledby="marketHistoryTitle" aria-hidden="true" hidden>
     <div class="market-history-panel" role="document">
       <div class="market-history-top">
@@ -2217,11 +2254,67 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 
     // init erst am Ende des Moduls aufrufen: Push-Konstanten vorher initialisieren.
 
+
+    // v93: Bereits vorhandene Formulare behalten ihre Original-IDs und Eventhandler.
+    // Wir verschieben nur Karten in sauber getrennte Unteransichten.
+    function prepareStructuredMenus(){
+      const locations={
+        firebaseView:['firebaseSettingsCard'],notificationsView:['pushRulesPanel','pushTestPanel'],
+        carSettingsView:['carSettingsCard'],resetView:['resetCard'],
+        bagView:['bagSizesCard'],offersView:['pelletMarketPriceCard'],
+        purchasesView:['purchaseCard','purchaseHistoryCard'],
+        pricesView:['pricePeriodCard','basePricesCard','currentPriceCard','priceHistoryCard']
+      };
+      for(const [view,ids] of Object.entries(locations)){
+        const grid=document.getElementById(view+'Grid');
+        if(!grid)continue;
+        for(const id of ids){const card=document.getElementById(id);if(card)grid.appendChild(card);}
+      }
+      document.addEventListener('click',event=>{
+        if(!event.target.closest('#mainTabs'))document.querySelectorAll('.nav-v93 details[open]').forEach(d=>d.open=false);
+      });
+      document.querySelectorAll('.nav-v93 details').forEach(detail=>{
+        detail.addEventListener('toggle',()=>{if(detail.open)document.querySelectorAll('.nav-v93 details').forEach(other=>{if(other!==detail)other.open=false;});});
+      });
+    }
+    function activatePriceTimes(times){
+      const list=document.getElementById('pricePushTimeList');if(!list)return;
+      const valid=Array.isArray(times)?times.filter(t=>/^([01]\d|2[0-3]):[0-5]\d$/.test(t)).slice(0,12):[];
+      list.replaceChildren();
+      for(const time of valid){
+        const row=document.createElement('div');row.className='price-time-row';
+        const label=document.createElement('label');label.textContent='🔔 Preis-Push';
+        const input=document.createElement('input');input.type='time';input.value=time;input.step=60;input.className='price-push-time';input.setAttribute('aria-label','Uhrzeit der Preisbenachrichtigung');
+        const remove=document.createElement('button');remove.type='button';remove.className='btn ghost';remove.textContent='✕';remove.title='Uhrzeit entfernen';remove.setAttribute('aria-label','Uhrzeit entfernen');
+        remove.addEventListener('click',()=>{row.remove();updatePriceTimeCount();});
+        label.appendChild(input);row.append(label,remove);list.appendChild(row);
+      }
+      updatePriceTimeCount();
+    }
+    function updatePriceTimeCount(){const e=document.getElementById('priceTimeCounter');if(e){const n=document.querySelectorAll('#pricePushTimeList .price-push-time').length;e.textContent=n+' '+(n===1?'Uhrzeit':'Uhrzeiten');}}
+    function readPriceTimes(){
+      const times=[...document.querySelectorAll('#pricePushTimeList .price-push-time')].map(el=>el.value);
+      if(times.some(t=>!/^([01]\d|2[0-3]):[0-5]\d$/.test(t)))throw new Error('Bitte gültige Uhrzeiten eingeben.');
+      if(new Set(times).size!==times.length)throw new Error('Jede Uhrzeit darf nur einmal vorkommen.');
+      return times.sort();
+    }
+    function registerPriceTimeControls(){
+      activatePriceTimes(['10:00','17:15']);
+      document.getElementById('addPricePushTime')?.addEventListener('click',()=>{
+        if(document.querySelectorAll('#pricePushTimeList .price-push-time').length>=12){setRulesStatus('Maximal 12 Uhrzeiten möglich.',true);return;}
+        const now=new Date();const t=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+        const times=[...document.querySelectorAll('#pricePushTimeList .price-push-time')].map(e=>e.value);
+        // Neue Uhrzeit sofort editierbar, für schnelle Live-Tests.
+        activatePriceTimes([...times,t]);document.querySelector('#pricePushTimeList .price-time-row:last-child input')?.focus();
+      });
+    }
     async function init() {
       hydrateLocalForms();
       setDefaultDatetimes();
       syncQuickNowUi();
       restoreLocalData();
+      prepareStructuredMenus();
+      registerPriceTimeControls();
       registerEvents();
       registerInstallHandling();
       registerServiceWorker();
@@ -2281,10 +2374,10 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
           const scope = item.scope === 'national' ? 'Deutschland-Durchschnitt · nicht regional' : '57489 Drolshagen';
           return `<article class="energy-market-tile" style="--market-accent:${color}" data-market-key="${key}" role="button" tabindex="0" aria-label="Preisverlauf ${label} öffnen"><h3>${symbol} ${label}</h3><div class="market-value">${valid ? formatCurrency(n) : 'Nicht verfügbar'}</div><p>${unit} · ${escapeHtml(scope)}</p><p>${valid ? (fresh ? 'Aktuelle Preisprüfung' : 'Älterer Preis, bitte Datum beachten') : 'Noch kein verifizierter Preis abrufbar'}${item.checked_at ? ' · '+escapeHtml(new Date(item.checked_at).toLocaleDateString('de-DE')) : ''}</p>${source ? `<p><a href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Quelle öffnen ↗</a></p>` : ''}<div class="market-tile-hint">📈 Preisverlauf anzeigen ↗</div></article>`;
         }).join('');
-        footer.textContent = ''; footer.hidden = true;
+        footer.textContent = 'Marktpreise nur zur Orientierung. Preisbasis und Bestellmenge unterscheiden sich je nach Anbieter. Keine Verwendung für Verbrauchs- oder Kostenberechnungen.';
       } catch(err) {
         area.innerHTML = '<div class="empty-state" style="grid-column:1/-1">Marktpreise derzeit nicht verfügbar. Die übrigen Funktionen der App sind davon nicht betroffen.</div>';
-        footer.hidden = false; footer.textContent = String(err.message || err);
+        footer.textContent = String(err.message || err);
       }
     }
 
@@ -2440,7 +2533,6 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       els.mainTabs?.addEventListener("click", handleTabClick);
       document.getElementById('openPelletStore')?.addEventListener('click',()=>document.querySelector('.tab[data-view="pelletStoreView"]')?.click());
       document.getElementById('pelletBaselineForm')?.addEventListener('submit',handlePelletBaselineSave);
-      document.getElementById('pelletWarningForm')?.addEventListener('submit',handlePelletWarningSave);
       document.getElementById('pelletAdjustmentForm')?.addEventListener('submit',handlePelletAdjustmentSave);
       document.getElementById('pelletAdjustmentDate').value=toDatetimeLocal(new Date());
       document.getElementById("dashboardChartMetric")?.addEventListener("change", renderDashboardMonthlyChart);
@@ -2720,14 +2812,14 @@ function formatStationShort(station) {
       }catch(error){pushStatus('❌ '+error.message,true);}
     }
     // v86: Push-Regeln liegen zentral beim authentifizierten Cloudflare Worker.
-    const PUSH_RULE_DEFAULTS={prices:true,reminder:true,warnings:true,fuel:true,threshold:30};
+    const PUSH_RULE_DEFAULTS={prices:true,reminder:true,warnings:true,fuel:true,threshold:30,priceTimes:['10:00','17:15']};
     function setRulesStatus(message,bad=false){const el=document.getElementById('pushRulesStatus');if(el){const success=!bad&&(/geladen|gespeichert/i).test(message);el.dataset.state=bad?'error':success?'success':'info';const txt=el.querySelector('.push-rules-message-text');const ico=el.querySelector('.push-rules-message-icon');if(txt)txt.textContent=message;if(ico)ico.textContent=bad?'❌':success?'✅':'ℹ️';}}
     function syncRulesView(){const ids=['rulePrices','ruleReminder','ruleWarnings','ruleFuel'];const n=ids.filter(id=>document.getElementById(id)?.checked).length;const count=document.getElementById('pushRulesActiveCount');if(count)count.textContent=n+' von 4 aktiv';const field=document.getElementById('ruleThreshold');const slider=document.getElementById('ruleThresholdSlider');if(field&&slider&&document.activeElement!==slider){const v=Number(field.value);if(Number.isFinite(v)&&v>=10&&v<=200)slider.value=String(v);}}
     function readRulesInputs(){return {prices:document.getElementById('rulePrices').checked,reminder:document.getElementById('ruleReminder').checked,
-      warnings:document.getElementById('ruleWarnings').checked,fuel:document.getElementById('ruleFuel').checked,threshold:Number(document.getElementById('ruleThreshold').value)};}
+      warnings:document.getElementById('ruleWarnings').checked,fuel:document.getElementById('ruleFuel').checked,threshold:Number(document.getElementById('ruleThreshold').value),priceTimes:readPriceTimes()};}
     function applyRulesInputs(rules){const r={...PUSH_RULE_DEFAULTS,...rules};
       for(const [key,id] of [['prices','rulePrices'],['reminder','ruleReminder'],['warnings','ruleWarnings'],['fuel','ruleFuel']])document.getElementById(id).checked=!!r[key];
-      document.getElementById('ruleThreshold').value=r.threshold;syncRulesView();}
+      document.getElementById('ruleThreshold').value=r.threshold;activatePriceTimes(r.priceTimes);syncRulesView();}
     function registerPushRules(){
       for(const id of ['rulePrices','ruleReminder','ruleWarnings','ruleFuel'])document.getElementById(id)?.addEventListener('change',syncRulesView);
       document.getElementById('ruleThresholdSlider')?.addEventListener('input',e=>{document.getElementById('ruleThreshold').value=e.target.value;});
@@ -2745,11 +2837,10 @@ function formatStationShort(station) {
       });
     }
 
-    // v92: zwei reale Vorratsorte, keine Doppelzählung von Umbuchungen.
-    const PELLET_DAY=86400000;
+    // v91: Bilanzbeginn = erste bekannte Lieferung. Altverbräuche ausdrücklich ausgeschlossen.
     function pelletBaselineDate(){
-      const ps=state.purchases.filter(p=>Number(p.totalKg)>0&&Number.isFinite(Date.parse(p.date))).sort((a,b)=>Date.parse(a.date)-Date.parse(b.date));
-      return ps.length?new Date(ps[0].date):null;
+      const purchases=state.purchases.filter(p=>Number(p.totalKg)>0&&Number.isFinite(Date.parse(p.date))).sort((a,b)=>Date.parse(a.date)-Date.parse(b.date));
+      return purchases.length?new Date(purchases[0].date):null;
     }
     function pelletConsumptionAfter(startMs,endMs=Date.now()){
       let total=0;
@@ -2762,128 +2853,117 @@ function formatStationShort(station) {
       }
       return total;
     }
-    function pelletSetting(){return {initialRestKg:100,capacityKg:1000,bagKg:15,warningKg:200,warningEnabled:true,adjustments:[],...(state.settings.pelletBalance||{})};}
-    function pelletBalanceModel(){
-      const baseline=pelletBaselineDate(),cfg=pelletSetting();
-      if(!baseline)return {ready:false,note:'Noch kein Pelletskauf mit Lieferdatum vorhanden.'};
-      const start=baseline.getTime(),now=Date.now();
-      const purchases=state.purchases.filter(p=>Number(p.totalKg)>0&&Date.parse(p.date)>=start&&Date.parse(p.date)<=now).sort((a,b)=>Date.parse(a.date)-Date.parse(b.date));
-      const refills=state.refills.filter(r=>Number(r.totalKg)>0&&Date.parse(r.date)>=start&&Date.parse(r.date)<=now).sort((a,b)=>Date.parse(a.date)-Date.parse(b.date));
-      const corrections=(cfg.adjustments||[]).filter(a=>Date.parse(a.date)>=start&&Date.parse(a.date)<=now).sort((a,b)=>Date.parse(a.date)-Date.parse(b.date));
-      // Ein Kauf geht immer zuerst ins Sacklager. Jede Nachfüllung ist eine interne Umbuchung.
-      // Für Zeiträume zwischen Ablesungen wird der Zählerverbrauch anteilig verteilt.
-      const events=[...purchases.map(p=>({t:Date.parse(p.date),kind:'purchase',kg:Number(p.totalKg)})),
-        ...refills.map(r=>({t:Date.parse(r.date),kind:'refill',kg:Number(r.totalKg)})),
-        ...corrections.map(a=>({t:Date.parse(a.date),kind:'correction',bunker:Number(a.stockKg),sacks:a.sacksKg===null||a.sacksKg===undefined?null:Number(a.sacksKg)}))]
-        .sort((a,b)=>a.t-b.t||({purchase:0,refill:1,correction:2}[a.kind]-{purchase:0,refill:1,correction:2}[b.kind]));
-      let bunker=Math.max(0,Number(cfg.initialRestKg)||0),sacks=0,previous=start,used=0,refilled=0,bought=0,discrepancy=0;
-      for(const e of [...events,{t:now,kind:'end'}]){
-        const consumed=pelletConsumptionAfter(previous,e.t);
-        bunker-=consumed;used+=consumed;previous=e.t;
-        if(e.kind==='purchase'){sacks+=e.kg;bought+=e.kg;}
-        if(e.kind==='refill'){sacks-=e.kg;bunker+=e.kg;refilled+=e.kg;}
-        if(e.kind==='correction'){
-          discrepancy+=e.bunker-bunker;bunker=e.bunker;
-          // Der Sackbestand bleibt immer Kauf minus Nachfüllungen. Historische Sackkorrekturen bleiben dokumentiert, greifen aber nicht mehr ein.
-        }
+    function pelletDeliveriesAfter(startMs,endMs=Date.now()){
+      const buys=state.purchases.filter(p=>Number(p.totalKg)>0&&Date.parse(p.date)>=startMs&&Date.parse(p.date)<=endMs);
+      let bought=buys.reduce((s,p)=>s+Number(p.totalKg),0);
+      let refill=0,ignored=0;
+      for(const r of state.refills){
+        const when=Date.parse(r.date),kg=Number(r.totalKg)||0;
+        if(!(when>=startMs&&when<=endMs&&kg>0))continue;
+        // Käufe und Nachfüllungen derselben Lieferung niemals doppelt zählen.
+        const duplicate=buys.some(p=>Math.abs(Date.parse(p.date)-when)<3*86400000 && Math.abs(Number(p.totalKg)-kg)<Math.max(15,kg*.03));
+        if(duplicate)ignored+=kg;else refill+=kg;
       }
-      const total=bunker+sacks;
-      return {ready:true,baseline,bunker,sacks,total,stock:total,used,bought,refilled,discrepancy,adjustments:corrections,capacity:Number(cfg.capacityKg)||1000,bagKg:Number(cfg.bagKg)||15,cfg,
-        issue:bunker< -10||sacks< -10||bunker>Number(cfg.capacityKg)*1.1?'Rechnerische Abweichung: Bestände und Nachfüllungen prüfen.':'',
-        note:'Kauf = Sacklager +; Nachfüllung = Sacklager − und Bunker +; Heizungsverbrauch = Bunker −. Abweichungen können über Bestandsabgleich korrigiert werden.'};
+      return {bought,refill,ignored,total:bought+refill};
     }
-    // Saisonprofil aus bis zu 24 Monaten vor heute. Bezieht ältere Winter ausdrücklich ein.
-    function pelletCoverage(){
-      const now=Date.now(),limit=now-730*PELLET_DAY,monthKg=new Array(12).fill(0),monthDays=new Array(12).fill(0);
+    function pelletBalanceModel(){
+      const baseline=pelletBaselineDate(), config=state.settings.pelletBalance||{};
+      if(!baseline)return {ready:false,stock:null,note:'Noch kein Pelletskauf mit Datum und Menge gespeichert.'};
+      const start=baseline.getTime(),now=Date.now();
+      const adjustments=(config.adjustments||[]).filter(a=>Date.parse(a.date)>=start&&Date.parse(a.date)<=now).sort((a,b)=>Date.parse(a.date)-Date.parse(b.date));
+      const correction=adjustments.at(-1);
+      const from=correction?Date.parse(correction.date):start;
+      const opening=correction?Number(correction.stockKg):Math.max(0,Number(config.initialRestKg)||0);
+      const deliveries=pelletDeliveriesAfter(from,now);
+      const consumption=pelletConsumptionAfter(from,now);
+      const stock=Math.max(0,opening+deliveries.total-consumption);
+      return {ready:true,stock,baseline,from:new Date(from),opening,consumption,deliveries,correction,adjustments};
+    }
+    function pelletCoverage(since){
+      const intervals=buildComputedReadings().filter(e=>e.type==='pellets'&&e.previousDate&&Number.isFinite(e.delta)&&e.delta>=0&&e.daysBetween>0);
+      if(!intervals.length)return null;
+      const now=Date.now(),startLimit=Math.max(since||0,now-365*86400000),monthKg=new Array(12).fill(0),monthDays=new Array(12).fill(0);
       let total=0,days=0,last=0;
-      for(const e of buildComputedReadings()){
-        if(e.type!=='pellets'||!e.previousDate||!Number.isFinite(e.delta)||e.delta<0)continue;
-        const a=Date.parse(e.previousDate),b=Date.parse(e.date),from=Math.max(a,limit),to=Math.min(b,now);
+      for(const e of intervals){
+        const a=Date.parse(e.previousDate),b=Date.parse(e.date),from=Math.max(a,startLimit),to=Math.min(b,now);
         if(!(b>a&&to>from))continue;
-        const rate=e.delta/((b-a)/PELLET_DAY);last=Math.max(last,b);
+        const rate=e.delta/((b-a)/86400000);
+        last=Math.max(last,b);
         for(let t=from;t<to;){
           const d=new Date(t),boundary=Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,1),next=Math.min(to,boundary);
-          const chunk=(next-t)/PELLET_DAY;
+          const chunk=(next-t)/86400000;
           monthKg[d.getUTCMonth()]+=rate*chunk;monthDays[d.getUTCMonth()]+=chunk;days+=chunk;total+=rate*chunk;t=next;
         }
       }
-      return days?{days,total,daily:total/days,monthKg,monthDays,end:last}:null;
+      return days>0?{days,total,daily:total/days,monthKg,monthDays,end:last}:null;
     }
     function pelletForecastModel(){
-      const balance=pelletBalanceModel();if(!balance.ready)return {...balance,reliable:false};
-      const coverage=pelletCoverage();if(!coverage||coverage.days<14)return {...balance,coverage,reliable:false,note:'Zu wenige historische Zählerintervalle für eine Reichweitenprognose.'};
+      const balance=pelletBalanceModel();
+      if(!balance.ready)return {...balance,reliable:false,note:balance.note};
+      const coverage=pelletCoverage(balance.baseline.getTime());
+      if(!coverage||coverage.days<7)return {...balance,coverage,reliable:false,note:'Seit der Sommerlieferung fehlen noch ausreichend lange abgeschlossene Ableseintervalle.'};
       const reliable=coverage.days>=300&&coverage.monthDays.filter(d=>d>=15).length>=10;
       const rates=coverage.monthKg.map((kg,i)=>coverage.monthDays[i]>=15?kg/coverage.monthDays[i]:coverage.daily);
-      const now=Date.now(),lastReadingAge=(now-coverage.end)/PELLET_DAY;
-      if(lastReadingAge>75)return {...balance,coverage,rates,reliable:false,note:'Letzte Ablesung älter als 75 Tage. Prognose bitte durch neue Ablesung aktualisieren.'};
-      function travel(amount){
-        if(amount<=0)return {when:new Date(),days:0};
-        if(coverage.daily<=0)return {when:null,days:null};
-        const date=new Date(),max=1095;let remaining=amount,days=0;
-        while(remaining>0&&days<max){
-          const rate=Math.max(0,reliable?rates[date.getMonth()]:coverage.daily);
-          remaining-=rate;date.setDate(date.getDate()+1);days++;
-        }
-        return remaining<=0?{when:date,days}:{when:null,days:null};
-      }
-      // Letzter Zählerstand + Verbrauchsprognose bis heute. Nur Schätzung, nicht nochmal vom Gesamtbestand abziehen.
-      const latestRead=[...state.readings].filter(r=>r.type==='pellets'&&Number.isFinite(Date.parse(r.date))).sort((a,b)=>Date.parse(b.date)-Date.parse(a.date))[0];
-      const latestAdjustmentTime = balance.adjustments?.length ? Math.max(...balance.adjustments.map(a=>Date.parse(a.date)).filter(Number.isFinite)) : 0;
-      let projectedBunker=balance.bunker;
-      if(latestRead){let t=Math.max(Date.parse(latestRead.date),latestAdjustmentTime,balance.baseline.getTime());let estimatedSince=0;
-        while(t<now){const d=new Date(t),next=Math.min(now,t+PELLET_DAY);estimatedSince+=(reliable?rates[d.getMonth()]:coverage.daily)*(next-t)/PELLET_DAY;t=next;}
-        projectedBunker-=estimatedSince;
-      }
-      const totalForecast=travel(Math.max(0,balance.total-(balance.bunker-projectedBunker)));
-      const bunkerForecast=travel(Math.max(0,projectedBunker));
-      const thresholdForecast=travel(Math.max(0,projectedBunker-balance.cfg.warningKg));
-      return {...balance,coverage,reliable,rates,when:totalForecast.when,days:totalForecast.days,
-        bunkerWhen:bunkerForecast.when,bunkerDays:bunkerForecast.days,warningWhen:thresholdForecast.when,projectedBunker,
-        note:reliable?'Saisonale Tagesverbräuche aus bis zu 24 Monaten Zählerhistorie.':'Vorläufige Näherung aus dem verfügbaren Messzeitraum; saisonale Aussage eingeschränkt.'};
+      const freshness=(Date.now()-coverage.end)/86400000;
+      if(freshness>60)return {...balance,coverage,reliable:false,note:'Die letzte Verbrauchsablesung liegt mehr als 60 Tage zurück. Bitte aktualisieren.'};
+      if(coverage.daily<=0)return {...balance,coverage,reliable:false,note:'Noch kein messbarer Verbrauch seit der Lieferung.'};
+      const when=new Date(), remaining0=balance.stock;
+      let remaining=remaining0,days=0,estimated=null;
+      if(reliable){while(remaining>0&&days<1095){remaining-=Math.max(0,rates[when.getMonth()]);when.setDate(when.getDate()+1);days++;}}
+      else {days=Math.ceil(remaining/coverage.daily);when.setDate(when.getDate()+Math.min(days,1095));}
+      if(days<=1095)estimated=new Date(when);
+      return {...balance,coverage,reliable,rates,when:estimated,days:days<=1095?days:null,note:reliable?'Saisonale Prognose aus deinen eigenen Monatsverbräuchen.':'Grobe Schätzung aus dem bisherigen Verbrauch seit der Sommerlieferung; der Winter kann deutlich abweichen.'};
     }
-    function pelletDate(d){return d instanceof Date&&!Number.isNaN(d.getTime())?d.toLocaleDateString('de-DE',{day:'2-digit',month:'long',year:'numeric'}):'Noch nicht berechenbar';}
+    function formatPelletUntil(f){
+      if(!f.ready||!f.when)return 'Noch nicht berechenbar';
+      return f.stock<=0?'Vorrat rechnerisch aufgebraucht':f.when.toLocaleDateString('de-DE',{day:'2-digit',month:'long',year:'numeric'});
+    }
     function renderPelletRangeForecast(){
-      const f=pelletForecastModel(),date=pelletDate(f.when);const short=document.getElementById('pelletRangeDashboard');
-      if(short)short.innerHTML=`<small class="muted">🔥 Gesamter Pelletvorrat reicht ungefähr bis</small><strong>${escapeHtml(date)}</strong><small class="muted">Bunker und Sacklager zusammen · Details im Menü Pelletlager</small>`;
+      const f=pelletForecastModel();const date=formatPelletUntil(f);
+      const short=document.getElementById('pelletRangeDashboard');
+      if(short)short.innerHTML=`<small class="muted">🔥 Voraussichtliche Pellet-Reichweite</small><strong>${escapeHtml(date)}</strong><small class="muted">${f.ready?'Unverbindliche Schätzung. Details und Bestandsabgleich im Menü Pelletlager.':'Ersten bekannten Einkauf prüfen.'}</small>`;
       const container=document.getElementById('pelletRangeForecast');
       if(container){
-        if(!f.ready)container.innerHTML=`<div class="empty-state">${escapeHtml(f.note)}</div>`;
+        if(!f.ready){container.innerHTML=`<div class="empty-state">${escapeHtml(f.note)}</div>`;}
         else{
-          const pct=Math.max(0,Math.min(100,(Math.max(0,f.projectedBunker??f.bunker)/f.capacity)*100));
-          const fmt=x=>formatNumber(x);
-          const warn=f.projectedBunker!==undefined&&f.projectedBunker<f.cfg.warningKg;
-          container.innerHTML=`<div class="pellet-hero-info"><div><small class="muted">Gesamtvorrat reicht ungefähr bis</small><div class="pellet-forecast-number">${escapeHtml(date)}</div><small class="muted">${f.reliable?'Saisonale 24-Monats-Prognose':'Vorläufige Näherung'}</small></div><div><small class="muted">Gesamtbestand geschätzt (heute)</small><strong>${fmt((f.projectedBunker??f.bunker)+f.sacks)} kg</strong></div></div>
-          <div class="pellet-balance-row"><div><small>🔥 Bunker (ca. ${fmt(f.capacity)} kg Fassungsvermögen)</small><strong>${fmt(f.projectedBunker??f.bunker)} kg</strong><small>Nachfüllen etwa: ${escapeHtml(pelletDate(f.bunkerWhen))}</small></div><div><small>📦 Sackware separat</small><strong>${fmt(f.sacks)} kg</strong><small>Etwa ${fmt(Math.max(0,f.sacks)/f.bagKg)} Säcke à ${fmt(f.bagKg)} kg</small></div><div><small>🔔 Bunkerwarnung unter</small><strong>${fmt(f.cfg.warningKg)} kg</strong><small>${warn?'⚠️ Prognose unter Warnschwelle':`Schwelle etwa: ${escapeHtml(pelletDate(f.warningWhen))}`}</small></div></div>
-          <div class="pellet-meter"><div style="width:${pct}%"></div></div>
-          <div class="pellet-balance-row"><div><small>Gekauft seit Beginn</small><strong>+${fmt(f.bought)} kg</strong></div><div><small>Aus Sacklager nachgefüllt</small><strong>${fmt(f.refilled)} kg</strong></div><div><small>Zählerverbrauch</small><strong>−${fmt(f.used)} kg</strong></div></div>
-          <p class="pellet-forecast-notes">${escapeHtml(f.note)} ${escapeHtml(f.issue||'')} ${f.coverage?`Grundlage: ${Math.round(f.coverage.days)} Tage erfasste historische Intervalle.`:''} ${Math.abs(f.discrepancy)>0.1?`Gespeicherte Bestandskorrekturen: ${fmt(f.discrepancy)} kg.`:''}</p>`;
+          const percent=Math.max(0,Math.min(100,(f.stock/Math.max(1,f.opening+f.deliveries.total))*100));
+          container.innerHTML=`<div class="pellet-hero-info"><div><small class="muted">Vorrat reicht ungefähr bis</small><div class="pellet-forecast-number">${escapeHtml(date)}</div><small class="muted">${f.reliable?'Saisonale Verbrauchsprognose':'Vorläufige Reichweitenschätzung'}</small></div><div><small class="muted">Rechnerischer Bestand</small><strong>${formatNumber(f.stock)} kg</strong></div></div>
+          <div class="pellet-meter"><div style="width:${percent}%"></div></div>
+          <div class="pellet-balance-row"><div><small>Seit ${escapeHtml(f.from.toLocaleDateString('de-DE'))} hinzugekommen</small><strong>+${formatNumber(f.deliveries.total)} kg</strong></div><div><small>Verbrauch seitdem</small><strong>−${formatNumber(f.consumption)} kg</strong></div><div><small>Angenommener Start/Abgleich</small><strong>${formatNumber(f.opening)} kg</strong></div></div>
+          <p class="pellet-forecast-notes">${escapeHtml(f.note)} ${f.coverage?`Berechnungsgrundlage: ${Math.round(f.coverage.days)} Tage abgeschlossene Pellet-Ableseintervalle.`:''} Käufe und Nachfüllungen mit fast gleichem Datum und Gewicht werden nur einmal angerechnet. Bitte manuell überprüfen, falls Lieferungen in mehreren Portionen eingetragen wurden.</p>`;
         }
       }
-      const info=document.getElementById('pelletStartInfo');if(info)info.innerHTML=f.ready?`<strong>Erster bekannter Kauf: ${escapeHtml(f.baseline.toLocaleDateString('de-DE'))}</strong><p>Anfangsrest im Bunker als Schätzung. Sämtliche Käufe werden im Sacklager gutgeschrieben, Nachfüllungen in den Bunker umgebucht. Zählerwerte vor diesem Kauf dienen nur dem Saisonprofil.</p>`:'<p>Bitte zuerst einen Pelletskauf erfassen.</p>';
-      for(const [id,key,def] of [['pelletInitialRest','initialRestKg',100],['pelletWarningKg','warningKg',200],['pelletCapacityKg','capacityKg',1000],['pelletBagKg','bagKg',15]]){
-        const node=document.getElementById(id);if(node&&document.activeElement!==node)node.value=String(f.cfg?.[key]??pelletSetting()[key]??def);
-      }
-      const enable=document.getElementById('pelletWarningEnabled');if(enable)enable.checked=!!pelletSetting().warningEnabled;
+      const startInfo=document.getElementById('pelletStartInfo');
+      if(startInfo)startInfo.innerHTML=f.ready?`<strong>Erster gespeicherter Kauf: ${escapeHtml(f.baseline.toLocaleDateString('de-DE'))}</strong><p>Alle früheren Zählerstände bleiben für diese Bestandsberechnung unberücksichtigt. Der Anfangsrest ist eine Schätzung, die du unten ändern kannst.</p>`:'<p>Bitte zuerst eine Lieferung erfassen.</p>';
+      const initial=document.getElementById('pelletInitialRest');
+      if(initial&&document.activeElement!==initial)initial.value=String(state.settings.pelletBalance?.initialRestKg??0);
       const hist=document.getElementById('pelletAdjustmentHistory');
-      if(hist)hist.innerHTML=!f.ready||!f.adjustments.length?'<div class="muted">Noch kein Bestandsabgleich erfasst.</div>':f.adjustments.slice().reverse().map(a=>`<div class="entry-item" style="padding:10px 12px;margin-bottom:7px"><div><strong>${escapeHtml(new Date(a.date).toLocaleString('de-DE',{dateStyle:'short',timeStyle:'short'}))}: Bunker ${fmtHist(a.stockKg)} kg</strong><div class="muted">${escapeHtml(a.note||'Bestandsprüfung')}</div></div></div>`).join('');
+      if(hist)hist.innerHTML=!f.ready||!f.adjustments.length?'<div class="muted">Noch kein Bestandsabgleich erfasst.</div>':f.adjustments.slice().reverse().map(a=>`<div class="entry-item" style="padding:10px 12px;margin-bottom:7px"><div><strong>${escapeHtml(new Date(a.date).toLocaleString('de-DE',{dateStyle:'short',timeStyle:'short'}))}: ${formatNumber(Number(a.stockKg))} kg</strong><div class="muted">${escapeHtml(a.note||'Bestandsprüfung')}</div></div></div>`).join('');
     }
-    function fmtHist(x){return formatNumber(Number(x));}
     async function savePelletSettings(){
       persistLocalSnapshot();renderPelletRangeForecast();
-      try{if(state.firebaseEnabled)await saveSettingsToFirestore();showToast('Pelletlager-Einstellungen gespeichert.','success');}
+      try{if(state.firebaseEnabled)await saveSettingsToFirestore();showToast('Pellet-Bestandsdaten gespeichert.','success');}
       catch(e){showToast('Speichern in Firestore fehlgeschlagen: '+e.message,'error');}
     }
-    async function handlePelletBaselineSave(event){event.preventDefault();const n=Number(document.getElementById('pelletInitialRest').value);if(!Number.isFinite(n)||n<0)return showToast('Anfangsrest prüfen.','error');state.settings.pelletBalance={...pelletSetting(),initialRestKg:n};await savePelletSettings();}
-    async function handlePelletWarningSave(event){
-      event.preventDefault();const cfg=pelletSetting();const kg=Number(document.getElementById('pelletWarningKg').value),cap=Number(document.getElementById('pelletCapacityKg').value),bag=Number(document.getElementById('pelletBagKg').value);
-      if(!Number.isFinite(kg)||kg<25||kg>=cap||!Number.isFinite(cap)||cap<100||cap>10000||!Number.isFinite(bag)||bag<=0||bag>50)return showToast('Warnwert, Bunkerkapazität und Sackgewicht prüfen.','error');
-      state.settings.pelletBalance={...cfg,warningKg:kg,capacityKg:cap,bagKg:bag,warningEnabled:document.getElementById('pelletWarningEnabled').checked};await savePelletSettings();
+    async function handlePelletBaselineSave(event){
+      event.preventDefault();const value=Number(document.getElementById('pelletInitialRest').value);
+      if(!Number.isFinite(value)||value<0)return showToast('Gültigen Restbestand eingeben.','error');
+      state.settings.pelletBalance=state.settings.pelletBalance||{adjustments:[]};
+      state.settings.pelletBalance.initialRestKg=value;
+      await savePelletSettings();
     }
     async function handlePelletAdjustmentSave(event){
-      event.preventDefault();const dt=document.getElementById('pelletAdjustmentDate').value,kg=Number(document.getElementById('pelletAdjustmentKg').value),sacksKg=null,note=document.getElementById('pelletAdjustmentNote').value.trim();const baseline=pelletBaselineDate(),time=Date.parse(dt),cfg=pelletSetting();
-      if(!baseline||!Number.isFinite(time)||time<baseline.getTime()||time>Date.now()||!Number.isFinite(kg)||kg<0||kg>cfg.capacityKg*1.1||(sacksKg!==null&&(!Number.isFinite(sacksKg)||sacksKg<0)))return showToast('Datum und Bestandsmengen prüfen.','error');
-      cfg.adjustments=[...(cfg.adjustments||[]),{date:new Date(time).toISOString(),stockKg:kg,sacksKg,note}].sort((a,b)=>Date.parse(a.date)-Date.parse(b.date));
-      state.settings.pelletBalance=cfg;await savePelletSettings();event.target.reset();document.getElementById('pelletAdjustmentDate').value=toDatetimeLocal(new Date());
+      event.preventDefault();const day=document.getElementById('pelletAdjustmentDate').value;
+      const stock=Number(document.getElementById('pelletAdjustmentKg').value),note=document.getElementById('pelletAdjustmentNote').value.trim();
+      const first=pelletBaselineDate();
+      if(!first)return showToast('Bitte zuerst einen Pelletskauf erfassen.','error');
+      const parsed=Date.parse(day);
+      if(!Number.isFinite(parsed)||parsed<first.getTime()||parsed>Date.now()||!Number.isFinite(stock)||stock<0)return showToast('Datum ab erster Lieferung und gültigen Bestand eingeben.','error');
+      state.settings.pelletBalance=state.settings.pelletBalance||{initialRestKg:0,adjustments:[]};
+      state.settings.pelletBalance.adjustments=state.settings.pelletBalance.adjustments||[];
+      state.settings.pelletBalance.adjustments.push({date:new Date(parsed).toISOString(),stockKg:stock,note});
+      state.settings.pelletBalance.adjustments.sort((a,b)=>Date.parse(a.date)-Date.parse(b.date));
+      await savePelletSettings();event.target.reset();document.getElementById('pelletAdjustmentDate').value=toDatetimeLocal(new Date());
     }
 
     function registerPushTest(){
@@ -2908,6 +2988,7 @@ function formatStationShort(station) {
       if (!button) return;
 
       const targetView = button.dataset.view;
+      document.querySelectorAll('.nav-v93 details').forEach(d=>{d.open=false;d.classList.toggle('has-selection',d.contains(button));});
 
       document.querySelectorAll(".tab").forEach((tab) =>
         tab.classList.toggle("active", tab === button)
@@ -5644,12 +5725,8 @@ async function updateRecord(kind, id, payload) {
         wasser: { basePrice: toNumber(incoming?.wasser?.basePrice) || 0, unitPrice: toNumber(incoming?.wasser?.unitPrice) || 0 },
         pellets: { basePrice: toNumber(incoming?.pellets?.basePrice) || 0, unitPrice: toNumber(incoming?.pellets?.unitPrice) || 0 },
         pelletBalance: {
-          initialRestKg: Math.max(0, Number(incoming?.pelletBalance?.initialRestKg ?? 100) || 0),
-          capacityKg: Math.max(100,Number(incoming?.pelletBalance?.capacityKg ?? 1000)),
-          bagKg: Math.max(1,Number(incoming?.pelletBalance?.bagKg ?? 15)),
-          warningKg: Math.max(25,Number(incoming?.pelletBalance?.warningKg ?? 200)),
-          warningEnabled: incoming?.pelletBalance?.warningEnabled !== false,
-          adjustments: Array.isArray(incoming?.pelletBalance?.adjustments) ? incoming.pelletBalance.adjustments.filter(a=>a&&Number.isFinite(Number(a.stockKg))&&Number.isFinite(Date.parse(a.date))).map(a=>({...a,sacksKg:a.sacksKg===null||a.sacksKg===undefined?null:Number(a.sacksKg)})).slice(-100) : []
+          initialRestKg: Math.max(0, Number(incoming?.pelletBalance?.initialRestKg) || 0),
+          adjustments: Array.isArray(incoming?.pelletBalance?.adjustments) ? incoming.pelletBalance.adjustments.filter(a=>a&&Number.isFinite(Number(a.stockKg))&&Number.isFinite(Date.parse(a.date))).slice(-100) : []
         }
       };
     }
@@ -5936,9 +6013,9 @@ async function updateRecord(kind, id, payload) {
           sub: annualText("pellets","kg")
         },
         {
-          label: "Pelletlager · Gesamtrest",
-          value: (() => { const f=pelletForecastModel(); return f.ready ? `${formatNumber(Math.max(0,(f.projectedBunker ?? f.bunker) + f.sacks))} kg` : "–"; })(),
-          sub: (() => { const f=pelletForecastModel(); return f.ready ? `Vorrat reicht ungefähr bis ${pelletDate(f.when)} · Bunker und Sackware` : 'Noch keine belastbare Bestandsbilanz'; })()
+          label: "Pellets Lager grob",
+          value: `${formatNumber(getPelletInventoryKg())} kg`,
+          sub: `${formatNumber(totalRefillKg())} kg nachgefüllt · ${formatNumber(totalPurchasedKg())} kg gekauft`
         }
       ];
       const icons = ["⚡", "💧", "🔥", "📦"];
