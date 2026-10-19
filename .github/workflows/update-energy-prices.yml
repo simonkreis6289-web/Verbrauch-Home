@@ -1,10 +1,8 @@
 name: Energiepreise prüfen
 
+# Wird vom Cloudflare Worker verbrauch-preis-trigger über die GitHub-API gestartet.
+# Kein GitHub schedule: mehr, damit keine doppelten oder unzuverlässigen Cron-Starts entstehen.
 on:
-  schedule:
-    # 06:07-18:07 alle zwei Stunden in deutscher Ortszeit.
-    - cron: '37 6,8,10,12,14,16,18 * * *'
-      timezone: "Europe/Berlin"
   workflow_dispatch:
 
 permissions:
