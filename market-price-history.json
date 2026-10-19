@@ -43,6 +43,15 @@
         "pellets_loose": 443.81,
         "pellets_bag": 519.87
       }
+    },
+    {
+      "date": "2026-10-19",
+      "checked_at": "2026-10-19T10:40:47+02:00",
+      "prices": {
+        "pellets_loose": 443.76,
+        "pellets_bag": 528.82,
+        "heating_oil": 174.3
+      }
     }
   ]
 }
