@@ -10,7 +10,6 @@
   <link rel="icon" href="icon-192.png" />
   <link rel="apple-touch-icon" href="icon-192.png" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <link rel="stylesheet" href="./fuel-prices.css?v=105"/>
   <script>
     // Früh anwenden, damit das gespeicherte Design beim Start nicht aufblitzt.
     (function () {
@@ -1010,7 +1009,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v104</strong> · 1.3.1.139<br><small>Letzte Änderung: 19.10.2026</small></div>
+        <div class="hero-v94-version">Version <strong>v107</strong> · 1.3.1.142<br><small>Letzte Änderung: 19.10.2026</small></div>
       </div>
     </header>
 
@@ -2027,7 +2026,6 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 <section id="offersView" class="view"><div class="grid" id="offersViewGrid"></div></section>
 <section id="purchasesView" class="view"><div class="grid" id="purchasesViewGrid"></div></section>
 <section id="carSettingsView" class="view"><div class="grid" id="carSettingsViewGrid"></div></section>
-<section id="fuelPricesView" class="view" aria-label="Spritpreise"><div id="fuelPricesModule"></div></section>
 <section id="firebaseView" class="view"><div class="grid" id="firebaseViewGrid"></div></section>
 <section id="notificationsView" class="view"><div class="grid" id="notificationsViewGrid"></div></section>
 <section id="pricesView" class="view"><div class="grid" id="pricesViewGrid"></div></section>
@@ -2095,7 +2093,6 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script type="module">
-    import { initFuelPrices } from "./fuel-prices.js?v=105";
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getMessaging, getToken, onMessage, deleteToken, isSupported } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-messaging.js";
     import {
@@ -2344,7 +2341,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       dashboardView: [['🏠 Übersicht','dashboardView']],
       readingsView: [['📈 Zählerstände','readingsView'],['🔄 Zählerneustart','resetView']],
       refillsView: [['🪣 Nachfüllen','refillsView'],['🏠 Pelletlager','pelletStoreView'],['📦 Sackgrößen','bagView'],['🏷️ Angebotsabfragen','offersView'],['🧾 Käufe','purchasesView']],
-      carsView: [['⛽ Tanken','carsView'],['🚙 Fahrzeugeinstellungen','carSettingsView'],['⛽ Spritpreise','fuelPricesView']],
+      carsView: [['⛽ Tanken','carsView'],['🚙 Fahrzeugeinstellungen','carSettingsView']],
       firebaseView: [['☁️ Firebase','firebaseView'],['🔔 Benachrichtigungen','notificationsView'],['💰 Preise','pricesView'],['💾 Backup','backupView']]
     };
     let currentNavGroupV94='dashboardView';
@@ -2420,7 +2417,6 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       syncQuickNowUi();
       restoreLocalData();
       prepareStructuredMenus();
-      initFuelPrices(document.getElementById("fuelPricesModule"));
       registerPriceTimeControls();
       registerEvents();
       registerInstallHandling();
@@ -6993,7 +6989,7 @@ async function updateRecord(kind, id, payload) {
       const btn=els.exportBackupBtn;
       if(btn){btn.disabled=true;btn.textContent='Sicherung wird erstellt …';}
       try{
-        const payload={format:'verbrauch-zuhause-backup',schemaVersion:2,appVersion:'v103',exportedAt:new Date().toISOString(),householdId:state.householdId||null,source:state.firebaseEnabled?'firestore':'local',collections:{},settings:null,bagSizes:structuredClone(state.bagSizes),localPreferences:{theme:document.documentElement.dataset.theme||'dark',lastBagSize:localStorage.getItem(LOCAL_KEYS.lastBagSize)}};
+        const payload={format:'verbrauch-zuhause-backup',schemaVersion:2,appVersion:'v107',exportedAt:new Date().toISOString(),householdId:state.householdId||null,source:state.firebaseEnabled?'firestore':'local',collections:{},settings:null,bagSizes:structuredClone(state.bagSizes),localPreferences:{theme:document.documentElement.dataset.theme||'dark',lastBagSize:localStorage.getItem(LOCAL_KEYS.lastBagSize)}};
         if(state.firebaseEnabled){
           if(!state.db)throw new Error('Firestore-Verbindung nicht bereit.');
           for(const key of BACKUP_COLLECTIONS_V94){const result=await getDocs(collection(state.db,`${householdBasePath()}/${key}`));payload.collections[key]=result.docs.map(mapFirestoreDoc);}
