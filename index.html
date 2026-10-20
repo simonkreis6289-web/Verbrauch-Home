@@ -861,6 +861,18 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 .pellet-month-cell[data-estimated="true"] .pellet-month-value{font-style:italic}
 @media(max-width:650px){.pellet-stock-split{grid-template-columns:1fr}.pellet-month-grid{gap:3px}.pellet-month-track{height:72px}.pellet-month-value{display:none}.pellet-month-bar-label{display:block;position:absolute;left:50%;bottom:6px;transform:translateX(-50%);writing-mode:vertical-rl;text-orientation:mixed;font-size:.58rem;line-height:1;font-weight:700;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.22);pointer-events:none;letter-spacing:.01em}.pellet-month-name{font-size:.62rem}}
 
+
+/* v115: Kameraunterstützte Zählererfassung (Wert wird nie automatisch gespeichert) */
+.meter-ocr-card{border:1px solid var(--line);border-radius:15px;padding:16px;background:var(--card-solid);margin-top:18px}
+.meter-ocr-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.meter-ocr-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:end}
+.meter-ocr-fields label{display:flex;flex-direction:column;gap:6px;font-weight:650;font-size:.87rem}
+.meter-ocr-fields input,.meter-ocr-fields select{width:100%;min-width:0}
+.meter-ocr-preview{max-width:100%;max-height:210px;object-fit:contain;border-radius:12px;border:1px solid var(--line);margin:12px 0;display:none}
+.meter-ocr-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}
+.meter-ocr-status{color:var(--muted);font-size:.84rem;line-height:1.5;margin-top:10px}
+@media(max-width:650px){.meter-ocr-fields{grid-template-columns:1fr}.meter-ocr-card{padding:13px}}
+
 /* v89: Push-Regel-Cockpit, nur UI. Bestehende IDs und Endpunkte bleiben unveraendert. */
 .push-rule-panel{position:relative;overflow:hidden}
 .push-rule-panel:before{content:"";position:absolute;right:-100px;top:-165px;width:380px;height:380px;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(14,165,233,.10),transparent 68%)}
@@ -1071,7 +1083,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v114</strong> · 1.3.1.149<br><small>Letzte Änderung: 20.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v115</strong> · 1.3.1.150<br><small>Letzte Änderung: 20.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -1262,6 +1274,26 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
               <button type="reset" class="btn ghost">Leeren</button>
             </div>
           </form>
+
+          <div class="meter-ocr-card" id="meterOcrBox">
+            <div class="meter-ocr-header"><strong>📷 Zählerstand mit Kamera erfassen</strong><span class="badge">Strom / Wasser</span></div>
+            <p class="muted">Zähler fotografieren oder vorhandenes Foto auswählen. Die Texterkennung schlägt einen Wert vor; du bestätigst ihn vor dem Speichern.</p>
+            <div class="meter-ocr-fields">
+              <label>Welcher Zähler?
+                <select id="meterOcrType"><option value="strom">Strom (kWh)</option><option value="wasser">Wasser (m³)</option></select>
+              </label>
+              <label>Zählerfoto
+                <input id="meterOcrImage" type="file" accept="image/*" capture="environment" />
+              </label>
+            </div>
+            <img id="meterOcrPreview" class="meter-ocr-preview" alt="Vorschau des Zählerfotos" />
+            <div class="meter-ocr-actions"><button type="button" class="btn ghost" id="meterOcrRecognize">🔍 Wert erkennen</button></div>
+            <label style="display:block;margin-top:14px">Erkannter Wert, bitte sorgfältig prüfen
+              <input id="meterOcrResult" type="text" inputmode="decimal" placeholder="z. B. 12345,67" autocomplete="off" />
+            </label>
+            <div class="meter-ocr-actions"><button type="button" class="btn primary" id="meterOcrTransfer">✓ In Schnellerfassung übernehmen</button></div>
+            <p id="meterOcrStatus" class="meter-ocr-status" role="status" aria-live="polite">Es wird kein Foto gespeichert oder hochgeladen. Die Erkennung benötigt beim ersten Mal eine Internetverbindung.</p>
+          </div>
         </section>
 
         <section class="card wide">
@@ -2966,6 +2998,9 @@ async function loadMarketPrices(force = false) {
       document.getElementById('backupRestoreFile')?.addEventListener('change',previewBackupV94);
       document.getElementById('backupRestoreBtn')?.addEventListener('click',()=>void restoreBackupV94());
 
+      document.getElementById('meterOcrImage')?.addEventListener('change',meterOcrImageChanged);
+      document.getElementById('meterOcrRecognize')?.addEventListener('click',()=>void recognizeMeterPhoto());
+      document.getElementById('meterOcrTransfer')?.addEventListener('click',transferMeterReading);
       els.quickUseNow?.addEventListener("change", syncQuickNowUi);
       els.searchFuelStationByTextBtn?.addEventListener("click", searchFuelStationByText);
       els.batchReadingForm?.addEventListener("submit", handleBatchReadingSubmit);
@@ -5662,6 +5697,74 @@ renderFuelMap();
       const pricePerKg = totalKg > 0 ? round4(totalPrice / totalKg) : 0;
       els.purchaseTotalKg.value = totalKg || "";
       els.purchasePricePerKg.value = pricePerKg || "";
+    }
+
+
+    // v115: OCR nur auf explizite Benutzeraktion und nur lokal im Browser.
+    let meterOcrImageUrl = null;
+    let meterOcrLibraryLoading = null;
+    function meterOcrStatus(message){
+      const el=document.getElementById('meterOcrStatus');if(el)el.textContent=message;
+    }
+    function loadMeterOcrLibrary(){
+      if(window.Tesseract)return Promise.resolve(window.Tesseract);
+      if(meterOcrLibraryLoading)return meterOcrLibraryLoading;
+      meterOcrLibraryLoading=new Promise((resolve,reject)=>{
+        const script=document.createElement('script');
+        script.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+        script.onload=()=>window.Tesseract?resolve(window.Tesseract):reject(new Error('OCR-Bibliothek konnte nicht geladen werden'));
+        script.onerror=()=>reject(new Error('OCR-Bibliothek nicht erreichbar'));
+        document.head.appendChild(script);
+      }).catch(e=>{meterOcrLibraryLoading=null;throw e;});
+      return meterOcrLibraryLoading;
+    }
+    function meterOcrImageChanged(){
+      const input=document.getElementById('meterOcrImage');
+      const preview=document.getElementById('meterOcrPreview');
+      if(meterOcrImageUrl){URL.revokeObjectURL(meterOcrImageUrl);meterOcrImageUrl=null;}
+      const file=input?.files?.[0];
+      if(!file){if(preview){preview.style.display='none';preview.removeAttribute('src');}return;}
+      if(!file.type.startsWith('image/')){meterOcrStatus('Bitte eine Bilddatei auswählen.');input.value='';return;}
+      meterOcrImageUrl=URL.createObjectURL(file);
+      if(preview){preview.src=meterOcrImageUrl;preview.style.display='block';}
+      document.getElementById('meterOcrResult').value='';
+      meterOcrStatus('Foto ausgewählt. Tippe auf „Wert erkennen“. Für beste Ergebnisse die Ziffern groß und scharf fotografieren.');
+    }
+    function guessMeterReading(raw){
+      // Nur Vorschlag! Bevorzugt eine zusammenhängende Ziffernfolge mit 4–8 Vorkommastellen.
+      const matches=(String(raw||'').replace(/\s/g,' ').match(/\d{4,8}(?:[.,]\d{1,3})?/g)||[]);
+      const candidates=matches.map(value=>value.replace(',','.'));
+      return candidates.sort((a,b)=>b.replace(/\D/g,'').length-a.replace(/\D/g,'').length)[0]||'';
+    }
+    async function recognizeMeterPhoto(){
+      const file=document.getElementById('meterOcrImage')?.files?.[0];
+      if(!file)return meterOcrStatus('Bitte zuerst ein Zählerfoto auswählen.');
+      const btn=document.getElementById('meterOcrRecognize');
+      btn.disabled=true;
+      meterOcrStatus('Erkennung läuft … Das kann beim ersten Mal etwas dauern.');
+      try{
+        const ocr=await loadMeterOcrLibrary();
+        const result=await ocr.recognize(file,'eng');
+        const guessed=guessMeterReading(result?.data?.text);
+        if(guessed){document.getElementById('meterOcrResult').value=guessed.replace('.',',');meterOcrStatus('Möglicher Zählerstand erkannt. Bitte genau mit dem Foto vergleichen und nötigenfalls korrigieren.');}
+        else meterOcrStatus('Keine eindeutige Ziffernfolge gefunden. Bitte den Zählerstand selbst in das Feld eintragen.');
+      }catch(error){console.warn('Zähler-OCR:',error);meterOcrStatus('Automatische Erkennung nicht verfügbar. Du kannst den Wert trotzdem manuell eintragen.');}
+      finally{btn.disabled=false;}
+    }
+    function transferMeterReading(){
+      const type=document.getElementById('meterOcrType')?.value;
+      const raw=document.getElementById('meterOcrResult')?.value?.trim()||'';
+      // Tausendertrenner nicht automatisch raten, um Ablesefehler zu vermeiden.
+      if(!/^\d+(?:[,.]\d{1,3})?$/.test(raw))return meterOcrStatus('Bitte einen Zählerstand als Zahl eingeben, z. B. 12345,67.');
+      const value=Number(raw.replace(',','.'));
+      if(!Number.isFinite(value)||value<0)return meterOcrStatus('Der Zählerstand ist ungültig.');
+      els.quickReadingType.value=type;
+      els.quickReadingValue.value=String(value);
+      els.quickUseNow.checked=true;
+      syncQuickNowUi();
+      meterOcrStatus('Wert übernommen. Bitte die Schnellerfassung kontrollieren und dort auf „Einzelwert speichern“ tippen.');
+      els.quickReadingValue.scrollIntoView({behavior:'smooth',block:'center'});
+      els.quickReadingValue.focus({preventScroll:true});
     }
 
     async function handleBatchReadingSubmit(event) {
