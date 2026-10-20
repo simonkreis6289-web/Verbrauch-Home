@@ -1117,7 +1117,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v120</strong> · 1.3.1.153<br><small>Letzte Änderung: 20.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v121</strong> · 1.3.1.154<br><small>Letzte Änderung: 20.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -1324,7 +1324,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
               <div class="meter-ocr-actions"><button type="button" class="btn ghost" id="meterRotateLeft">↶ 90° links</button><button type="button" class="btn ghost" id="meterRotateRight">↷ 90° rechts</button><button type="button" class="btn ghost" id="meterCropReset">Rahmen zurücksetzen</button></div>
               <strong style="display:block;margin-top:12px">Ausgewählter Bildausschnitt</strong><canvas id="meterOcrCropPreview" class="meter-crop-preview"></canvas>
             </div>
-            <div class="meter-ocr-actions" style="margin-top:10px"><button type="button" class="btn ghost" id="meterCropTighten">🎯 Ausschnitt enger setzen</button><button type="button" class="btn ghost" id="meterSegmentRead">▦ LCD-Segmente prüfen</button></div><div id="meterOcrDiagnostics" role="status" style="display:none;margin:12px 0;padding:12px;border:1px solid #c9dce7;border-radius:12px;background:#f4f9fc;white-space:pre-wrap;font-size:.86rem"></div><div class="meter-ocr-actions"><button type="button" class="btn ghost" id="meterOcrRecognize">🔍 Automatisch erkennen</button><button type="button" class="btn ghost" id="meterOcrReadCrop">🔢 Markierten Bereich lesen</button></div>
+            <div class="meter-ocr-actions" style="margin-top:10px"><button type="button" class="btn ghost" id="meterCropTighten">🎯 Ausschnitt enger setzen</button><button type="button" class="btn ghost" id="meterSegmentRead">▦ LCD-Ziffern analysieren</button></div><div id="meterLcdPreview" style="display:none;margin-top:12px"></div><div id="meterOcrDiagnostics" role="status" style="display:none;margin:12px 0;padding:12px;border:1px solid #c9dce7;border-radius:12px;background:#f4f9fc;white-space:pre-wrap;font-size:.86rem"></div><div class="meter-ocr-actions"><button type="button" class="btn ghost" id="meterOcrRecognize">🔍 Automatisch erkennen</button><button type="button" class="btn ghost" id="meterOcrReadCrop">🔢 Markierten Bereich lesen</button></div>
             <label style="display:block;margin-top:14px">Erkannter Wert, bitte sorgfältig prüfen
               <input id="meterOcrResult" type="text" inputmode="decimal" placeholder="z. B. 12345,67" autocomplete="off" />
             </label>
@@ -5851,22 +5851,63 @@ renderFuelMap();
       const f=.64;meterCrop={x:Math.max(0,meterCrop.x+meterCrop.w*(1-f)/2),y:Math.max(0,meterCrop.y+meterCrop.h*(1-f)/2),w:meterCrop.w*f,h:meterCrop.h*f};
       drawMeterCrop();meterOcrStatus('Rahmen enger gesetzt. Auf die Ziffern verschieben, ohne Beschriftungen oder rote Zeiger.');
     }
+    // v121: Browserlokaler Siebensegment-Prototyp. Arbeitet auf dem vom Nutzer
+    // bestätigten Zahlenstreifen; niemals unkontrolliert als Messwert übernehmen.
     function inspectMeterSegments(){
       if(!meterBitmap)return meterOcrStatus('Bitte zuerst ein Foto auswählen.');
-      if(document.getElementById('meterOcrType')?.value==='wasser')return meterOcrStatus('LCD-Segmentanalyse ist nur für digitale Stromzähler geeignet. Wasserzähler bitte ausrichten und das schwarze Zahlenfenster markieren.');
-      const src=document.getElementById('meterOcrCropPreview');
-      if(!src?.width||!src?.height)return;
-      const w=src.width,h=src.height,ctx=src.getContext('2d',{willReadFrequently:true}),d=ctx.getImageData(0,0,w,h).data;
-      const gray=new Uint8Array(w*h),hist=new Uint32Array(256);
-      for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x,k=i*4,v=Math.round(d[k]*.299+d[k+1]*.587+d[k+2]*.114);gray[i]=v;hist[v]++;}
-      let n=0,threshold=0;for(let v=0;v<256;v++){n+=hist[v];if(n>=w*h*.32){threshold=v;break;}}
-      const vertical=[];for(let x=0;x<w;x++){let dark=0;for(let y=Math.floor(h*.15);y<h*.85;y++)if(gray[y*w+x]<threshold)dark++;vertical.push(dark/Math.max(1,h*.7));}
-      const smooth=vertical.map((_,x)=>{let sum=0,c=0;for(let j=Math.max(0,x-2);j<=Math.min(w-1,x+2);j++){sum+=vertical[j];c++;}return sum/c;});
-      const occupied=smooth.map(v=>v>.10);let runs=[],start=-1;
-      for(let x=0;x<=w;x++){if(x<w&&occupied[x]){if(start<0)start=x;}else if(start>=0){if(x-start>=Math.max(3,w*.012))runs.push([start,x]);start=-1;}}
-      // Aufeinanderfolgende Segmente können verbunden sein; die Runs sind nur eine Diagnose.
-      meterDiagnostics(['LCD-Segmentdiagnose (experimentell):',`Ausschnitt: ${w} × ${h} Pixel`,`Helligkeitsschwelle: ${threshold}`,`Dunkle vertikale Gruppen: ${runs.length}`,`Gruppenpositionen: ${runs.slice(0,16).map(r=>Math.round(r[0]/w*100)+'–'+Math.round(r[1]/w*100)+' %').join(', ')||'keine'}`,'Noch keine sichere Siebensegment-Zifferndekodierung. Bitte Bildausschnitt möglichst eng um die großen LCD-Ziffern setzen.','Der Zählerstand wird aus dieser Diagnose bewusst nicht automatisch übernommen.']);
-      meterOcrStatus('LCD-Struktur untersucht. Die Diagnose zeigt erkannte Balkengruppen, aber noch keinen verlässlich dekodierten Wert.');
+      if(document.getElementById('meterOcrType')?.value!=='strom')return meterOcrStatus('LCD-Decoder ist nur für Stromzähler.');
+      const source=document.getElementById('meterOcrCropPreview');
+      const target=document.getElementById('meterLcdPreview');
+      if(!source?.width)return;
+      // Die sechs Ziffern müssen vollständig, waagerecht und ohne 1.8.0/kWh markiert sein.
+      const cw=720,ch=210,c=document.createElement('canvas');c.width=cw;c.height=ch;
+      const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(source,0,0,cw,ch);
+      const data=ctx.getImageData(0,0,cw,ch).data,lum=new Uint8Array(cw*ch),hist=new Uint32Array(256);
+      for(let i=0;i<lum.length;i++){let k=i*4;lum[i]=Math.round(.299*data[k]+.587*data[k+1]+.114*data[k+2]);hist[lum[i]]++;}
+      // Otsu-Grenze, danach Helligkeits-Offset gegen dunkles LCD-Glas.
+      let sum=0,total=lum.length;for(let i=0;i<256;i++)sum+=i*hist[i];
+      let best=-1,bestT=90,wB=0,sB=0;
+      for(let t=0;t<256;t++){wB+=hist[t];if(!wB||wB===total)continue;sB+=t*hist[t];const wF=total-wB;const score=wB*wF*Math.pow(sB/wB-(sum-sB)/wF,2);if(score>best){best=score;bestT=t;}}
+      const mask=new Uint8Array(lum.length);for(let i=0;i<lum.length;i++)mask[i]=lum[i]<bestT?1:0;
+      // Projektionen als Hilfsmittel, keine automatische Übernahme von Fremdtext.
+      const cols=new Float32Array(cw);for(let x=0;x<cw;x++){let n=0;for(let y=25;y<ch-25;y++)n+=mask[y*cw+x];cols[x]=n/(ch-50);}
+      const rowScores=new Float32Array(ch);for(let y=0;y<ch;y++){let n=0;for(let x=20;x<cw-20;x++)n+=mask[y*cw+x];rowScores[y]=n/(cw-40);}
+      const pat={0:'1111110',1:'0110000',2:'1101101',3:'1111001',4:'0110011',5:'1011011',6:'1011111',7:'1110000',8:'1111111',9:'1111011'};
+      const centers=[[.5,.13],[.83,.29],[.83,.71],[.5,.87],[.17,.71],[.17,.29],[.5,.5]];
+      function segmentScore(x0,x1,y0,y1){
+        const width=x1-x0,height=y1-y0;const values=[];
+        for(const [u,v] of centers){let count=0,n=0;const horizontal=(u===.5);const rx=width*(horizontal?.13:.09),ry=height*(horizontal?.075:.12);const cx=x0+u*width,cy=y0+v*height;
+          for(let y=Math.max(0,Math.floor(cy-ry));y<Math.min(ch,Math.ceil(cy+ry));y+=2)for(let x=Math.max(0,Math.floor(cx-rx));x<Math.min(cw,Math.ceil(cx+rx));x+=2){count+=mask[y*cw+x];n++;}
+          values.push(count/Math.max(1,n));}
+        return values;
+      }
+      // Bei gleich breiten LCD-Ziffern sechs und sieben Stellen untersuchen.
+      const candidates=[];
+      for(const digits of [6,7])for(const left of [.02,.05,.08,.11])for(const right of [.89,.92,.95,.98]){
+        if(right-left<.65)continue;
+        const slot=(right-left)*cw/digits;let result='',errors=0,uncertain=0,segments=[];
+        for(let i=0;i<digits;i++){
+          const x0=(left*cw+i*slot)+slot*.07,x1=(left*cw+(i+1)*slot)-slot*.07;
+          const strengths=segmentScore(x0,x1,ch*.08,ch*.92);
+          const lo=Math.min(...strengths),hi=Math.max(...strengths),mid=(lo+hi)/2;
+          const bits=strengths.map(v=>v>mid?'1':'0').join('');
+          let choices=Object.entries(pat).map(([digit,pattern])=>({digit,distance:[...pattern].reduce((a,z,j)=>a+(z!==bits[j]?1:0),0)})).sort((a,b)=>a.distance-b.distance);
+          result+=choices[0].digit;errors+=choices[0].distance;uncertain+=(choices[1].distance===choices[0].distance?1:0);segments.push({bits,strengths,dist:choices[0].distance});
+        }
+        candidates.push({digits,left,right,result,errors,uncertain,segments});
+      }
+      candidates.sort((a,b)=>a.errors-b.errors||a.uncertain-b.uncertain);
+      const winner=candidates[0];
+      target.style.display='block';target.replaceChildren();
+      const heading=document.createElement('strong');heading.textContent='LCD-Prüfbild (nur Ziffern markieren):';target.appendChild(heading);
+      const display=document.createElement('canvas');display.width=cw;display.height=ch;display.style.cssText='display:block;width:100%;height:auto;margin:8px 0;border-radius:8px;border:1px solid #b9d4de';
+      const dc=display.getContext('2d');dc.drawImage(c,0,0);dc.strokeStyle='#04c6e0';dc.lineWidth=3;
+      for(let i=0;i<winner.digits;i++){const x=(winner.left+(winner.right-winner.left)*i/winner.digits)*cw;dc.strokeRect(x,ch*.08,(winner.right-winner.left)*cw/winner.digits,ch*.84);}
+      target.appendChild(display);
+      const uncertain=winner.errors>0||winner.uncertain>0;
+      meterDiagnostics(['LCD-Zifferndiagnose (v121, experimentell):',`Markierter Bereich: ${source.width} × ${source.height} Pixel`,`Automatische Schwelle: ${bestT}`,`Erkannte Stellen: ${winner.digits}`,`Decoder-Kandidat: ${winner.result}`,`Abweichende Segmente: ${winner.errors}; mehrdeutige Stellen: ${winner.uncertain}`,'Dies ist KEIN bestätigter Zählerstand. Bitte die sechs großen Ziffern möglichst eng und waagerecht markieren.','Die blauen Kästen zeigen, welche Einzelbereiche tatsächlich untersucht wurden.']);
+      // Nie ungeprüft den erkannten Wert in das Formular schreiben.
+      meterOcrStatus(uncertain?'Decoder noch unsicher. Rahmen nur um die großen Ziffern ziehen und erneut prüfen.':'Decoder hat einen Kandidaten gefunden. Wert am Foto kontrollieren und manuell eintragen.');
     }
     // v119: OCR-Diagnose und Bildvorverarbeitung. Keine geratenen Nachkommastellen.
     function meterDiagnostics(lines){
@@ -5934,7 +5975,7 @@ renderFuelMap();
         const results=await meterReadVariants(src,ocr,type);
         const chosen=meterChooseCandidate(results);
         meterDiagnostics(['OCR-Diagnose (markierter Bereich):',...results.map(r=>`${r.kind}: ${r.vals.join(' / ')||'keine Ziffern'} (OCR ${r.confidence} %)`) ,chosen?`Häufigster Vorschlag: ${chosen.value} (${chosen.votes}/4 Durchläufe)`:'Keine lesbare Ziffernfolge','Hinweis: OCR-Prozentwerte sind keine garantierte Messgenauigkeit.']);
-        if(chosen && chosen.votes>=2 && !chosen.ambiguous){
+        if(chosen && chosen.votes>=2 && !chosen.ambiguous && (type!=='strom' || results.filter(r=>r.vals.includes(chosen.value)&&r.confidence>=70).length>=2)){
           document.getElementById('meterOcrResult').value=chosen.value.replace('.',',');
           meterOcrStatus(type==='wasser'?'Vorschlag für das Zahlenwerk. Rote Zeiger weiterhin manuell prüfen und ergänzen.':'Ziffernvorschlag aus dem markierten Bereich. Vor Übernahme am Foto kontrollieren.');
         }else{
