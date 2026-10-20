@@ -229,8 +229,7 @@
     .summary-grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
     .energy-market-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
-    .energy-market-tile{padding:18px;border:1px solid var(--line);background:var(--app-inner,rgba(8,17,32,.65));border-radius:18px;position:relative;min-width:0}
-    .energy-market-tile:before{content:"";position:absolute;top:0;left:0;width:100%;height:4px;background:var(--market-accent,#f59e0b);border-radius:18px 18px 0 0}
+    .energy-market-tile{padding:18px;border:1px solid var(--line);border-top:4px solid var(--market-accent,#f59e0b);background:var(--app-inner,rgba(8,17,32,.65));border-radius:18px;position:relative;min-width:0;box-sizing:border-box}
     .energy-market-tile h3{font-size:.94rem;margin:4px 0 12px}
     .energy-market-tile .market-value{font-size:clamp(1.1rem,2vw,1.7rem);font-weight:850;letter-spacing:-.02em}
     .energy-market-tile p{font-size:.8rem;color:var(--muted);line-height:1.5;margin:8px 0 0}
@@ -775,6 +774,13 @@ html[data-theme="light"] #dashboardView .dash-trend.up{color:#b91c1c} html[data-
     .pellet-compare-item .pellet-big {font-size:clamp(1.18rem,2.6vw,1.8rem);font-weight:850}
     @media(max-width:850px){.pellet-compare-grid{grid-template-columns:1fr}}
   
+
+/* v100: Vergleich mit dem belegten Preis des unmittelbar vorherigen Kalendertags */
+.market-day-change {margin:10px 0 5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.84rem;line-height:1.35;font-weight:750;}
+.market-day-change .market-change-pill {display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:5px 10px;background:var(--app-inner,rgba(148,163,184,.10));border:1px solid var(--line);}
+.market-day-change.up {color:#bf3c37}.market-day-change.down {color:#12834c}.market-day-change.flat {color:var(--muted)}.market-day-change.missing {color:var(--muted);font-weight:550}
+.market-history-stat .delta-up {color:#bf3c37}.market-history-stat .delta-down {color:#12834c}.market-history-stat .delta-neutral {color:var(--muted)}
+
 /* v72: Historischer Marktpreisvergleich */
 .energy-market-tile[data-market-key] { cursor:pointer; transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
 .energy-market-tile[data-market-key]:hover { transform:translateY(-3px); border-color:var(--market-accent); box-shadow:0 12px 35px rgba(17,24,39,.13); }
@@ -890,33 +896,131 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 .pellet-balance-row small{display:block;color:var(--muted);margin-bottom:6px}
 .pellet-balance-row strong{font-size:1.15rem}
 @media(max-width:720px){.tabs{width:100%;overflow:visible!important;border-radius:14px;padding:5px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.tabs .tab{width:100%;border-radius:10px;padding:12px 7px;line-height:1.2;font-size:.86rem;white-space:normal;overflow-wrap:anywhere}.tabs .tab:last-child:nth-child(odd){grid-column:span 2}.pellet-balance-row{grid-template-columns:1fr}}
+
+/* v93: Hauptnavigation mit klaren Untermenüs */
+.nav-v93{display:flex!important;flex-wrap:wrap!important;gap:9px!important;overflow:visible!important;border-radius:16px!important;position:relative;z-index:40;align-items:stretch}
+.nav-v93 > .tab,.nav-v93 > .nav-dropdown{flex:1 1 auto;min-width:130px}
+.nav-v93 .nav-dropdown{position:relative}
+.nav-v93 .nav-dropdown>summary{list-style:none;cursor:pointer;padding:13px 14px;height:100%;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;font-weight:750;user-select:none;white-space:nowrap}
+.nav-v93 .nav-dropdown>summary::-webkit-details-marker{display:none}
+.nav-v93 .nav-dropdown>summary:hover,.nav-v93 .nav-dropdown[open]>summary,.nav-v93 .nav-dropdown.has-selection>summary{background:rgba(56,189,248,.16)}
+.nav-v93 .nav-dropdown>summary span{font-size:.75rem;color:var(--muted)}
+.nav-v93 .nav-popover{position:absolute;top:calc(100% + 7px);left:0;min-width:235px;width:max-content;max-width:min(92vw,330px);display:grid;gap:5px;background:var(--card-solid);border:1px solid var(--line);box-shadow:0 16px 35px rgba(4,25,44,.16);border-radius:14px;padding:8px;z-index:60}
+.nav-v93 .nav-popover .tab{width:100%;display:flex;text-align:left;padding:12px 14px;justify-content:space-between;white-space:normal;min-height:42px}
+.nav-v93 .nav-popover small{font-size:.72rem;color:var(--muted)}
+.price-schedule-box{margin:16px 0}
+.price-times-list{display:grid;gap:9px}
+.price-time-row{display:flex;align-items:center;gap:12px;background:var(--card-solid);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.price-time-row label{flex:1;min-width:0;display:flex;align-items:center;gap:12px;font-weight:700}
+.price-time-row input{max-width:155px;min-width:115px}
+.price-time-row .btn{padding:8px 12px;flex-shrink:0}
+.price-times-bottom{display:flex;align-items:center;gap:13px;flex-wrap:wrap;margin-top:13px}
+.price-times-bottom .muted{font-size:.82rem;flex:1;min-width:180px}
+@media(max-width:720px){.nav-v93{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible!important;padding:6px!important;gap:6px!important;border-radius:12px!important}.nav-v93>.tab,.nav-v93>.nav-dropdown{min-width:0;width:100%;grid-column:auto}.nav-v93>.tab{padding:13px 9px!important}.nav-v93>.nav-dropdown>summary{font-size:.86rem;padding:13px 7px;white-space:normal;text-align:center;line-height:1.3}.nav-v93>.nav-dropdown:last-child{grid-column:span 2}.nav-v93 .nav-popover{left:0;right:auto;min-width:min(80vw,240px);max-width:90vw}.nav-v93>.nav-dropdown:last-child .nav-popover{left:50%;transform:translateX(-50%)}.price-time-row{gap:7px;padding:9px}.price-time-row label{gap:7px;font-size:.84rem}.price-time-row input{min-width:105px;max-width:140px;padding:9px 8px}}
+
+/* v94: kompakter Titel, zweistufige Navigation und Backup-Verwaltung */
+.hero-v94{align-items:center;padding:21px 26px;margin-bottom:14px;border-radius:20px;gap:14px}
+.hero-v94 h1{font-size:clamp(1.45rem,3.3vw,2.3rem);margin:5px 0 7px;line-height:1.12}
+.hero-v94-brand{min-width:0}.hero-v94 .hero-status{font-size:.86rem;line-height:1.35}
+.hero-v94-meta{margin-left:auto;text-align:right;white-space:nowrap;display:grid;gap:6px}
+.hero-v94-clock{font-size:1.1rem;font-weight:800;letter-spacing:.01em}
+.hero-v94-version{font-size:.77rem;color:var(--muted);line-height:1.5}.hero-v94-version strong{color:var(--text)}
+.nav-v94{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px!important;border-radius:14px!important;margin-bottom:0!important;overflow:visible!important;padding:7px!important}
+.nav-v94 .main-nav-btn{min-width:0;width:100%;border:0;color:var(--text);background:transparent;font:inherit;font-weight:760;padding:13px 7px;border-radius:9px;cursor:pointer;white-space:normal}
+.nav-v94 .main-nav-btn.selected{background:rgba(56,189,248,.17);box-shadow:inset 0 0 0 1px rgba(56,189,248,.17)}
+.nav-v94 .main-nav-btn:hover{background:rgba(56,189,248,.13)}
+.subnav-v94{display:flex;flex-wrap:wrap;gap:8px;margin:7px 0 20px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card-solid);box-shadow:0 3px 10px rgba(0,0,0,.045)}
+.subnav-v94[hidden]{display:none!important}
+.subnav-v94 .tab{background:rgba(108,143,170,.09);border:1px solid var(--line);border-radius:8px;padding:9px 13px;white-space:normal;font-size:.89rem;flex:0 1 auto}
+.subnav-v94 .tab.active{background:rgba(56,189,248,.19);border-color:rgba(56,189,248,.4)}
+.backup-layout-v94{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:15px}
+.backup-box-v94{padding:20px;background:var(--app-inner,var(--card-solid));border:1px solid var(--line);border-radius:16px;display:grid;align-content:start;gap:12px;min-width:0}
+.backup-box-v94 h3,.backup-box-v94 p{margin:0}.backup-box-v94 p{color:var(--muted);line-height:1.55}.backup-icon-v94{font-size:1.7rem}
+.backup-file-v94{display:grid;gap:8px;font-weight:650}.backup-file-v94 input{max-width:100%;font-weight:400}
+.backup-note-v94{border:1px solid var(--line);border-radius:12px;padding:13px;margin-top:14px;color:var(--muted);line-height:1.5}
+.app-install-v94{padding:10px 4px}.app-install-v94 p{margin:6px 0 12px}
+@media(max-width:720px){.hero-v94{padding:16px;border-radius:15px;flex-direction:row;align-items:flex-start;flex-wrap:wrap}.hero-v94-meta{text-align:left;margin-left:0;white-space:normal}.hero-v94-clock{font-size:.95rem}.nav-v94{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px!important;padding:6px!important}.nav-v94 .main-nav-btn{font-size:.81rem;padding:11px 3px}.subnav-v94{gap:5px;padding:8px}.subnav-v94 .tab{font-size:.79rem;padding:10px 8px;flex:1 1 42%}.backup-layout-v94{grid-template-columns:1fr}}
+
+
+/* v101: Tank-Dashboard mit vier gleich breiten Karten und robuster mobiler Darstellung. */
+.fuel-stats-section{min-width:0}
+.fuel-stats-section .fuel-stats-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+  align-items:stretch;
+}
+.fuel-stats-section .fuel-hero-card,
+.fuel-stats-section .fuel-mini-card{
+  grid-column:auto;
+  min-width:0;
+  min-height:0;
+  padding:20px 22px;
+  border-radius:18px;
+}
+.fuel-stats-section .fuel-card-head > div:first-child{min-width:0}
+.fuel-stats-section .fuel-card-title{
+  font-size:clamp(1.02rem,1.35vw,1.32rem);
+  line-height:1.25;
+  overflow-wrap:normal;
+  word-break:normal;
+  hyphens:none;
+}
+.fuel-stats-section .fuel-card-value{
+  font-size:clamp(1.45rem,2.5vw,2.05rem);
+  line-height:1.2;
+  overflow-wrap:normal;
+  word-break:normal;
+  white-space:normal;
+}
+.fuel-stats-section .fuel-mini-card .fuel-card-value{
+  white-space:nowrap;
+  font-size:clamp(1.32rem,2.1vw,1.85rem);
+}
+.fuel-stats-section .fuel-card-icon{width:40px;height:40px;border-radius:12px}
+.fuel-stats-section .fuel-card-sub{font-size:.86rem}
+.fuel-stats-section .fuel-mini-card .fuel-card-sub{margin-top:8px}
+@media(max-width:720px){
+  .fuel-stats-section .fuel-stats-grid{grid-template-columns:minmax(0,1fr);gap:12px}
+  .fuel-stats-section .fuel-hero-card,
+  .fuel-stats-section .fuel-mini-card{padding:17px 18px}
+  .fuel-stats-section .fuel-mini-card .fuel-card-value{font-size:clamp(1.3rem,5.5vw,1.8rem)}
+}
+@media(min-width:721px) and (max-width:860px){
+  .fuel-stats-section .fuel-stats-grid{grid-template-columns:minmax(0,1fr)}
+}
+
+
+/* v102: Zeitstempel der tatsächlich veröffentlichten Preisdatei. */
+.market-fetch-status{display:inline-flex;align-items:center;gap:9px;flex-wrap:wrap;border:1px solid var(--line);background:var(--app-inner,rgba(148,163,184,.09));border-radius:12px;padding:9px 12px;margin:0 0 14px;color:var(--muted);font-size:.84rem;line-height:1.35}
+.market-fetch-status strong{color:var(--text);font-weight:750}
+.market-fetch-dot{display:inline-block;flex:none;width:8px;height:8px;border-radius:50%;background:#16a34a}
+.market-fetch-status.unknown .market-fetch-dot{background:#f59e0b}
+
 </style>
 </head>
 <body>
   <div class="app-shell">
-    <header class="hero">
-      <div>
-        <p class="eyebrow">Verbrauch Zuhause</p>
-        <h1>Zählerstände, Pellets und Kosten im Blick</h1>
-        <p class="hero-copy">Strom, Wasser und Pellets werden als Zählerstände erfasst. Dazu kommen Pellets-Nachfüllungen, Käufe, Preiszeiträume und Reset-Funktionen für Zählerwechsel.</p>
-        <p class="hero-status" id="firebaseStatus">Firebase wird beim Laden automatisch verbunden. In den Einstellungen kannst du den Haushalt wechseln oder neu anlegen.</p>
-        <p class="hero-copy">Version 1.3.1.131</p>
+    <header class="hero hero-v94">
+      <div class="hero-v94-brand">
+        <p class="eyebrow">VERBRAUCH ZUHAUSE · HAUSHALTSDASHBOARD</p>
+        <h1>Verbrauch Zuhause</h1>
+        <p class="hero-status" id="firebaseStatus">Verbindung wird aufgebaut …</p>
       </div>
-      <div class="hero-actions">
-        <button id="themeToggleBtn" class="btn ghost theme-toggle" type="button" aria-label="Design wechseln" aria-pressed="false"><span id="themeToggleIcon" aria-hidden="true">☀️</span> <span id="themeToggleLabel">Helles Design</span></button>
-        <button id="installBtn" class="btn secondary hidden" type="button">App installieren</button>
-        <button id="exportBackupBtn" class="btn ghost" type="button">Backup exportieren</button>
+      <div class="hero-v94-meta">
+        <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
+        <div class="hero-v94-version">Version <strong>v107</strong> · 1.3.1.142<br><small>Letzte Änderung: 19.10.2026</small></div>
       </div>
     </header>
 
-    <div class="tabs" id="mainTabs">
-      <button class="tab active" type="button" data-view="dashboardView">Übersicht</button>
-      <button class="tab" type="button" data-view="readingsView">Zählerstände</button>
-      <button class="tab" type="button" data-view="refillsView">Pellets Nachfüllen</button>
-      <button class="tab" type="button" data-view="pelletStoreView">Pelletlager</button>
-      <button class="tab" type="button" data-view="carsView">Auto / Tanken</button>
-      <button class="tab" type="button" data-view="settingsView">Einstellungen</button>
-    </div>
+    <nav class="tabs nav-v94" id="mainTabs" aria-label="Hauptnavigation">
+      <button class="main-nav-btn selected" type="button" data-group="dashboardView">🏠 Übersicht</button>
+      <button class="main-nav-btn" type="button" data-group="readingsView">📊 Zählerstände</button>
+      <button class="main-nav-btn" type="button" data-group="refillsView">🔥 Pellets</button>
+      <button class="main-nav-btn" type="button" data-group="carsView">🚗 Auto</button>
+      <button class="main-nav-btn" type="button" data-group="firebaseView">⚙️ Einstellungen</button>
+    </nav>
+    <nav id="subTabs" class="subnav-v94" aria-label="Untermenü" hidden></nav>
 
     <section id="dashboardView" class="view active">
       <div class="grid">
@@ -934,11 +1038,9 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
         <section class="card wide" aria-label="Marktpreise in Drolshagen">
           <div class="card-head"><div><p class="section-kicker">ENERGIEPREISE · 57489 DROLSHAGEN</p><h2>Aktuelle Marktpreise</h2><small class="muted">Nur zur Information. Für die Pellets-Kostenrechnung zählt ausschließlich der letzte gespeicherte Kauf.</small></div><button class="btn ghost" id="marketRefreshBtn" type="button">Preise aktualisieren</button></div>
           <p class="muted" style="margin:-5px 0 12px;font-size:.84rem">Kachel anklicken, um Preisverlauf und Zeitraum auszuwählen.</p>
+          <div class="market-fetch-status" id="marketFetchStatus" role="status" aria-live="polite"><span class="market-fetch-dot" aria-hidden="true"></span><span>Letzter Preisdatei-Stand wird geladen …</span></div>
           <div class="energy-market-grid" id="energyMarketPrices" aria-live="polite"><p class="muted">Preisübersicht wird geladen …</p></div>
           <p class="muted" id="energyMarketUpdated" style="margin:12px 0 0;font-size:.8rem"></p>
-          <div class="fuel-nation-head"><div><p class="section-kicker">DEUTSCHLANDWEITER DURCHSCHNITT</p><h3>Aktuelle Spritpreise</h3></div><small class="muted">Super E5 · Super E10 · Diesel</small></div>
-          <div id="fuelNationalMarket" class="energy-market-grid" aria-live="polite"><p class="muted">Durchschnittspreise werden geladen …</p></div>
-          <p id="fuelNationalUpdated" class="muted" style="font-size:.8rem;margin-top:9px"></p>
         </section>
 
         <section class="card wide" aria-label="Kostenüberblick">
@@ -1225,14 +1327,6 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
           </form>
         </section>
       
-    <section class="card wide glass" id="liveFuelPriceSection">
-      <div class="card-head"><div><p class="section-kicker">LIVE · TANKERKÖNIG</p><h2>⛽ Tankstellenpreise in meiner Nähe</h2><small class="muted">Beim Öffnen von Auto / Tanken, höchstens ein Abruf in 15 Minuten, über alle Geräte und Standorte.</small></div><span class="badge">Standortbasiert</span></div>
-      <div class="live-fuel-controls"><label>Kraftstoff<select id="liveFuelType"><option value="diesel">Diesel</option><option value="e5">Super E5</option><option value="e10">Super E10</option></select></label><label>Umkreis<select id="liveFuelRadius"><option value="5">5 km</option><option value="10" selected>10 km</option><option value="15">15 km</option><option value="25">25 km</option></select></label><label>Sortieren<select id="liveFuelSort"><option value="price">Preis aufsteigend</option><option value="dist">Entfernung</option></select></label><button class="btn secondary" type="button" id="liveFuelRefresh">Preise prüfen</button></div>
-      <div id="liveFuelStatus" class="live-fuel-status" aria-live="polite">Beim ersten Öffnen wird der Standort ermittelt.</div>
-      <div id="liveFuelResults" class="fuel-station-prices"></div>
-      <div id="liveFuelMap" class="map-box" style="min-height:290px;margin-top:16px"></div>
-      <small class="muted">Preise: Tankerkönig / Markttransparenzstelle für Kraftstoffe. Standortangaben werden für die Suche verwendet, aber nicht in die Preishistorie geschrieben.</small>
-    </section>
     <section class="card glass" id="fuelEntryCard">
       <div class="card-head">
         <div>
@@ -1441,7 +1535,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 </section>
 
 
-    <section class="card">
+    <section class="card wide fuel-stats-section">
       <div class="card-head">
         <div>
           <p class="section-kicker">Auswertung</p>
@@ -1519,7 +1613,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       
 <section id="settingsView" class="view">
   <div class="grid">
-    <section class="card glass wide">
+    <section id="firebaseSettingsCard" class="card glass wide">
       <div class="card-head">
         <div>
           <p class="section-kicker">Firebase</p>
@@ -1562,13 +1656,13 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 
     <section class="card glass wide push-rule-panel" id="pushRulesPanel">
       <div class="push-rules-heading">
-        <div><div class="push-rules-eyebrow">Benachrichtigungen · v89</div><h2>Meine Push-Regeln 🔔</h2>
+        <div><div class="push-rules-eyebrow">Benachrichtigungen · Zeitplan</div><h2>Meine Push-Regeln 🔔</h2>
           <p>Steuere, welche Meldungen deine Geräte erreichen. Gespeicherte Regeln gelten für den gesamten Haushalt, auch wenn die App geschlossen ist.</p></div>
         <div class="push-rules-summary"><span class="push-rules-chip">🏠 Haushaltweit</span><span class="push-rules-chip is-on" id="pushRulesActiveCount">4 von 4 aktiv</span></div>
       </div>
       <div class="push-rules-grid-v89">
         <label class="push-rule-v89">
-          <span class="push-rule-top"><span class="push-rule-icon">🔥</span><span class="push-rule-content"><strong>Tägliche Energiepreise</strong><small>Lose Pellets, Sackware und Heizöl. Einmal täglich als kompakte Preisübersicht.</small></span></span>
+          <span class="push-rule-top"><span class="push-rule-icon">🔥</span><span class="push-rule-content"><strong>Energiepreise zum Wunschzeitpunkt</strong><small>Lose Pellets, Sackware und Heizöl zu deinen eingestellten Uhrzeiten.</small></span></span>
           <span class="push-rule-bottom"><span class="push-rule-state"><span class="push-rule-state-on">Aktiviert</span><span class="push-rule-state-off">Deaktiviert</span></span><input class="push-switch" id="rulePrices" type="checkbox" checked aria-label="Tägliche Energiepreise aktivieren"></span>
         </label>
         <label class="push-rule-v89">
@@ -1583,6 +1677,12 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
           <span class="push-rule-top"><span class="push-rule-icon blue">⛽</span><span class="push-rule-content"><strong>Neue Tankvorgänge</strong><small>Meldung nach einer neuen Tankung mit Fahrzeug, Menge, Preis und Kilometerstand.</small></span></span>
           <span class="push-rule-bottom"><span class="push-rule-state"><span class="push-rule-state-on">Aktiviert</span><span class="push-rule-state-off">Deaktiviert</span></span><input class="push-switch" id="ruleFuel" type="checkbox" checked aria-label="Tankvorgang-Meldungen aktivieren"></span>
         </label>
+      </div>
+      <div class="push-rules-controls price-schedule-box" id="pricePushSchedulePanel">
+        <div class="push-rules-control-head"><div><strong>🕒 Energiepreis-Push: Uhrzeiten</strong><small>Gilt für alle angemeldeten Geräte. Uhrzeiten nach Europe/Berlin. Füge eine oder mehrere tägliche Benachrichtigungen hinzu.</small></div><span class="push-rules-chip" id="priceTimeCounter">2 Zeiten</span></div>
+        <div id="pricePushTimeList" class="price-times-list" aria-live="polite"></div>
+        <div class="price-times-bottom"><button class="btn secondary" type="button" id="addPricePushTime">＋ Uhrzeit hinzufügen</button><span class="muted">Die Preisprüfung läuft unabhängig davon alle 2 Stunden von 06:00 bis 18:00 Uhr.</span></div>
+        <p class="muted" style="margin:12px 0 0;font-size:.82rem">Auch ohne Preisänderung wird zur gewählten Uhrzeit der zuletzt bestätigte Preis mit seinem Datenstand gemeldet. Bei fehlgeschlagenem Abruf wird das ausdrücklich gekennzeichnet.</p>
       </div>
       <div class="push-rules-controls">
         <div class="push-rules-control-head"><div><strong>⚙️ Empfindlichkeit der Verbrauchswarnung</strong><small>Warnung bei einer Abweichung vom historischen Vergleichswert. Mindestens 7 Tage aktuelles Ableseintervall und 90 Tage Historie.</small></div></div>
@@ -1613,7 +1713,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
     </section>
 
-    <section class="card glass wide">
+    <section id="carSettingsCard" class="card glass wide">
       <div class="card-head">
         <div>
           <p class="section-kicker">Autos</p>
@@ -1675,7 +1775,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       <div id="carList" class="list-stack" style="margin-top:14px;"></div>
     </section>
 
-    <section class="card wide">
+    <section id="pricePeriodCard" class="card wide">
       <div class="card-head">
         <div>
           <p class="section-kicker">Preiszeiträume</p>
@@ -1724,7 +1824,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </form>
     </section>
 
-    <section class="card wide">
+    <section id="bagSizesCard" class="card wide">
       <div class="card-head">
         <div>
           <p class="section-kicker">Sackgrößen</p>
@@ -1757,7 +1857,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       <small class="muted">Ein direkter Live-Preisabruf aus der externen Webseite ist nicht verfügbar. Der hinterlegte Preis wird auf diesem Gerät gespeichert und bleibt als Angebot mit Datum gekennzeichnet.</small>
       <div id="pelletComparisonSettings" class="pellet-compare-grid" style="margin-top:16px"></div>
     </section>
-    <section class="card glass">
+    <section id="basePricesCard" class="card glass">
       <div class="card-head">
         <div>
           <p class="section-kicker">Aktuelle Basispreise</p>
@@ -1801,7 +1901,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </form>
     </section>
 
-    <section class="card glass">
+    <section id="resetCard" class="card glass">
       <div class="card-head">
         <div>
           <p class="section-kicker">Zählerwechsel / Reset</p>
@@ -1844,7 +1944,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </form>
     </section>
 
-    <section class="card glass">
+    <section id="purchaseCard" class="card glass">
       <div class="card-head">
         <div>
           <p class="section-kicker">Pellets Einkauf</p>
@@ -1889,7 +1989,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </form>
     </section>
 
-    <section class="card">
+    <section id="currentPriceCard" class="card">
       <div class="card-head">
         <div>
           <p class="section-kicker">Aktive Preislage</p>
@@ -1899,7 +1999,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       <div id="settingsSummary" class="settings-summary-grid"></div>
     </section>
 
-    <section class="card wide">
+    <section id="priceHistoryCard" class="card wide">
       <div class="card-head">
         <div>
           <p class="section-kicker">Preis-Historie</p>
@@ -1909,7 +2009,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       <div id="pricePeriodList" class="list-stack"></div>
     </section>
 
-    <section class="card wide">
+    <section id="purchaseHistoryCard" class="card wide">
       <div class="card-head">
         <div>
           <p class="section-kicker">Pellets Käufe</p>
@@ -1921,13 +2021,27 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
   </div>
 </section>
 
-  <div id="nationalFuelHistoryModal" class="market-history-backdrop" role="dialog" aria-modal="true" aria-label="Spritpreisverlauf" aria-hidden="true" hidden>
-    <div class="market-history-panel" style="max-width:850px">
-      <div class="card-head"><div><p class="section-kicker">Spritpreis-Historie · Deutschland</p><h2 id="nationalFuelHistoryTitle">Preisverlauf</h2><small class="muted">Sechs Zeitpunkte pro Tag, maximal drei Jahre</small></div><button class="btn ghost" type="button" id="nationalFuelHistoryClose">Schließen ✕</button></div>
-      <label>Zeitraum <select id="nationalFuelHistoryPeriod"><option value="7">7 Tage</option><option value="30" selected>30 Tage</option><option value="90">3 Monate</option><option value="365">1 Jahr</option><option value="all">Gesamter Verlauf</option></select></label>
-      <div id="nationalFuelHistoryChart" style="margin-top:14px"></div><div id="nationalFuelHistoryDetails" class="market-history-details"></div>
-    </div>
-  </div>
+<section id="resetView" class="view"><div class="grid" id="resetViewGrid"></div></section>
+<section id="bagView" class="view"><div class="grid" id="bagViewGrid"></div></section>
+<section id="offersView" class="view"><div class="grid" id="offersViewGrid"></div></section>
+<section id="purchasesView" class="view"><div class="grid" id="purchasesViewGrid"></div></section>
+<section id="carSettingsView" class="view"><div class="grid" id="carSettingsViewGrid"></div></section>
+<section id="firebaseView" class="view"><div class="grid" id="firebaseViewGrid"></div></section>
+<section id="notificationsView" class="view"><div class="grid" id="notificationsViewGrid"></div></section>
+<section id="pricesView" class="view"><div class="grid" id="pricesViewGrid"></div></section>
+<section id="backupView" class="view">
+ <div class="grid">
+  <section class="card wide glass backup-card-v94">
+   <div class="card-head"><div><p class="section-kicker">DATENSICHERUNG</p><h2>Backup & Wiederherstellung</h2><p class="muted">Sichere deine eingegebenen Haushaltsdaten als JSON-Datei und stelle sie bei Bedarf wieder her.</p></div><span class="badge ok">Lokal herunterladbar</span></div>
+   <div class="backup-layout-v94">
+    <div class="backup-box-v94"><div class="backup-icon-v94">⬇️</div><h3>Backup exportieren</h3><p>Erfasst Zählerstände, Pelletlieferungen, Käufe, Tankungen, Fahrzeuge, Einstellungen, Preiszeiträume und Tankstellen.</p><button id="exportBackupBtn" class="btn primary" type="button">Gesamtes Backup herunterladen</button></div>
+    <div class="backup-box-v94"><div class="backup-icon-v94">⬆️</div><h3>Backup wiederherstellen</h3><p>Wähle eine zuvor exportierte JSON-Datei aus. Du erhältst eine Vorschau und bestätigst die Wiederherstellung ausdrücklich.</p><label class="backup-file-v94">Backup-Datei auswählen<input id="backupRestoreFile" type="file" accept=".json,application/json"></label><div id="backupRestorePreview" class="muted" role="status">Noch keine Datei ausgewählt.</div><button id="backupRestoreBtn" class="btn secondary" type="button" disabled>Daten aus Datei wiederherstellen</button><div id="backupRestoreStatus" class="muted" aria-live="polite"></div></div>
+   </div>
+   <div class="backup-note-v94"><strong>Wichtig:</strong> Die Wiederherstellung ergänzt vorhandene Daten und aktualisiert Datensätze mit derselben ID. Andere vorhandene Datensätze werden nicht automatisch gelöscht. Cloudflare-Push-Regeln, GitHub-Workflows und Marktpreis-Historien liegen außerhalb von Firestore und sind nicht Bestandteil dieses Backups.</div>
+  </section>
+  <section class="card wide glass"><p class="section-kicker">DARSTELLUNG UND INSTALLATION</p><h2>App-Einstellungen</h2><div class="settings-grid"><label for="themeSelectV94">Farbschema<select id="themeSelectV94"><option value="light">☀️ Helles Design</option><option value="dark">🌙 Dunkles Design</option></select></label><div class="app-install-v94"><strong>App installieren</strong><p class="muted">Installiere Verbrauch Zuhause als eigenständige App auf deinem Endgerät.</p><button id="installBtn" class="btn secondary hidden" type="button">📲 App installieren</button><small id="installInfoV94" class="muted">Falls kein Button erscheint, nutze die Installationsfunktion deines Browsers.</small></div></div></section>
+ </div>
+</section>
   <div id="marketHistoryModal" class="market-history-backdrop" role="dialog" aria-modal="true" aria-labelledby="marketHistoryTitle" aria-hidden="true" hidden>
     <div class="market-history-panel" role="document">
       <div class="market-history-top">
@@ -1995,7 +2109,8 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       query,
       serverTimestamp,
       Timestamp,
-      getDocs
+      getDocs,
+      runTransaction
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
     const FIREBASE_CONFIG = {
@@ -2221,83 +2336,88 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
     // init erst am Ende des Moduls aufrufen: Push-Konstanten vorher initialisieren.
 
 
-    // v92: Standortbasierte Tankstellenpreise und bundesweite Durchschnittspreise.
-    const LIVE_FUEL_WORKER = 'https://verbrauch-push.simonkreis6289.workers.dev';
-    let liveFuelPayload=null, liveFuelMap=null,liveFuelMarkers=null, liveFuelPending=null;
-    const NATIONAL_FUEL_TYPES={super:['Super E5','⛽','#f59e0b'],e10:['Super E10','⛽','#22c55e'],diesel:['Diesel','🚙','#38bdf8']};
-    let nationalFuelHistory=[],nationalFuelKey='diesel';
-    const fmtFuel=v=>Number(v).toLocaleString('de-DE',{minimumFractionDigits:3,maximumFractionDigits:3})+' €/l';
-    async function loadNationalFuelPrices(){
-      const grid=document.getElementById('fuelNationalMarket'),footer=document.getElementById('fuelNationalUpdated');
-      try{
-        const res=await fetch('./fuel-prices.json?t='+Date.now(),{cache:'no-store'});
-        if(!res.ok)throw new Error('Preisdaten noch nicht vorhanden');
-        const data=await res.json();
-        grid.innerHTML=Object.entries(NATIONAL_FUEL_TYPES).map(([key,[title,emoji,color]])=>{
-          const val=Number(data.prices?.[key]);const ok=Number.isFinite(val)&&val>0;
-          return `<article class="energy-market-tile" style="--market-accent:${color}" data-national-fuel="${key}" role="button" tabindex="0" aria-label="${title}: Preisverlauf öffnen"><h3>${emoji} ${title}</h3><div class="market-value">${ok?fmtFuel(val):'–'}</div><p>Deutschlandweiter Durchschnitt</p><p>${data.source_date?'Stand: '+escapeHtml(new Date(data.source_date).toLocaleString('de-DE')):'Kein Datenstand'}</p><div class="market-tile-hint">📈 Preisverlauf öffnen ↗</div></article>`;
-        }).join('');
-        footer.textContent='Quelle: Benzinpreis-Aktuell · Datenstand: '+(data.source_date?new Date(data.source_date).toLocaleString('de-DE'):'unbekannt')+' · Abgerufen: '+(data.fetched_at?new Date(data.fetched_at).toLocaleString('de-DE'):'–');
-      }catch(e){grid.innerHTML='<p class="muted">Noch keine Spritpreise gespeichert. Der erste GitHub-Workflow füllt die Daten.</p>';footer.textContent=String(e.message||e);}
+    // v94: Feste Hauptleiste und sichtbare zweite Menüleiste.
+    const NAV_GROUPS_V94 = {
+      dashboardView: [['🏠 Übersicht','dashboardView']],
+      readingsView: [['📈 Zählerstände','readingsView'],['🔄 Zählerneustart','resetView']],
+      refillsView: [['🪣 Nachfüllen','refillsView'],['🏠 Pelletlager','pelletStoreView'],['📦 Sackgrößen','bagView'],['🏷️ Angebotsabfragen','offersView'],['🧾 Käufe','purchasesView']],
+      carsView: [['⛽ Tanken','carsView'],['🚙 Fahrzeugeinstellungen','carSettingsView']],
+      firebaseView: [['☁️ Firebase','firebaseView'],['🔔 Benachrichtigungen','notificationsView'],['💰 Preise','pricesView'],['💾 Backup','backupView']]
+    };
+    let currentNavGroupV94='dashboardView';
+    function openNavGroupV94(group, target){
+      const options=NAV_GROUPS_V94[group]||NAV_GROUPS_V94.dashboardView;
+      currentNavGroupV94=group;
+      document.querySelectorAll('#mainTabs .main-nav-btn').forEach(b=>b.classList.toggle('selected',b.dataset.group===group));
+      const sub=document.getElementById('subTabs');
+      sub.replaceChildren();
+      for(const [label,view] of options){
+        const b=document.createElement('button');b.type='button';b.className='tab';b.dataset.view=view;b.textContent=label;sub.appendChild(b);
+      }
+      sub.hidden=group==='dashboardView';
+      const selected=sub.querySelector(`[data-view="${target||options[0][1]}"]`) || sub.querySelector('.tab');
+      // Hauptansicht ohne Klick auf verborgenes Menü aktivieren.
+      const viewName=target||options[0][1];
+      sub.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view===viewName));
+      els.views.forEach(v=>v.classList.toggle('active',v.id===viewName));
+      if(viewName==='carsView')setTimeout(()=>{renderFuelMap();refreshFuelMapSize();void refreshStationGps();},150);
     }
-    async function openNationalFuelHistory(key){
-      if(!NATIONAL_FUEL_TYPES[key])return;
-      nationalFuelKey=key;
-      const modal=document.getElementById('nationalFuelHistoryModal');modal.hidden=false;modal.setAttribute('aria-hidden','false');
-      document.getElementById('nationalFuelHistoryTitle').textContent=NATIONAL_FUEL_TYPES[key][0];
-      document.getElementById('nationalFuelHistoryPeriod').value='30';
-      document.getElementById('nationalFuelHistoryChart').textContent='Preisverlauf wird geladen …';
-      try{const r=await fetch('./fuel-price-history.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('Noch keine Historie');const data=await r.json();nationalFuelHistory=Array.isArray(data.records)?data.records:[];renderNationalFuelHistory();}
-      catch(e){document.getElementById('nationalFuelHistoryChart').textContent='Noch keine historischen Werte vorhanden.';}
+    function prepareStructuredMenus(){
+      const locations={
+        firebaseView:['firebaseSettingsCard'],notificationsView:['pushRulesPanel','pushTestPanel'],
+        carSettingsView:['carSettingsCard'],resetView:['resetCard'],
+        bagView:['bagSizesCard'],offersView:['pelletMarketPriceCard'],
+        purchasesView:['purchaseCard','purchaseHistoryCard'],
+        pricesView:['pricePeriodCard','basePricesCard','currentPriceCard','priceHistoryCard']
+      };
+      for(const [view,ids] of Object.entries(locations)){
+        const grid=document.getElementById(view+'Grid');if(!grid)continue;
+        for(const id of ids){const card=document.getElementById(id);if(card)grid.appendChild(card);}
+      }
+      document.querySelectorAll('#mainTabs .main-nav-btn').forEach(btn=>btn.addEventListener('click',()=>openNavGroupV94(btn.dataset.group)));
+      openNavGroupV94('dashboardView');
+      const clock=document.getElementById('headerClock');
+      const refreshClock=()=>{if(clock)clock.textContent=new Intl.DateTimeFormat('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}).format(new Date())+' Uhr';};
+      refreshClock();setInterval(refreshClock,30000);
     }
-    function closeNationalFuelHistory(){const el=document.getElementById('nationalFuelHistoryModal');el.hidden=true;el.setAttribute('aria-hidden','true');}
-    function renderNationalFuelHistory(){
-      const period=document.getElementById('nationalFuelHistoryPeriod').value,cutoff=period==='all'?0:Date.now()-Number(period)*86400000;
-      const points=nationalFuelHistory.map(r=>({time:Date.parse(r.source_date||r.fetched_at),price:Number(r.prices?.[nationalFuelKey])})).filter(p=>Number.isFinite(p.time)&&p.time>=cutoff&&Number.isFinite(p.price)&&p.price>0).sort((a,b)=>a.time-b.time);
-      const chart=document.getElementById('nationalFuelHistoryChart'),details=document.getElementById('nationalFuelHistoryDetails');
-      if(!points.length){chart.innerHTML='<div class="empty-state">Keine gespeicherten Preise im gewählten Zeitraum.</div>';details.innerHTML='';return;}
-      const w=900,h=290,l=65,r=20,t=22,b=44,min=Math.min(...points.map(p=>p.price)),max=Math.max(...points.map(p=>p.price)),pad=Math.max(.025,(max-min)*.15),low=min-pad,high=max+pad,start=points[0].time,end=points.at(-1).time;
-      const x=p=>l+(p.time-start)/(end-start||1)*(w-l-r),y=p=>t+(high-p.price)/(high-low)*(h-t-b);
-      const ticks=Array.from({length:5},(_,i)=>{const value=low+(high-low)*i/4,yy=t+(h-t-b)*(1-i/4);return `<line x1="${l}" x2="${w-r}" y1="${yy}" y2="${yy}" stroke="var(--line)"/><text x="${l-9}" y="${yy+4}" text-anchor="end" font-size="13" fill="var(--muted)">${value.toFixed(2)}</text>`;}).join('');
-      const color=NATIONAL_FUEL_TYPES[nationalFuelKey][2];
-      chart.innerHTML=`<svg viewBox="0 0 ${w} ${h}" aria-label="Preisverlauf" role="img" style="width:100%;height:auto">${ticks}<polyline points="${points.map(p=>x(p)+','+y(p)).join(' ')}" fill="none" stroke="${color}" stroke-width="3" stroke-linejoin="round"/>${points.length<=90?points.map(p=>`<circle cx="${x(p)}" cy="${y(p)}" r="4" fill="${color}"><title>${escapeHtml(new Date(p.time).toLocaleString('de-DE'))}: ${fmtFuel(p.price)}</title></circle>`).join(''):''}<text x="${l}" y="${h-12}" fill="var(--muted)" font-size="13">${escapeHtml(new Date(start).toLocaleDateString('de-DE'))}</text><text x="${w-r}" y="${h-12}" text-anchor="end" fill="var(--muted)" font-size="13">${escapeHtml(new Date(end).toLocaleDateString('de-DE'))}</text></svg>`;
-      details.innerHTML=`<div class="market-history-stat"><small>Erster Preis</small><strong>${fmtFuel(points[0].price)}</strong></div><div class="market-history-stat"><small>Letzter Preis</small><strong>${fmtFuel(points.at(-1).price)}</strong></div><div class="market-history-stat"><small>Messpunkte</small><strong>${points.length}</strong></div>`;
+    function activatePriceTimes(times){
+      const list=document.getElementById('pricePushTimeList');if(!list)return;
+      const valid=Array.isArray(times)?times.filter(t=>/^([01]\d|2[0-3]):[0-5]\d$/.test(t)).slice(0,12):[];
+      list.replaceChildren();
+      for(const time of valid){
+        const row=document.createElement('div');row.className='price-time-row';
+        const label=document.createElement('label');label.textContent='🔔 Preis-Push';
+        const input=document.createElement('input');input.type='time';input.value=time;input.step=60;input.className='price-push-time';input.setAttribute('aria-label','Uhrzeit der Preisbenachrichtigung');
+        const remove=document.createElement('button');remove.type='button';remove.className='btn ghost';remove.textContent='✕';remove.title='Uhrzeit entfernen';remove.setAttribute('aria-label','Uhrzeit entfernen');
+        remove.addEventListener('click',()=>{row.remove();updatePriceTimeCount();});
+        label.appendChild(input);row.append(label,remove);list.appendChild(row);
+      }
+      updatePriceTimeCount();
     }
-    async function loadLiveFuelPrices(){
-      if(liveFuelPending)return liveFuelPending;
-      const status=document.getElementById('liveFuelStatus');status.textContent='Standort wird ermittelt und Preisspeicher geprüft …';
-      liveFuelPending=(async()=>{
-        const pos=await getCurrentPositionSafe();
-        // Standortberechtigung nur beim tatsächlichen Öffnen des Menüpunkts erfragen.
-        if(!pos){status.textContent='Standort nicht freigegeben. Bitte GPS-Berechtigung aktivieren.';return;}
-        try{
-          const r=await fetch(LIVE_FUEL_WORKER+'/fuel-prices',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lat:pos.latitude,lng:pos.longitude,radius:Number(document.getElementById('liveFuelRadius').value)})});
-          const payload=await r.json();if(!r.ok)throw Error(payload.error||'Preisabruf fehlgeschlagen ('+r.status+')');
-          liveFuelPayload=payload;renderLiveFuelPrices();
-        }catch(e){status.textContent='Preisabfrage nicht möglich: '+String(e.message||e);}
-      })();try{await liveFuelPending;}finally{liveFuelPending=null;}
+    function updatePriceTimeCount(){const e=document.getElementById('priceTimeCounter');if(e){const n=document.querySelectorAll('#pricePushTimeList .price-push-time').length;e.textContent=n+' '+(n===1?'Uhrzeit':'Uhrzeiten');}}
+    function readPriceTimes(){
+      const times=[...document.querySelectorAll('#pricePushTimeList .price-push-time')].map(el=>el.value);
+      if(times.some(t=>!/^([01]\d|2[0-3]):[0-5]\d$/.test(t)))throw new Error('Bitte gültige Uhrzeiten eingeben.');
+      if(new Set(times).size!==times.length)throw new Error('Jede Uhrzeit darf nur einmal vorkommen.');
+      return times.sort();
     }
-    function renderLiveFuelPrices(){
-      const status=document.getElementById('liveFuelStatus'),area=document.getElementById('liveFuelResults');
-      if(!liveFuelPayload)return;
-      const data=liveFuelPayload,sort=document.getElementById('liveFuelSort').value,fuel=document.getElementById('liveFuelType').value;
-      const stations=(data.stations||[]).filter(s=>s&&s[fuel]!=null&&Number(s[fuel])>0).sort((a,b)=>sort==='dist'?Number(a.dist||999)-Number(b.dist||999):Number(a[fuel])-Number(b[fuel]));
-      const time=data.fetched_at?new Date(data.fetched_at).toLocaleString('de-DE'):'unbekannt',available=data.next_allowed_at?new Date(data.next_allowed_at).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'–';
-      status.textContent=(data.cached?'Zwischengespeicherte Preise':'Neue Preise geladen')+' · Stand '+time+' · Neue Abfrage frühestens '+available+' · Abrufort: '+(data.origin?.label||'GPS-Position beim letzten Abruf')+'.';
-      area.innerHTML=stations.length?stations.map(s=>{const lat=Number(s.lat),lng=Number(s.lng),nav=Number.isFinite(lat)&&Number.isFinite(lng)?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(lat+','+lng):'';return `<article class="live-station-item"><strong>${escapeHtml(s.brand||s.name||'Tankstelle')}</strong><span class="muted">${escapeHtml([s.street,s.houseNumber,s.place].filter(Boolean).join(' '))}</span><div class="live-price">${fmtFuel(s[fuel])}</div><small class="muted">${Number.isFinite(Number(s.dist))?Number(s.dist).toLocaleString('de-DE',{maximumFractionDigits:1})+' km · ':''}${s.isOpen?'Geöffnet':'Öffnungsstatus unbekannt/geschlossen'}</small>${nav?`<a href="${nav}" target="_blank" rel="noopener noreferrer">Navigation ↗</a>`:''}</article>`;}).join(''):'<div class="empty-state">Keine Tankstellen mit diesem Kraftstoff gefunden.</div>';
-      if(typeof L==='undefined')return;
-      if(!liveFuelMap){liveFuelMap=L.map('liveFuelMap');L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(liveFuelMap);liveFuelMarkers=L.layerGroup().addTo(liveFuelMap);}
-      liveFuelMarkers.clearLayers();
-      const coords=[];
-      for(const s of stations){const lat=Number(s.lat),lng=Number(s.lng);if(!Number.isFinite(lat)||!Number.isFinite(lng))continue;coords.push([lat,lng]);L.marker([lat,lng]).addTo(liveFuelMarkers).bindPopup(`<b>${escapeHtml(s.brand||s.name||'Tankstelle')}</b><p>${fmtFuel(s[fuel])}</p>`);}
-      if(coords.length)liveFuelMap.fitBounds(coords,{padding:[25,25],maxZoom:13});else liveFuelMap.setView([51.2,7.8],8);
-      setTimeout(()=>liveFuelMap.invalidateSize(),150);
+    function registerPriceTimeControls(){
+      activatePriceTimes(['10:00','17:15']);
+      document.getElementById('addPricePushTime')?.addEventListener('click',()=>{
+        if(document.querySelectorAll('#pricePushTimeList .price-push-time').length>=12){setRulesStatus('Maximal 12 Uhrzeiten möglich.',true);return;}
+        const now=new Date();const t=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+        const times=[...document.querySelectorAll('#pricePushTimeList .price-push-time')].map(e=>e.value);
+        // Neue Uhrzeit sofort editierbar, für schnelle Live-Tests.
+        activatePriceTimes([...times,t]);document.querySelector('#pricePushTimeList .price-time-row:last-child input')?.focus();
+      });
     }
     async function init() {
       hydrateLocalForms();
       setDefaultDatetimes();
       syncQuickNowUi();
       restoreLocalData();
+      prepareStructuredMenus();
+      registerPriceTimeControls();
       registerEvents();
       registerInstallHandling();
       registerServiceWorker();
@@ -2324,16 +2444,6 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       });
       document.getElementById('marketRefreshBtn')?.addEventListener('click', () => loadMarketPrices(true));
       void loadMarketPrices();
-      void loadNationalFuelPrices();
-      document.getElementById('fuelNationalMarket')?.addEventListener('click',e=>{const tile=e.target.closest('[data-national-fuel]');if(tile)void openNationalFuelHistory(tile.dataset.nationalFuel);});
-      document.getElementById('fuelNationalMarket')?.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const tile=e.target.closest('[data-national-fuel]');if(tile){e.preventDefault();void openNationalFuelHistory(tile.dataset.nationalFuel);}}});
-      document.getElementById('nationalFuelHistoryClose')?.addEventListener('click',closeNationalFuelHistory);
-      document.getElementById('nationalFuelHistoryModal')?.addEventListener('click',e=>{if(e.target.id==='nationalFuelHistoryModal')closeNationalFuelHistory();});
-      document.getElementById('nationalFuelHistoryPeriod')?.addEventListener('change',renderNationalFuelHistory);
-      document.getElementById('liveFuelType')?.addEventListener('change',renderLiveFuelPrices);
-      document.getElementById('liveFuelSort')?.addEventListener('change',renderLiveFuelPrices);
-      document.getElementById('liveFuelRadius')?.addEventListener('change',()=>void loadLiveFuelPrices());
-      document.getElementById('liveFuelRefresh')?.addEventListener('click',()=>void loadLiveFuelPrices());
       renderAll();
       renderSavedStationOptions();
       if (state.householdId) await connectFirebase(FIREBASE_CONFIG, state.householdId, false);
@@ -2342,37 +2452,116 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       void enablePushWhileOpen();
     }
 
-    // Anzeige einer vom GitHub-Workflow gepflegten Datei. Keine Marktwerte fließen in Kostenberechnungen ein.
-    async function loadMarketPrices(force = false) {
-      const area = document.getElementById('energyMarketPrices');
-      const footer = document.getElementById('energyMarketUpdated');
-      if (!area) return;
-      try {
-        const response = await fetch(`./market-prices.json${force ? '?v='+Date.now() : ''}`, {cache:'no-store'});
-        if (!response.ok) throw new Error('Preisdaten fehlen (HTTP '+response.status+')');
-        const data = await response.json();
-        const definitions = [
-          ['pellets_loose','Pellets · lose Ware','🔥','#f59e0b','€/1.000 kg'],
-          ['pellets_bag','Pellets · Sackware','📦','#8b5cf6','€/1.000 kg'],
-          ['heating_oil','Heizöl','🛢️','#38bdf8','€/100 Liter']
-        ];
-        const now = Date.now();
-        area.innerHTML = definitions.map(([key,label,symbol,color,unit]) => {
-          const item = data?.prices?.[key] || {};
-          const n = Number(item.price);
-          const valid = item.price !== null && item.price !== undefined && Number.isFinite(n) && n > 0;
-          const age = item.checked_at ? now - new Date(item.checked_at).getTime() : Infinity;
-          const fresh = valid && age >= 0 && age <= 48*3600*1000;
-          const source = item.source_url && /^https:\/\//.test(item.source_url) ? item.source_url : '';
-          const scope = item.scope === 'national' ? 'Deutschland-Durchschnitt · nicht regional' : '57489 Drolshagen';
-          return `<article class="energy-market-tile" style="--market-accent:${color}" data-market-key="${key}" role="button" tabindex="0" aria-label="Preisverlauf ${label} öffnen"><h3>${symbol} ${label}</h3><div class="market-value">${valid ? formatCurrency(n) : 'Nicht verfügbar'}</div><p>${unit} · ${escapeHtml(scope)}</p><p>${valid ? (fresh ? 'Aktuelle Preisprüfung' : 'Älterer Preis, bitte Datum beachten') : 'Noch kein verifizierter Preis abrufbar'}${item.checked_at ? ' · '+escapeHtml(new Date(item.checked_at).toLocaleDateString('de-DE')) : ''}</p>${source ? `<p><a href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Quelle öffnen ↗</a></p>` : ''}<div class="market-tile-hint">📈 Preisverlauf anzeigen ↗</div></article>`;
-        }).join('');
-        footer.textContent = 'Marktpreise nur zur Orientierung. Preisbasis und Bestellmenge unterscheiden sich je nach Anbieter. Keine Verwendung für Verbrauchs- oder Kostenberechnungen.';
-      } catch(err) {
-        area.innerHTML = '<div class="empty-state" style="grid-column:1/-1">Marktpreise derzeit nicht verfügbar. Die übrigen Funktionen der App sind davon nicht betroffen.</div>';
-        footer.textContent = String(err.message || err);
-      }
+
+// Marktpreis-Historie: nur bestätigte Preise mit exakt dem Vortag vergleichen.
+// Keine stillschweigende Ersetzung durch ältere verfügbare Werte.
+let marketHistoryCache = null;
+let marketHistoryPromise = null;
+async function getMarketHistory(force = false) {
+  if (!force && marketHistoryCache) return marketHistoryCache;
+  if (!force && marketHistoryPromise) return marketHistoryPromise;
+  marketHistoryPromise = (async () => {
+    const res = await fetch('./market-price-history.json?v='+Date.now(), {cache:'no-store'});
+    if (!res.ok) throw new Error('Preisverlauf HTTP '+res.status);
+    const data = await res.json();
+    if (!Array.isArray(data.records)) throw new Error('Unbekanntes Historienformat');
+    marketHistoryCache = data.records;
+    return marketHistoryCache;
+  })();
+  try { return await marketHistoryPromise; }
+  finally { marketHistoryPromise = null; }
+}
+function berlinMarketDay(timestamp) {
+  const d=new Date(timestamp);
+  if(!Number.isFinite(d.getTime())) return null;
+  return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
+}
+function previousMarketDay(day) {
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(day||'')) return null;
+  const d=new Date(day+'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate()-1);
+  return d.toISOString().slice(0,10);
+}
+function validMarketNumber(value) {
+  if (value===null || value===undefined || value==='') return null;
+  const num=Number(value);
+  return Number.isFinite(num) && num>0 ? num : null;
+}
+function marketDailyPrices(rows,key) {
+  const days=new Map();
+  for (const entry of (Array.isArray(rows)?rows:[])) {
+    const day=String(entry?.date||entry?.checked_at||'').slice(0,10);
+    const price=validMarketNumber(entry?.prices?.[key]);
+    if(/^\d{4}-\d{2}-\d{2}$/.test(day) && price!==null) days.set(day,price);
+  }
+  return days;
+}
+function marketDayChange(rows,key,day,price) {
+  const prevDay=previousMarketDay(day);
+  const previous=prevDay ? marketDailyPrices(rows,key).get(prevDay) : null;
+  const current=validMarketNumber(price);
+  if (!Number.isFinite(previous) || current===null) return null;
+  const amount=current-previous;
+  return {amount,percent:amount/previous*100,previous,prevDay};
+}
+function marketDeltaMarkup(delta,short=false) {
+  if(!delta) return `<span class="market-day-change missing">Zum Vortag: kein Vergleichswert</span>`;
+  const fmt=(n,dec=2)=>new Intl.NumberFormat('de-DE',{minimumFractionDigits:dec,maximumFractionDigits:dec}).format(n);
+  const sign=delta.amount>0?'+':delta.amount<0?'−':'';
+  const variant=delta.amount>0?'up':delta.amount<0?'down':'flat';
+  const arrow=delta.amount>0?'↗':delta.amount<0?'↘':'→';
+  return `<span class="market-day-change ${variant}"><span class="market-change-pill">${arrow} ${sign}${fmt(Math.abs(delta.amount))} € (${sign}${fmt(Math.abs(delta.percent))} %)</span>${short?'':'<span>zum Vortag</span>'}</span>`;
+}
+// Datumsangaben aus der von GitHub erzeugten Datei in deutscher Ortszeit darstellen.
+function marketCheckedDisplay(timestamp) {
+  if (!timestamp) return null;
+  const date=new Date(timestamp);
+  if (!Number.isFinite(date.getTime())) return null;
+  return new Intl.DateTimeFormat('de-DE',{timeZone:'Europe/Berlin',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(date)+' Uhr';
+}
+// Anzeige einer vom GitHub-Workflow gepflegten Datei. Keine Marktwerte fließen in Kostenberechnungen ein.
+async function loadMarketPrices(force = false) {
+  const area = document.getElementById('energyMarketPrices');
+  const footer = document.getElementById('energyMarketUpdated');
+  const status = document.getElementById('marketFetchStatus');
+  if (!area) return;
+  try {
+    const response = await fetch(`./market-prices.json${force ? '?v='+Date.now() : ''}`, {cache:'no-store'});
+    if (!response.ok) throw new Error('Preisdaten fehlen (HTTP '+response.status+')');
+    const data = await response.json();
+    const fileTime=marketCheckedDisplay(data.generated_at);
+    if(status) {
+      status.classList.toggle('unknown',!fileTime);
+      status.innerHTML=`<span class="market-fetch-dot" aria-hidden="true"></span><span>${fileTime ? 'Letzte veröffentlichte Preisdatei: <strong>'+escapeHtml(fileTime)+'</strong>' : 'Zeitpunkt der letzten Preisdatei nicht bekannt'}</span>`;
     }
+    let history=[];
+    try { history=await getMarketHistory(force); }
+    catch(e) { console.warn('Tagesvergleich nicht verfügbar:',e); }
+    const definitions = [
+      ['pellets_loose','Pellets · lose Ware','🔥','#f59e0b','€/1.000 kg'],
+      ['pellets_bag','Pellets · Sackware','📦','#8b5cf6','€/1.000 kg'],
+      ['heating_oil','Heizöl','🛢️','#38bdf8','€/100 Liter']
+    ];
+    const now = Date.now();
+    area.innerHTML = definitions.map(([key,label,symbol,color,unit]) => {
+      const item = data?.prices?.[key] || {};
+      const n = validMarketNumber(item.price);
+      const valid = n!==null;
+      const age = item.checked_at ? now - new Date(item.checked_at).getTime() : Infinity;
+      const fresh = valid && age >= 0 && age <= 48*3600*1000;
+      const source = item.source_url && /^https:\/\//.test(item.source_url) ? item.source_url : '';
+      const scope = item.scope === 'national' ? 'Deutschland-Durchschnitt · nicht regional' : '57489 Drolshagen';
+      const priceDay= item.checked_at ? berlinMarketDay(item.checked_at) : null;
+      const change = valid && priceDay ? marketDayChange(history,key,priceDay,n) : null;
+      return `<article class="energy-market-tile" style="--market-accent:${color}" data-market-key="${key}" role="button" tabindex="0" aria-label="Preisverlauf ${label} öffnen"><h3>${symbol} ${label}</h3><div class="market-value">${valid ? formatCurrency(n) : 'Nicht verfügbar'}</div><p>${unit} · ${escapeHtml(scope)}</p>${valid ? marketDeltaMarkup(change) : ''}<p>${valid ? (fresh ? 'Aktuelle Preisprüfung' : 'Älterer Preis, bitte Datum beachten') : 'Noch kein verifizierter Preis abrufbar'}${item.checked_at ? ' · '+escapeHtml(marketCheckedDisplay(item.checked_at) || 'Zeitpunkt unbekannt') : ''}</p>${source ? `<p><a href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Quelle öffnen ↗</a></p>` : ''}<div class="market-tile-hint">📈 Preisverlauf anzeigen ↗</div></article>`;
+    }).join('');
+    footer.textContent = 'Marktpreise nur zur Orientierung. Preisbasis und Bestellmenge unterscheiden sich je nach Anbieter. Keine Verwendung für Verbrauchs- oder Kostenberechnungen.';
+  } catch(err) {
+    area.innerHTML = '<div class="empty-state" style="grid-column:1/-1">Marktpreise derzeit nicht verfügbar. Die übrigen Funktionen der App sind davon nicht betroffen.</div>';
+    footer.textContent = String(err.message || err);
+    if(status){ status.classList.add('unknown'); status.innerHTML='<span class="market-fetch-dot" aria-hidden="true"></span><span>Letzte Preisdatei konnte nicht geladen werden.</span>'; }
+  }
+}
 
     const MARKET_INFO = {
       pellets_loose:{title:'🔥 Pellets · lose Ware',unit:'€/1.000 kg',color:'#f59e0b',scope:'57489 Drolshagen'},
@@ -2399,11 +2588,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       document.getElementById('marketHistoryDetails').innerHTML='';
       document.getElementById('marketHistoryClose').focus();
       try {
-        const r=await fetch('./market-price-history.json?v='+Date.now(),{cache:'no-store'});
-        if (!r.ok) throw new Error('Historie noch nicht angelegt');
-        const data=await r.json();
-        if (!Array.isArray(data.records)) throw new Error('Unbekanntes Historienformat');
-        marketHistoryRows=data.records;
+        marketHistoryRows=await getMarketHistory();
         renderMarketHistoryChart();
       } catch (e) {
         marketHistoryRows=[];
@@ -2468,8 +2653,10 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
         ${points.map((p,i)=>`<circle class="market-history-point" data-point="${i}" cx="${x(p)}" cy="${y(p.value)}" r="${points.length>50?3.5:5}" fill="${info.color}" stroke="var(--card-solid)" stroke-width="2" tabindex="0"><title>${escapeHtml(p.day)}: ${escapeHtml(fmt(p.value))}</title></circle>`).join('')}
         ${ticks}</svg>`;
       const selected=points.find(p=>p.day===marketHistoryFocus) || points.at(-1);
-      const diff=last-start;
-      details.innerHTML=`<div class="market-history-stat"><small>Erster Wert</small><strong>${escapeHtml(fmt(start))}</strong></div><div class="market-history-stat"><small>Letzter Wert</small><strong>${escapeHtml(fmt(last))}</strong></div><div class="market-history-stat"><small>Veränderung</small><strong>${diff>0?'+':''}${escapeHtml(fmt(diff))}</strong></div><div class="market-history-stat"><small>Ausgewählter Punkt · ${escapeHtml(new Date(selected.day+'T12:00:00').toLocaleDateString('de-DE'))}</small><strong>${escapeHtml(fmt(selected.value))}</strong></div>`;
+      const change=marketDayChange(marketHistoryRows,selectedMarketKey,selected.day,selected.value);
+      const deltaClass=change?(change.amount>0?'delta-up':change.amount<0?'delta-down':'delta-neutral'):'delta-neutral';
+      const deltaText=change ? `${change.amount>0?'+':change.amount<0?'−':''}${fmt(Math.abs(change.amount))} (${change.percent>0?'+':change.percent<0?'−':''}${new Intl.NumberFormat('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Math.abs(change.percent))} %)` : 'Kein Vortageswert';
+      details.innerHTML=`<div class="market-history-stat"><small>Letzter Wert im Zeitraum</small><strong>${escapeHtml(fmt(last))}</strong></div><div class="market-history-stat"><small>Ausgewählter Punkt · ${escapeHtml(new Date(selected.day+'T12:00:00').toLocaleDateString('de-DE'))}</small><strong>${escapeHtml(fmt(selected.value))}</strong></div><div class="market-history-stat"><small>Veränderung zum Vortag des gewählten Punkts</small><strong class="${deltaClass}">${escapeHtml(deltaText)}</strong></div>`;
       const showPoint=e=>{
         const el=e.target.closest('[data-point]');
         if(!el)return;
@@ -2523,13 +2710,15 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
     }
 
     function registerEvents() {
-      els.mainTabs?.addEventListener("click", handleTabClick);
-      document.getElementById('openPelletStore')?.addEventListener('click',()=>document.querySelector('.tab[data-view="pelletStoreView"]')?.click());
+      document.getElementById("subTabs")?.addEventListener("click", handleTabClick);
+      document.getElementById('openPelletStore')?.addEventListener('click',()=>openNavGroupV94('refillsView','pelletStoreView'));
       document.getElementById('pelletBaselineForm')?.addEventListener('submit',handlePelletBaselineSave);
       document.getElementById('pelletAdjustmentForm')?.addEventListener('submit',handlePelletAdjustmentSave);
       document.getElementById('pelletAdjustmentDate').value=toDatetimeLocal(new Date());
       document.getElementById("dashboardChartMetric")?.addEventListener("change", renderDashboardMonthlyChart);
-      els.exportBackupBtn?.addEventListener("click", exportBackup);
+      els.exportBackupBtn?.addEventListener("click", ()=>void exportBackup());
+      document.getElementById('backupRestoreFile')?.addEventListener('change',previewBackupV94);
+      document.getElementById('backupRestoreBtn')?.addEventListener('click',()=>void restoreBackupV94());
 
       els.quickUseNow?.addEventListener("change", syncQuickNowUi);
       els.searchFuelStationByTextBtn?.addEventListener("click", searchFuelStationByText);
@@ -2805,14 +2994,14 @@ function formatStationShort(station) {
       }catch(error){pushStatus('❌ '+error.message,true);}
     }
     // v86: Push-Regeln liegen zentral beim authentifizierten Cloudflare Worker.
-    const PUSH_RULE_DEFAULTS={prices:true,reminder:true,warnings:true,fuel:true,threshold:30};
+    const PUSH_RULE_DEFAULTS={prices:true,reminder:true,warnings:true,fuel:true,threshold:30,priceTimes:['10:00','17:15']};
     function setRulesStatus(message,bad=false){const el=document.getElementById('pushRulesStatus');if(el){const success=!bad&&(/geladen|gespeichert/i).test(message);el.dataset.state=bad?'error':success?'success':'info';const txt=el.querySelector('.push-rules-message-text');const ico=el.querySelector('.push-rules-message-icon');if(txt)txt.textContent=message;if(ico)ico.textContent=bad?'❌':success?'✅':'ℹ️';}}
     function syncRulesView(){const ids=['rulePrices','ruleReminder','ruleWarnings','ruleFuel'];const n=ids.filter(id=>document.getElementById(id)?.checked).length;const count=document.getElementById('pushRulesActiveCount');if(count)count.textContent=n+' von 4 aktiv';const field=document.getElementById('ruleThreshold');const slider=document.getElementById('ruleThresholdSlider');if(field&&slider&&document.activeElement!==slider){const v=Number(field.value);if(Number.isFinite(v)&&v>=10&&v<=200)slider.value=String(v);}}
     function readRulesInputs(){return {prices:document.getElementById('rulePrices').checked,reminder:document.getElementById('ruleReminder').checked,
-      warnings:document.getElementById('ruleWarnings').checked,fuel:document.getElementById('ruleFuel').checked,threshold:Number(document.getElementById('ruleThreshold').value)};}
+      warnings:document.getElementById('ruleWarnings').checked,fuel:document.getElementById('ruleFuel').checked,threshold:Number(document.getElementById('ruleThreshold').value),priceTimes:readPriceTimes()};}
     function applyRulesInputs(rules){const r={...PUSH_RULE_DEFAULTS,...rules};
       for(const [key,id] of [['prices','rulePrices'],['reminder','ruleReminder'],['warnings','ruleWarnings'],['fuel','ruleFuel']])document.getElementById(id).checked=!!r[key];
-      document.getElementById('ruleThreshold').value=r.threshold;syncRulesView();}
+      document.getElementById('ruleThreshold').value=r.threshold;activatePriceTimes(r.priceTimes);syncRulesView();}
     function registerPushRules(){
       for(const id of ['rulePrices','ruleReminder','ruleWarnings','ruleFuel'])document.getElementById(id)?.addEventListener('change',syncRulesView);
       document.getElementById('ruleThresholdSlider')?.addEventListener('input',e=>{document.getElementById('ruleThreshold').value=e.target.value;});
@@ -2847,17 +3036,14 @@ function formatStationShort(station) {
       return total;
     }
     function pelletDeliveriesAfter(startMs,endMs=Date.now()){
+      // Käufe/Lieferungen bilden den Gesamtvorrat. Nachfüllungen sind interne
+      // Umlagerungen aus dem bereits vorhandenen Sackvorrat in den Heizungsbunker.
+      // Sie erhöhen den Gesamtbestand NICHT noch einmal.
       const buys=state.purchases.filter(p=>Number(p.totalKg)>0&&Date.parse(p.date)>=startMs&&Date.parse(p.date)<=endMs);
-      let bought=buys.reduce((s,p)=>s+Number(p.totalKg),0);
-      let refill=0,ignored=0;
-      for(const r of state.refills){
-        const when=Date.parse(r.date),kg=Number(r.totalKg)||0;
-        if(!(when>=startMs&&when<=endMs&&kg>0))continue;
-        // Käufe und Nachfüllungen derselben Lieferung niemals doppelt zählen.
-        const duplicate=buys.some(p=>Math.abs(Date.parse(p.date)-when)<3*86400000 && Math.abs(Number(p.totalKg)-kg)<Math.max(15,kg*.03));
-        if(duplicate)ignored+=kg;else refill+=kg;
-      }
-      return {bought,refill,ignored,total:bought+refill};
+      const bought=buys.reduce((sum,p)=>sum+Number(p.totalKg),0);
+      const refills=state.refills.filter(r=>Number(r.totalKg)>0&&Date.parse(r.date)>=startMs&&Date.parse(r.date)<=endMs)
+        .reduce((sum,r)=>sum+Number(r.totalKg),0);
+      return {bought,refill:0,internalRefill:refills,ignored:refills,total:bought};
     }
     function pelletBalanceModel(){
       const baseline=pelletBaselineDate(), config=state.settings.pelletBalance||{};
@@ -2875,7 +3061,7 @@ function formatStationShort(station) {
     function pelletCoverage(since){
       const intervals=buildComputedReadings().filter(e=>e.type==='pellets'&&e.previousDate&&Number.isFinite(e.delta)&&e.delta>=0&&e.daysBetween>0);
       if(!intervals.length)return null;
-      const now=Date.now(),startLimit=Math.max(since||0,now-365*86400000),monthKg=new Array(12).fill(0),monthDays=new Array(12).fill(0);
+      const now=Date.now(),startLimit=now-730*86400000,monthKg=new Array(12).fill(0),monthDays=new Array(12).fill(0);
       let total=0,days=0,last=0;
       for(const e of intervals){
         const a=Date.parse(e.previousDate),b=Date.parse(e.date),from=Math.max(a,startLimit),to=Math.min(b,now);
@@ -2893,19 +3079,19 @@ function formatStationShort(station) {
     function pelletForecastModel(){
       const balance=pelletBalanceModel();
       if(!balance.ready)return {...balance,reliable:false,note:balance.note};
-      const coverage=pelletCoverage(balance.baseline.getTime());
-      if(!coverage||coverage.days<7)return {...balance,coverage,reliable:false,note:'Seit der Sommerlieferung fehlen noch ausreichend lange abgeschlossene Ableseintervalle.'};
+      const coverage=pelletCoverage();
+      if(!coverage||coverage.days<7)return {...balance,coverage,reliable:false,note:'Für eine Verbrauchsprognose fehlen noch ausreichend lange abgeschlossene Pellet-Ableseintervalle.'};
       const reliable=coverage.days>=300&&coverage.monthDays.filter(d=>d>=15).length>=10;
       const rates=coverage.monthKg.map((kg,i)=>coverage.monthDays[i]>=15?kg/coverage.monthDays[i]:coverage.daily);
       const freshness=(Date.now()-coverage.end)/86400000;
       if(freshness>60)return {...balance,coverage,reliable:false,note:'Die letzte Verbrauchsablesung liegt mehr als 60 Tage zurück. Bitte aktualisieren.'};
-      if(coverage.daily<=0)return {...balance,coverage,reliable:false,note:'Noch kein messbarer Verbrauch seit der Lieferung.'};
+      if(coverage.daily<=0)return {...balance,coverage,reliable:false,note:'Noch kein messbarer Pelletverbrauch in der vorhandenen Ablesehistorie.'};
       const when=new Date(), remaining0=balance.stock;
       let remaining=remaining0,days=0,estimated=null;
       if(reliable){while(remaining>0&&days<1095){remaining-=Math.max(0,rates[when.getMonth()]);when.setDate(when.getDate()+1);days++;}}
       else {days=Math.ceil(remaining/coverage.daily);when.setDate(when.getDate()+Math.min(days,1095));}
       if(days<=1095)estimated=new Date(when);
-      return {...balance,coverage,reliable,rates,when:estimated,days:days<=1095?days:null,note:reliable?'Saisonale Prognose aus deinen eigenen Monatsverbräuchen.':'Grobe Schätzung aus dem bisherigen Verbrauch seit der Sommerlieferung; der Winter kann deutlich abweichen.'};
+      return {...balance,coverage,reliable,rates,when:estimated,days:days<=1095?days:null,note:reliable?'Saisonale Prognose auf Basis deiner Pellet-Ablesungen der letzten zwei Jahre.':'Vorläufige Schätzung aus den verfügbaren Pellet-Ablesungen. Ohne vollständiges Winterprofil kann die Reichweite deutlich abweichen.'};
     }
     function formatPelletUntil(f){
       if(!f.ready||!f.when)return 'Noch nicht berechenbar';
@@ -2922,8 +3108,8 @@ function formatStationShort(station) {
           const percent=Math.max(0,Math.min(100,(f.stock/Math.max(1,f.opening+f.deliveries.total))*100));
           container.innerHTML=`<div class="pellet-hero-info"><div><small class="muted">Vorrat reicht ungefähr bis</small><div class="pellet-forecast-number">${escapeHtml(date)}</div><small class="muted">${f.reliable?'Saisonale Verbrauchsprognose':'Vorläufige Reichweitenschätzung'}</small></div><div><small class="muted">Rechnerischer Bestand</small><strong>${formatNumber(f.stock)} kg</strong></div></div>
           <div class="pellet-meter"><div style="width:${percent}%"></div></div>
-          <div class="pellet-balance-row"><div><small>Seit ${escapeHtml(f.from.toLocaleDateString('de-DE'))} hinzugekommen</small><strong>+${formatNumber(f.deliveries.total)} kg</strong></div><div><small>Verbrauch seitdem</small><strong>−${formatNumber(f.consumption)} kg</strong></div><div><small>Angenommener Start/Abgleich</small><strong>${formatNumber(f.opening)} kg</strong></div></div>
-          <p class="pellet-forecast-notes">${escapeHtml(f.note)} ${f.coverage?`Berechnungsgrundlage: ${Math.round(f.coverage.days)} Tage abgeschlossene Pellet-Ableseintervalle.`:''} Käufe und Nachfüllungen mit fast gleichem Datum und Gewicht werden nur einmal angerechnet. Bitte manuell überprüfen, falls Lieferungen in mehreren Portionen eingetragen wurden.</p>`;
+          <div class="pellet-balance-row"><div><small>Seit ${escapeHtml(f.from.toLocaleDateString('de-DE'))} gekauft / geliefert</small><strong>+${formatNumber(f.deliveries.total)} kg</strong></div><div><small>Verbrauch seitdem</small><strong>−${formatNumber(f.consumption)} kg</strong></div><div><small>Angenommener Start/Abgleich</small><strong>${formatNumber(f.opening)} kg</strong></div></div>
+          <p class="pellet-forecast-notes">${escapeHtml(f.note)} ${f.coverage?`Berechnungsgrundlage: ${Math.round(f.coverage.days)} Tage abgeschlossene Pellet-Ableseintervalle.`:''} Nachfüllungen (${formatNumber(f.deliveries.internalRefill)} kg seit dem letzten Abgleich) sind interne Umlagerungen aus dem gekauften Vorrat und werden nicht erneut zum Gesamtbestand addiert.</p>`;
         }
       }
       const startInfo=document.getElementById('pelletStartInfo');
@@ -2976,28 +3162,11 @@ function formatStationShort(station) {
       }
     }
 
-    function handleTabClick(event) {
-      const button = event.target.closest(".tab");
-      if (!button) return;
-
-      const targetView = button.dataset.view;
-
-      document.querySelectorAll(".tab").forEach((tab) =>
-        tab.classList.toggle("active", tab === button)
-      );
-
-      els.views.forEach((view) =>
-        view.classList.toggle("active", view.id === targetView)
-      );
-
-    if (targetView === "carsView") {
-      void loadLiveFuelPrices();
-      setTimeout(() => {
-        renderFuelMap();
-        refreshFuelMapSize();
-        void refreshStationGps();
-      }, 150);
-    }
+    function handleTabClick(event){
+      const button=event.target.closest('#subTabs .tab');
+      if(!button)return;
+      const view=button.dataset.view;
+      openNavGroupV94(currentNavGroupV94,view);
     }
 
     function syncQuickNowUi() {
@@ -4843,12 +5012,12 @@ function renderFuelStats() {
       <div class="fuel-card-head">
         <div>
           <div class="fuel-card-kicker">Verbrauch</div>
-          <div class="fuel-card-title">Durchschnitt</div>
+          <div class="fuel-card-title">Ø Verbrauch</div>
         </div>
         <div class="fuel-card-icon">📊</div>
       </div>
       <div class="fuel-card-value">${avgValue(avgConsumption) != null ? `${formatNumber(avgValue(avgConsumption))} l/100 km` : '–'}</div>
-      <div class="fuel-card-sub">Berechnet aus ${avgConsumption.length} Intervallen</div>
+      <div class="fuel-card-sub">Basis: ${avgConsumption.length} Tankintervalle</div>
     </article>
 
     <article class="fuel-mini-card" style="--card-accent:#8b5cf6;">
@@ -4856,12 +5025,12 @@ function renderFuelStats() {
       <div class="fuel-card-head">
         <div>
           <div class="fuel-card-kicker">Kosten</div>
-          <div class="fuel-card-title">Durchschnitt</div>
+          <div class="fuel-card-title">Ø Kosten</div>
         </div>
         <div class="fuel-card-icon">💶</div>
       </div>
       <div class="fuel-card-value">${avgValue(avgCost) != null ? `${formatCurrency(avgValue(avgCost))}/100 km` : '–'}</div>
-      <div class="fuel-card-sub">Auf Basis der gespeicherten Tankintervalle</div>
+      <div class="fuel-card-sub">Basis: gespeicherte Tankintervalle</div>
     </article>
   `;
 }
@@ -5600,6 +5769,50 @@ renderFuelMap();
       await setDoc(doc(state.db, `${householdBasePath()}/settings/main`), state.settings, { merge: true });
     }
 
+    // v96: Ereignisgesteuerte Push-Ueberwachung. Eine gemeinsame Sequenz verhindert
+    // den Verlust mehrerer Datensaetze innerhalb eines Cron-Intervalls.
+    function pushReadingMetrics(payload) {
+      if (!['strom','wasser'].includes(payload.type)) return null;
+      const points = (state.readings || []).filter(x => x.type === payload.type &&
+        Number.isFinite(Number(x.value)) && Number.isFinite(Date.parse(x.date)) &&
+        Date.parse(x.date) < Date.parse(payload.date))
+        .sort((a,b) => Date.parse(a.date)-Date.parse(b.date));
+      if (points.length < 4) return null;
+      const prior = points[points.length - 1];
+      const days = (Date.parse(payload.date)-Date.parse(prior.date))/86400000;
+      if (!(days >= 7 && days <= 90)) return null;
+      const current = (Number(payload.value)-Number(prior.value))/days;
+      const oldest = points.find(x => {
+        const period=(Date.parse(prior.date)-Date.parse(x.date))/86400000;
+        return period >= 90 && period <= 365;
+      });
+      if (!oldest) return null;
+      const baselineDays=(Date.parse(prior.date)-Date.parse(oldest.date))/86400000;
+      const baseline=(Number(prior.value)-Number(oldest.value))/baselineDays;
+      if (!(current > 0 && baseline > 0)) return null;
+      return {ratio: current/baseline, current, baseline, days};
+    }
+
+    function newPushEvent(kind, payload) {
+      if (kind === 'fuelEntries') {
+        const car = (state.cars || []).find(c => c.id === payload.carId);
+        const carName = [car?.brand, car?.model].filter(Boolean).join(' ') || car?.name || 'Fahrzeug';
+        const amount = Number(payload.liters), total = Number(payload.totalPrice);
+        const cost = amount > 0 ? total/amount : Number(payload.pricePerLiter);
+        const fmt = (n,d=2) => Number.isFinite(n) ? n.toLocaleString('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d}) : '–';
+        return {kind:'fuel', title:'⛽ Neue Tankung', body:[carName,
+          new Date(payload.date).toLocaleDateString('de-DE'),fmt(amount)+' l',
+          fmt(cost,3)+' €/l',fmt(total)+' €',fmt(Number(payload.mileage),0)+' km'].join(' · ').slice(0,180)};
+      }
+      if (kind === 'readings') {
+        const metrics = pushReadingMetrics(payload);
+        if (!metrics) return null;
+        return {kind:'reading', readingType: payload.type,
+          ratio:metrics.ratio, current:metrics.current, baseline:metrics.baseline, days:metrics.days};
+      }
+      return null;
+    }
+
     async function saveRecord(kind, payload) {
       if (!state[kind]) {
         throw new Error(`Unbekannter Datentyp: ${kind}`);
@@ -5621,10 +5834,32 @@ renderFuelMap();
           throw new Error(`Kein Firestore-Pfad für Datentyp: ${kind}`);
         }
 
-        await addDoc(collection(state.db, pathMap[kind]), {
-          ...payload,
-          serverCreatedAt: serverTimestamp()
-        });
+        if (kind === 'fuelEntries' || kind === 'readings') {
+          // Tankung/Zählerstand und Push-Ereignis werden atomar gespeichert.
+          // Keine vollständige Sammlung und kein zyklisches Scannen nötig.
+          const recordRef = doc(collection(state.db, pathMap[kind]));
+          const controlRef = doc(state.db, `${householdBasePath()}/pushControl/main`);
+          const eventRef = doc(collection(state.db, `${householdBasePath()}/pushEvents`));
+          const eventData = newPushEvent(kind,payload);
+          await runTransaction(state.db, async tx => {
+            const controlSnap = await tx.get(controlRef);
+            const current = Number(controlSnap.exists() ? controlSnap.data()?.seq : 0);
+            if (!Number.isSafeInteger(current) || current < 0 || current >= Number.MAX_SAFE_INTEGER - 1)
+              throw new Error('Ungültige Push-Ereignisnummer');
+            const next = current + 1;
+            tx.set(recordRef, {...payload,serverCreatedAt:serverTimestamp()});
+            tx.set(controlRef,{seq:next,updatedAt:serverTimestamp()},{merge:true});
+            tx.set(eventRef,{seq:next,recordId:recordRef.id,
+              kind: eventData?.kind || 'no-alert',
+              ...(eventData || {}),
+              createdAt:serverTimestamp()});
+          });
+        } else {
+          await addDoc(collection(state.db, pathMap[kind]), {
+            ...payload,
+            serverCreatedAt: serverTimestamp()
+          });
+        }
       } else {
         if (!Array.isArray(state[kind])) {
           throw new Error(`state.${kind} ist kein Array`);
@@ -6746,38 +6981,101 @@ async function updateRecord(kind, id, payload) {
   });
 }
 
-    function exportBackup() {
-        const payload = {
-          exportedAt: new Date().toISOString(),
-          firebaseEnabled: state.firebaseEnabled,
-          householdId: state.householdId || null,
-          readings: state.readings,
-          refills: state.refills,
-          purchases: state.purchases,
-          resets: state.resets,
-          chargeEntries: state.chargeEntries,
-          pricePeriods: state.pricePeriods,
-          settings: state.settings,
-          cars: state.cars,
-          fuelEntries: state.fuelEntries,
-          bagSizes: state.bagSizes,
-          // Stationen sind bisher in den Tank- und Ladeeinträgen gespeichert.
-          // Zusätzlich als abgeleiteter Katalog exportieren, ohne die Datenstruktur zu verändern.
-          stations: [...new Map([...state.stations, ...state.fuelEntries.map(e => ({
-            id: e.stationId || null, name: e.stationName || "", brand: e.stationBrand || "",
-            address: e.stationAddress || e.stationDisplayName || e.locationText || "",
-            latitude: e.latitude, longitude: e.longitude, kind: "fuel"
-          })), ...state.chargeEntries.map(e => ({
-            id: e.chargeStationId || null, name: e.chargeStationName || "", brand: e.chargeStationBrand || "",
-            address: e.chargeStationAddress || e.chargeStationDisplayName || e.locationText || "",
-            latitude: e.latitude, longitude: e.longitude, kind: "charge"
-          }))].filter(e => e.id || e.name || e.address).map(e => [
-            `${e.kind}|${e.latitude ?? ""}|${e.longitude ?? ""}|${(e.name || e.address || "").toLowerCase()}`, e
-          ])).values()]
-        };
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-      downloadBlob(blob, `verbrauch-backup-${dateStamp()}.json`);
-      showToast("Backup exportiert.", "success");
+    // v94: Firestore-Backup liest alle Sammlungen direkt aus dem Server,
+    // nicht nur den eventuell noch unvollständig geladenen UI-Cache.
+    const BACKUP_COLLECTIONS_V94=['readings','refills','purchases','resets','chargeEntries','pricePeriods','cars','fuelEntries','stations'];
+    let selectedBackupV94=null;
+    async function exportBackup(){
+      const btn=els.exportBackupBtn;
+      if(btn){btn.disabled=true;btn.textContent='Sicherung wird erstellt …';}
+      try{
+        const payload={format:'verbrauch-zuhause-backup',schemaVersion:2,appVersion:'v107',exportedAt:new Date().toISOString(),householdId:state.householdId||null,source:state.firebaseEnabled?'firestore':'local',collections:{},settings:null,bagSizes:structuredClone(state.bagSizes),localPreferences:{theme:document.documentElement.dataset.theme||'dark',lastBagSize:localStorage.getItem(LOCAL_KEYS.lastBagSize)}};
+        if(state.firebaseEnabled){
+          if(!state.db)throw new Error('Firestore-Verbindung nicht bereit.');
+          for(const key of BACKUP_COLLECTIONS_V94){const result=await getDocs(collection(state.db,`${householdBasePath()}/${key}`));payload.collections[key]=result.docs.map(mapFirestoreDoc);}
+          const settings=await getDoc(doc(state.db,`${householdBasePath()}/settings/main`));payload.settings=settings.exists()?convertFirestoreTimestamps(settings.data()):structuredClone(state.settings);
+        }else{
+          for(const key of BACKUP_COLLECTIONS_V94)payload.collections[key]=structuredClone(state[key]||[]);
+          payload.settings=structuredClone(state.settings);
+        }
+        const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+        downloadBlob(blob,`Verbrauch_Zuhause_Backup_${state.householdId||'lokal'}_${dateStamp()}.json`);
+        showToast('Vollständiges App-Datenbackup erstellt.','success');
+      }catch(error){console.error('Backup fehlgeschlagen:',error);showToast('Backup fehlgeschlagen: '+(error.message||error),'error');}
+      finally{if(btn){btn.disabled=false;btn.textContent='Gesamtes Backup herunterladen';}}
+    }
+    function parseBackupV94(raw){
+      if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('Keine gültige Backup-Datei.');
+      const collections=raw.format==='verbrauch-zuhause-backup'&&raw.collections?raw.collections:raw;
+      const required=['readings','refills','purchases','resets','pricePeriods','cars','fuelEntries'];
+      if(!required.every(k=>Array.isArray(collections[k])))throw new Error('Die Datei enthält nicht alle erwarteten Datensammlungen.');
+      const data={};
+      for(const name of BACKUP_COLLECTIONS_V94){
+        const items=collections[name]||[];
+        if(!Array.isArray(items)||items.length>25000||items.some(v=>!v||typeof v!=='object'||Array.isArray(v)))throw new Error('Ungültige Daten in '+name+'.');
+        data[name]=items;
+      }
+      const settings=raw.settings;
+      if(!settings||typeof settings!=='object'||Array.isArray(settings))throw new Error('Einstellungen fehlen im Backup.');
+      return {data,settings,bagSizes:raw.bagSizes||defaultBagSizes,householdId:raw.householdId||null,preferences:raw.localPreferences||{},exportedAt:raw.exportedAt||null};
+    }
+    async function previewBackupV94(event){
+      selectedBackupV94=null;
+      const btn=document.getElementById('backupRestoreBtn');if(btn)btn.disabled=true;
+      const out=document.getElementById('backupRestorePreview');
+      const file=event.target.files?.[0];if(!file){out.textContent='Noch keine Datei ausgewählt.';return;}
+      try{
+        if(file.size>30*1024*1024)throw new Error('Die Datei ist größer als 30 MB.');
+        const data=parseBackupV94(JSON.parse(await file.text()));selectedBackupV94=data;
+        const rows=Object.entries(data.data).filter(([,items])=>items.length).map(([k,items])=>`${k}: ${items.length}`).join(' · ');
+        out.textContent=`Backup vom ${data.exportedAt?new Date(data.exportedAt).toLocaleString('de-DE'):'unbekannten Datum'} · Haushalt: ${data.householdId||'unbekannt'} · ${rows||'keine Einträge'}`;
+        btn.disabled=false;
+      }catch(e){out.textContent='Dateifehler: '+e.message;}
+    }
+    async function restoreBackupV94(){
+      const data=selectedBackupV94;if(!data)return;
+      const box=document.getElementById('backupRestoreStatus');const btn=document.getElementById('backupRestoreBtn');
+      if(data.householdId&&state.householdId&&data.householdId!==state.householdId){
+        box.textContent=`Abgebrochen: Backup gehört zu ${data.householdId}, ausgewählt ist ${state.householdId}. Bitte zuerst den passenden Haushalt verbinden.`;return;
+      }
+      const count=Object.values(data.data).reduce((n,a)=>n+a.length,0);
+      if(!confirm(`Wiederherstellung starten?\nHaushalt: ${state.householdId}\n${count} Datensätze plus Einstellungen.\nVorhandene IDs werden aktualisiert, andere Daten NICHT gelöscht.\nBitte vorher ein aktuelles Backup exportieren.`))return;
+      btn.disabled=true;box.textContent='Wiederherstellung läuft. Bitte die App nicht schließen …';
+      let done=0;
+      try{
+        if(state.firebaseEnabled){
+          for(const [key,items] of Object.entries(data.data)){
+            for(const item of items){
+              const id=typeof item.id==='string'&&item.id&&item.id.length<400?item.id:generateId();
+              const {id:ignored,...fields}=item;
+              // Firestore-Timestamp-Typen aus dem JSON-Export wiederherstellen.
+              for(const stampKey of ['serverCreatedAt','createdAt','updatedAt']){
+                if(typeof fields[stampKey]==='string' && /^\d{4}-\d{2}-\d{2}T/.test(fields[stampKey])){
+                  const date=new Date(fields[stampKey]);
+                  if(Number.isFinite(date.getTime()))fields[stampKey]=Timestamp.fromDate(date);
+                }
+              }
+              await setDoc(doc(state.db,`${householdBasePath()}/${key}/${id}`),fields,{merge:true});
+              done++;if(done%20===0)box.textContent=`Firestore: ${done} von ${count} Einträgen gespeichert …`;
+            }
+          }
+          await setDoc(doc(state.db,`${householdBasePath()}/settings/main`),data.settings,{merge:true});
+        }else{
+          for(const [key,items] of Object.entries(data.data)){
+            const existing=new Map((state[key]||[]).map(item=>[item.id,item]));
+            for(const item of items){const id=item.id||generateId();existing.set(id,{...item,id});done++;}
+            state[key]=[...existing.values()];
+          }
+          state.settings=mergeSettings(data.settings);
+        }
+        state.bagSizes=normalizeBagSizes(data.bagSizes);
+        if(data.preferences.lastBagSize)localStorage.setItem(LOCAL_KEYS.lastBagSize,String(data.preferences.lastBagSize));
+        if(['light','dark'].includes(data.preferences.theme)){document.documentElement.dataset.theme=data.preferences.theme;localStorage.setItem('verbrauch-theme-v1',data.preferences.theme);document.getElementById('themeSelectV94').value=data.preferences.theme;document.getElementById('appThemeColor')?.setAttribute('content',data.preferences.theme==='light'?'#f4f7fc':'#0f172a');}
+        persistLocalSnapshot();renderAll();
+        box.textContent=`Wiederherstellung abgeschlossen: ${done} Datensätze verarbeitet. Bei Firestore werden die Ansichten automatisch aktualisiert.`;
+        showToast('Backup wiederhergestellt.','success');
+      }catch(e){console.error('Restore fehlgeschlagen',e);box.textContent=`Wiederherstellung nach ${done} Einträgen unterbrochen: ${e.message}. Bereits geschriebene Einträge bleiben bestehen; bitte Fehler prüfen.`;showToast('Wiederherstellung nicht vollständig.','error');}
+      finally{btn.disabled=false;}
     }
 
     function mapFirestoreDoc(docSnap) {
@@ -6908,27 +7206,19 @@ async function updateRecord(kind, id, payload) {
     });
   </script>
   <script>
-    (function () {
-      const btn = document.getElementById("themeToggleBtn");
-      const label = document.getElementById("themeToggleLabel");
-      const icon = document.getElementById("themeToggleIcon");
-      const meta = document.getElementById("appThemeColor");
-      if (!btn) return;
-      function refresh() {
-        const isLight = document.documentElement.dataset.theme === "light";
-        label.textContent = isLight ? "Dunkles Design" : "Helles Design";
-        icon.textContent = isLight ? "🌙" : "☀️";
-        btn.setAttribute("aria-pressed", String(isLight));
-        btn.setAttribute("title", isLight ? "Zum dunklen Design wechseln" : "Zum hellen Design wechseln");
-        if (meta) meta.setAttribute("content", isLight ? "#f4f7fc" : "#0f172a");
-      }
-      btn.addEventListener("click", function () {
-        const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
-        document.documentElement.dataset.theme = next;
-        try { localStorage.setItem("verbrauch-theme-v1", next); } catch (_) {}
-        refresh();
-      });
-      refresh();
+    (()=>{
+      const select=document.getElementById('themeSelectV94');
+      if(!select)return;
+      const meta=document.getElementById('appThemeColor');
+      const apply=value=>{
+        const next=value==='light'?'light':'dark';
+        document.documentElement.dataset.theme=next;
+        select.value=next;
+        try{localStorage.setItem('verbrauch-theme-v1',next);}catch(_){}
+        if(meta)meta.setAttribute('content',next==='light'?'#f4f7fc':'#0f172a');
+      };
+      select.value=document.documentElement.dataset.theme==='light'?'light':'dark';
+      select.addEventListener('change',()=>apply(select.value));
     })();
   </script>
 </body>
