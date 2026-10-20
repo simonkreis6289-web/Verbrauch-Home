@@ -1117,7 +1117,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v121</strong> · 1.3.1.154<br><small>Letzte Änderung: 20.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v122</strong> · 1.3.1.155<br><small>Letzte Änderung: 20.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -5851,63 +5851,84 @@ renderFuelMap();
       const f=.64;meterCrop={x:Math.max(0,meterCrop.x+meterCrop.w*(1-f)/2),y:Math.max(0,meterCrop.y+meterCrop.h*(1-f)/2),w:meterCrop.w*f,h:meterCrop.h*f};
       drawMeterCrop();meterOcrStatus('Rahmen enger gesetzt. Auf die Ziffern verschieben, ohne Beschriftungen oder rote Zeiger.');
     }
-    // v121: Browserlokaler Siebensegment-Prototyp. Arbeitet auf dem vom Nutzer
-    // bestätigten Zahlenstreifen; niemals unkontrolliert als Messwert übernehmen.
+    // v122: experimentelle Mehrschwellen-Siebensegmentanalyse mit visualisierter Segmentprüfung.
     function inspectMeterSegments(){
       if(!meterBitmap)return meterOcrStatus('Bitte zuerst ein Foto auswählen.');
       if(document.getElementById('meterOcrType')?.value!=='strom')return meterOcrStatus('LCD-Decoder ist nur für Stromzähler.');
-      const source=document.getElementById('meterOcrCropPreview');
-      const target=document.getElementById('meterLcdPreview');
-      if(!source?.width)return;
-      // Die sechs Ziffern müssen vollständig, waagerecht und ohne 1.8.0/kWh markiert sein.
+      const source=document.getElementById('meterOcrCropPreview'),target=document.getElementById('meterLcdPreview');
+      if(!source?.width||!target)return;
       const cw=720,ch=210,c=document.createElement('canvas');c.width=cw;c.height=ch;
       const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(source,0,0,cw,ch);
-      const data=ctx.getImageData(0,0,cw,ch).data,lum=new Uint8Array(cw*ch),hist=new Uint32Array(256);
-      for(let i=0;i<lum.length;i++){let k=i*4;lum[i]=Math.round(.299*data[k]+.587*data[k+1]+.114*data[k+2]);hist[lum[i]]++;}
-      // Otsu-Grenze, danach Helligkeits-Offset gegen dunkles LCD-Glas.
-      let sum=0,total=lum.length;for(let i=0;i<256;i++)sum+=i*hist[i];
-      let best=-1,bestT=90,wB=0,sB=0;
-      for(let t=0;t<256;t++){wB+=hist[t];if(!wB||wB===total)continue;sB+=t*hist[t];const wF=total-wB;const score=wB*wF*Math.pow(sB/wB-(sum-sB)/wF,2);if(score>best){best=score;bestT=t;}}
-      const mask=new Uint8Array(lum.length);for(let i=0;i<lum.length;i++)mask[i]=lum[i]<bestT?1:0;
-      // Projektionen als Hilfsmittel, keine automatische Übernahme von Fremdtext.
-      const cols=new Float32Array(cw);for(let x=0;x<cw;x++){let n=0;for(let y=25;y<ch-25;y++)n+=mask[y*cw+x];cols[x]=n/(ch-50);}
-      const rowScores=new Float32Array(ch);for(let y=0;y<ch;y++){let n=0;for(let x=20;x<cw-20;x++)n+=mask[y*cw+x];rowScores[y]=n/(cw-40);}
-      const pat={0:'1111110',1:'0110000',2:'1101101',3:'1111001',4:'0110011',5:'1011011',6:'1011111',7:'1110000',8:'1111111',9:'1111011'};
-      const centers=[[.5,.13],[.83,.29],[.83,.71],[.5,.87],[.17,.71],[.17,.29],[.5,.5]];
-      function segmentScore(x0,x1,y0,y1){
-        const width=x1-x0,height=y1-y0;const values=[];
-        for(const [u,v] of centers){let count=0,n=0;const horizontal=(u===.5);const rx=width*(horizontal?.13:.09),ry=height*(horizontal?.075:.12);const cx=x0+u*width,cy=y0+v*height;
-          for(let y=Math.max(0,Math.floor(cy-ry));y<Math.min(ch,Math.ceil(cy+ry));y+=2)for(let x=Math.max(0,Math.floor(cx-rx));x<Math.min(cw,Math.ceil(cx+rx));x+=2){count+=mask[y*cw+x];n++;}
-          values.push(count/Math.max(1,n));}
+      const rgba=ctx.getImageData(0,0,cw,ch).data,lum=new Uint8Array(cw*ch),hist=new Uint32Array(256);
+      for(let i=0;i<lum.length;i++){const j=i*4;lum[i]=Math.round(.299*rgba[j]+.587*rgba[j+1]+.114*rgba[j+2]);hist[lum[i]]++;}
+      let sum=0,wb=0,sb=0,score=-1,otsu=90;
+      for(let i=0;i<256;i++)sum+=i*hist[i];
+      for(let t=0;t<256;t++){wb+=hist[t];sb+=t*hist[t];if(!wb||wb===lum.length)continue;const wf=lum.length-wb,v=wb*wf*Math.pow(sb/wb-(sum-sb)/wf,2);if(v>score){score=v;otsu=t;}}
+      const patterns=['1111110','0110000','1101101','1111001','0110011','1011011','1011111','1110000','1111111','1111011'];
+      const centers=[[.50,.12],[.82,.29],[.82,.71],[.50,.88],[.18,.71],[.18,.29],[.50,.50]];
+      const masks=[];
+      for(const threshold of [...new Set([otsu-24,otsu-12,otsu,otsu+12,otsu+24,75,95,115].map(t=>Math.max(20,Math.min(220,t))))]){
+        const mask=new Uint8Array(lum.length);for(let i=0;i<lum.length;i++)mask[i]=lum[i]<threshold?1:0;
+        masks.push({threshold,mask});
+      }
+      function measure(mask,x0,x1,y0,y1){
+        const width=x1-x0,height=y1-y0,values=[];
+        for(const [u,v] of centers){let dark=0,total=0;const horizontal=u===.5,rx=width*(horizontal?.12:.075),ry=height*(horizontal?.060:.105);
+          const cx=x0+u*width,cy=y0+v*height;
+          for(let y=Math.max(0,Math.floor(cy-ry));y<Math.min(ch,Math.ceil(cy+ry));y+=2)
+            for(let x=Math.max(0,Math.floor(cx-rx));x<Math.min(cw,Math.ceil(cx+rx));x+=2){dark+=mask[y*cw+x];total++;}
+          values.push(dark/Math.max(1,total));
+        }
         return values;
       }
-      // Bei gleich breiten LCD-Ziffern sechs und sieben Stellen untersuchen.
       const candidates=[];
-      for(const digits of [6,7])for(const left of [.02,.05,.08,.11])for(const right of [.89,.92,.95,.98]){
-        if(right-left<.65)continue;
-        const slot=(right-left)*cw/digits;let result='',errors=0,uncertain=0,segments=[];
-        for(let i=0;i<digits;i++){
-          const x0=(left*cw+i*slot)+slot*.07,x1=(left*cw+(i+1)*slot)-slot*.07;
-          const strengths=segmentScore(x0,x1,ch*.08,ch*.92);
-          const lo=Math.min(...strengths),hi=Math.max(...strengths),mid=(lo+hi)/2;
-          const bits=strengths.map(v=>v>mid?'1':'0').join('');
-          let choices=Object.entries(pat).map(([digit,pattern])=>({digit,distance:[...pattern].reduce((a,z,j)=>a+(z!==bits[j]?1:0),0)})).sort((a,b)=>a.distance-b.distance);
-          result+=choices[0].digit;errors+=choices[0].distance;uncertain+=(choices[1].distance===choices[0].distance?1:0);segments.push({bits,strengths,dist:choices[0].distance});
-        }
-        candidates.push({digits,left,right,result,errors,uncertain,segments});
-      }
-      candidates.sort((a,b)=>a.errors-b.errors||a.uncertain-b.uncertain);
-      const winner=candidates[0];
+      // Digit spacing and positioning are optimized globally, not tuned to a known reading.
+      for(const {threshold,mask} of masks)for(const digits of [6,7])
+        for(const left of [.015,.04,.065,.09,.115])for(const right of [.885,.91,.935,.96,.985])
+          for(const yshift of [-.045,0,.045]){
+            const slot=(right-left)*cw/digits;if(slot<45)continue;
+            const cells=[];let result='',totalCost=0,ambiguous=0;
+            for(let i=0;i<digits;i++){
+              const x0=left*cw+i*slot+slot*.08,x1=left*cw+(i+1)*slot-slot*.08;
+              const y0=ch*(.065+yshift),y1=ch*(.935+yshift);
+              const strengths=measure(mask,x0,x1,y0,y1);
+              // Soft scoring preserves weak segments instead of turning every sample into a hard bit.
+              const sorted=[...strengths].sort((a,b)=>a-b),cut=(sorted[2]+sorted[4])/2;
+              const ranked=patterns.map((pattern,digit)=>{
+                let cost=0;for(let j=0;j<7;j++){
+                  const expected=pattern[j]==='1';const confidence=Math.max(0,Math.min(1,(strengths[j]-cut)*4+.5));
+                  cost+=expected?1-confidence:confidence;
+                }
+                return {digit,cost,pattern};
+              }).sort((a,b)=>a.cost-b.cost);
+              const margin=ranked[1].cost-ranked[0].cost;
+              if(margin<.23)ambiguous++;
+              totalCost+=ranked[0].cost+Math.max(0,.23-margin)*.6;
+              result+=ranked[0].digit;
+              cells.push({x0,x1,y0,y1,strengths,cut,margin,chosen:ranked[0],second:ranked[1]});
+            }
+            // Prefer six digits when fit is similar, and penalize excessive uncertainty.
+            candidates.push({threshold,digits,left,right,yshift,result,cells,ambiguous,cost:totalCost/digits+(digits===7?.08:0)});
+          }
+      candidates.sort((a,b)=>a.cost-b.cost||a.ambiguous-b.ambiguous);
+      const winner=candidates[0];if(!winner)return meterOcrStatus('Keine auswertbaren Ziffern gefunden.');
+      const close=candidates.filter(v=>v.cost<=winner.cost+.09);
+      const alternatives=[...new Set(close.map(v=>v.result))].slice(0,8);
+      const reliable=winner.cost<.45&&winner.ambiguous===0&&alternatives.length===1;
       target.style.display='block';target.replaceChildren();
-      const heading=document.createElement('strong');heading.textContent='LCD-Prüfbild (nur Ziffern markieren):';target.appendChild(heading);
+      const heading=document.createElement('strong');heading.textContent='LCD-Prüfbild mit Segment-Markierungen:';target.appendChild(heading);
       const display=document.createElement('canvas');display.width=cw;display.height=ch;display.style.cssText='display:block;width:100%;height:auto;margin:8px 0;border-radius:8px;border:1px solid #b9d4de';
-      const dc=display.getContext('2d');dc.drawImage(c,0,0);dc.strokeStyle='#04c6e0';dc.lineWidth=3;
-      for(let i=0;i<winner.digits;i++){const x=(winner.left+(winner.right-winner.left)*i/winner.digits)*cw;dc.strokeRect(x,ch*.08,(winner.right-winner.left)*cw/winner.digits,ch*.84);}
-      target.appendChild(display);
-      const uncertain=winner.errors>0||winner.uncertain>0;
-      meterDiagnostics(['LCD-Zifferndiagnose (v121, experimentell):',`Markierter Bereich: ${source.width} × ${source.height} Pixel`,`Automatische Schwelle: ${bestT}`,`Erkannte Stellen: ${winner.digits}`,`Decoder-Kandidat: ${winner.result}`,`Abweichende Segmente: ${winner.errors}; mehrdeutige Stellen: ${winner.uncertain}`,'Dies ist KEIN bestätigter Zählerstand. Bitte die sechs großen Ziffern möglichst eng und waagerecht markieren.','Die blauen Kästen zeigen, welche Einzelbereiche tatsächlich untersucht wurden.']);
-      // Nie ungeprüft den erkannten Wert in das Formular schreiben.
-      meterOcrStatus(uncertain?'Decoder noch unsicher. Rahmen nur um die großen Ziffern ziehen und erneut prüfen.':'Decoder hat einen Kandidaten gefunden. Wert am Foto kontrollieren und manuell eintragen.');
+      const dc=display.getContext('2d');dc.drawImage(c,0,0);dc.lineWidth=2;
+      winner.cells.forEach((cell,i)=>{
+        dc.strokeStyle=cell.margin<.23?'#ff9d21':'#04c6e0';dc.strokeRect(cell.x0,cell.y0,cell.x1-cell.x0,cell.y1-cell.y0);
+        centers.forEach(([u,v],j)=>{
+          const x=cell.x0+u*(cell.x1-cell.x0),y=cell.y0+v*(cell.y1-cell.y0),active=cell.strengths[j]>cell.cut;
+          dc.fillStyle=active?'rgba(22,190,100,.85)':'rgba(238,77,70,.85)';dc.beginPath();dc.arc(x,y,4,0,Math.PI*2);dc.fill();
+        });
+      });target.appendChild(display);
+      const legend=document.createElement('div');legend.style.cssText='font-size:.8rem;margin:6px 0';legend.textContent='Grün = Segment als aktiv erkannt · Rot = inaktiv · Orange Rahmen = unsichere Ziffer';target.appendChild(legend);
+      meterDiagnostics(['LCD-Zifferndiagnose (v122, experimentell):',`Markierter Bereich: ${source.width} × ${source.height} Pixel`,`Geprüfte Helligkeitsschwellen: ${masks.map(v=>v.threshold).join(', ')}`,`Beste Schwelle: ${winner.threshold}; Ziffern: ${winner.digits}`,`Decoder-Kandidat: ${winner.result}`,`Durchschnittlicher Segmentfehler: ${winner.cost.toFixed(2)}; unsichere Stellen: ${winner.ambiguous}`,`Nahe alternative Lesungen: ${alternatives.join(' / ')||'keine'}`,...winner.cells.map((cell,i)=>`Stelle ${i+1}: ${cell.chosen.digit} (Alternative ${cell.second.digit}, Abstand ${cell.margin.toFixed(2)})`),reliable?'Kandidat ist intern konsistent, aber NICHT unabhängig bestätigt.':'Erkennung unsicher. Keine automatische Übernahme.','Die Referenzwerte sind nicht im Decoder hinterlegt.']);
+      meterOcrStatus('LCD-Analyse abgeschlossen. Bitte Zählerstand am Originalfoto prüfen und manuell bestätigen.');
     }
     // v119: OCR-Diagnose und Bildvorverarbeitung. Keine geratenen Nachkommastellen.
     function meterDiagnostics(lines){
