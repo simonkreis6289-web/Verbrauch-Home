@@ -1072,7 +1072,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 .token-settings-preview .token-state{font-size:.82rem;padding:8px 11px}
 @media(max-width:700px){.token-header-status{justify-content:center}.token-state{font-size:.65rem}#fuelNationalMarket .fuel-pump-value{font-size:2rem}}
 
-/* v116: Smartphone-Layout: Kartenüberschriften und Hinweise sauber umbrechen. */
+/* v117: Smartphone-Layout: Kartenüberschriften und Hinweise sauber umbrechen. */
 @media (max-width: 720px) {
   .grid, .grid > *, .card, .card.wide, .card-head, .card-head > div { min-width: 0; }
   .card, .card.wide { padding: 17px 16px; max-width: 100%; }
@@ -1114,7 +1114,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v116</strong> · 1.3.1.151<br><small>Letzte Änderung: 20.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v117</strong> · 1.3.1.151<br><small>Letzte Änderung: 20.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -1322,6 +1322,17 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
             <label style="display:block;margin-top:14px">Erkannter Wert, bitte sorgfältig prüfen
               <input id="meterOcrResult" type="text" inputmode="decimal" placeholder="z. B. 12345,67" autocomplete="off" />
             </label>
+            <div id="meterDialControls" style="display:none;margin:12px 0;padding:12px;border:1px solid #b9d6e4;border-radius:12px;background:#f2f9fc">
+              <strong>🔴 Rote Zeigerskalen (Wasser)</strong>
+              <p style="margin:6px 0 10px;font-size:.9em">Die Zeiger lassen sich nicht zuverlässig als Text lesen. Trage die angezeigten Ziffern der Skalen ein. Leere Felder bleiben unberücksichtigt.</p>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px">
+                <label>× 0,1 m³<input id="meterDialTenths" type="number" min="0" max="9" step="1" inputmode="numeric" placeholder="0–9" /></label>
+                <label>× 0,01 m³<input id="meterDialHundredths" type="number" min="0" max="9" step="1" inputmode="numeric" placeholder="0–9" /></label>
+                <label>× 0,001 m³<input id="meterDialThousandths" type="number" min="0" max="9" step="1" inputmode="numeric" placeholder="0–9" /></label>
+              </div>
+              <button type="button" class="btn ghost" id="meterDialCombine" style="margin-top:10px">🔢 Zeiger mit OCR-Wert kombinieren</button>
+              <p style="font-size:.85em;margin:8px 0 0">Skalenbeschriftung am eigenen Zähler prüfen. Bei Zeigerstellungen zwischen Zahlen die niedrigere bereits erreichte Ziffer verwenden.</p>
+            </div>
             <div class="meter-ocr-actions"><button type="button" class="btn primary" id="meterOcrTransfer">✓ In Schnellerfassung übernehmen</button></div>
             <p id="meterOcrStatus" class="meter-ocr-status" role="status" aria-live="polite">Es wird kein Foto gespeichert oder hochgeladen. Die Erkennung benötigt beim ersten Mal eine Internetverbindung.</p>
           </div>
@@ -3032,6 +3043,9 @@ async function loadMarketPrices(force = false) {
       document.getElementById('meterOcrImage')?.addEventListener('change',meterOcrImageChanged);
       document.getElementById('meterOcrRecognize')?.addEventListener('click',()=>void recognizeMeterPhoto());
       document.getElementById('meterOcrTransfer')?.addEventListener('click',transferMeterReading);
+      document.getElementById('meterOcrType')?.addEventListener('change',updateMeterDialControls);
+      document.getElementById('meterDialCombine')?.addEventListener('click',combineMeterDialReading);
+      updateMeterDialControls();
       els.quickUseNow?.addEventListener("change", syncQuickNowUi);
       els.searchFuelStationByTextBtn?.addEventListener("click", searchFuelStationByText);
       els.batchReadingForm?.addEventListener("submit", handleBatchReadingSubmit);
@@ -5761,24 +5775,66 @@ renderFuelMap();
       document.getElementById('meterOcrResult').value='';
       meterOcrStatus('Foto ausgewählt. Tippe auf „Wert erkennen“. Für beste Ergebnisse die Ziffern groß und scharf fotografieren.');
     }
+    function updateMeterDialControls(){
+      const el=document.getElementById('meterDialControls');
+      if(el)el.style.display=document.getElementById('meterOcrType')?.value==='wasser'?'block':'none';
+    }
     function guessMeterReading(raw){
-      // Nur Vorschlag! Bevorzugt eine zusammenhängende Ziffernfolge mit 4–8 Vorkommastellen.
-      const matches=(String(raw||'').replace(/\s/g,' ').match(/\d{4,8}(?:[.,]\d{1,3})?/g)||[]);
-      const candidates=matches.map(value=>value.replace(',','.'));
-      return candidates.sort((a,b)=>b.replace(/\D/g,'').length-a.replace(/\D/g,'').length)[0]||'';
+      // Nur zusammenhängende Ziffernfolgen als Vorschlag; niemals Dezimalstellen erfinden.
+      const matches=(String(raw||'').match(/\d{4,8}(?:[.,]\d{1,3})?/g)||[]);
+      return matches.sort((a,b)=>b.replace(/\D/g,'').length-a.replace(/\D/g,'').length)[0]||'';
+    }
+    function combineMeterDialReading(){
+      if(document.getElementById('meterOcrType')?.value!=='wasser')return;
+      const input=document.getElementById('meterOcrResult');
+      const raw=input?.value?.trim()||'';
+      if(!/^\d+(?:[,.]\d{1,3})?$/.test(raw))return meterOcrStatus('Zuerst die schwarzen Kubikmeter-Ziffern erkennen oder eingeben.');
+      const whole=raw.split(/[,.]/)[0];
+      const ids=['meterDialTenths','meterDialHundredths','meterDialThousandths'];
+      const digits=ids.map(id=>document.getElementById(id)?.value?.trim()||'');
+      if(digits.every(x=>x===''))return meterOcrStatus('Bitte zuerst mindestens eine rote Zeigerskala ablesen.');
+      if(digits.some(x=>x!==''&&!/^[0-9]$/.test(x)))return meterOcrStatus('Pro Zeigerskala bitte genau eine Ziffer von 0 bis 9 eingeben.');
+      // Keine fehlenden Zwischenstellen als Null ausgeben.
+      const last=digits.reduce((n,x,i)=>x!==''?i:n,-1);
+      if(digits.slice(0,last+1).some(x=>x===''))return meterOcrStatus('Bitte die Zeigerskalen lückenlos von ×0,1 an ausfüllen.');
+      input.value=whole+','+digits.slice(0,last+1).join('');
+      meterOcrStatus('Schwarze Ziffern und manuell abgelesene rote Zeiger kombiniert. Bitte Ergebnis am Foto kontrollieren.');
     }
     async function recognizeMeterPhoto(){
       const file=document.getElementById('meterOcrImage')?.files?.[0];
       if(!file)return meterOcrStatus('Bitte zuerst ein Zählerfoto auswählen.');
       const btn=document.getElementById('meterOcrRecognize');
       btn.disabled=true;
-      meterOcrStatus('Erkennung läuft … Das kann beim ersten Mal etwas dauern.');
+      meterOcrStatus('OCR läuft: Original und kontrastverstärkte Bildvariante werden geprüft …');
       try{
         const ocr=await loadMeterOcrLibrary();
-        const result=await ocr.recognize(file,'eng');
-        const guessed=guessMeterReading(result?.data?.text);
-        if(guessed){document.getElementById('meterOcrResult').value=guessed.replace('.',',');meterOcrStatus('Möglicher Zählerstand erkannt. Bitte genau mit dem Foto vergleichen und nötigenfalls korrigieren.');}
-        else meterOcrStatus('Keine eindeutige Ziffernfolge gefunden. Bitte den Zählerstand selbst in das Feld eintragen.');
+        const image=await createImageBitmap(file);
+        const canvas=document.createElement('canvas');
+        const scale=Math.min(2,2000/Math.max(image.width,image.height));
+        canvas.width=Math.max(1,Math.round(image.width*scale));
+        canvas.height=Math.max(1,Math.round(image.height*scale));
+        const ctx=canvas.getContext('2d',{willReadFrequently:true});
+        ctx.drawImage(image,0,0,canvas.width,canvas.height);
+        image.close?.();
+        const first=await ocr.recognize(canvas,'eng');
+        const options=[guessMeterReading(first?.data?.text)];
+        const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);
+        for(let i=0;i<pixels.data.length;i+=4){
+          const r=pixels.data[i],g=pixels.data[i+1],b=pixels.data[i+2];
+          const gray=.299*r+.587*g+.114*b;
+          const value=gray>140?255:0;
+          pixels.data[i]=pixels.data[i+1]=pixels.data[i+2]=value;
+        }
+        ctx.putImageData(pixels,0,0);
+        const second=await ocr.recognize(canvas,'eng');
+        options.push(guessMeterReading(second?.data?.text));
+        const guessed=options.filter(Boolean).sort((a,b)=>b.replace(/\D/g,'').length-a.replace(/\D/g,'').length)[0];
+        if(guessed){
+          document.getElementById('meterOcrResult').value=guessed.replace('.',',');
+          meterOcrStatus(document.getElementById('meterOcrType')?.value==='wasser'?
+            'Schwarze Ziffern als OCR-Vorschlag erkannt. Rote Zeiger unten ablesen und kombinieren; sie werden noch nicht automatisch erkannt.':
+            'Stromzähler-OCR aus zwei Bildvarianten. Bitte den Vorschlag und eventuelle Nachkommastellen sorgfältig prüfen.');
+        }else meterOcrStatus('Keine eindeutige Ziffernfolge erkannt. Bitte den Zählerstand selbst eingeben.');
       }catch(error){console.warn('Zähler-OCR:',error);meterOcrStatus('Automatische Erkennung nicht verfügbar. Du kannst den Wert trotzdem manuell eintragen.');}
       finally{btn.disabled=false;}
     }
