@@ -1008,6 +1008,15 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 .fuel-live-grid[hidden]{display:none!important}.fuel-live-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.fuel-live-grid>.empty-state{grid-column:1/-1}.fuel-station-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start;border:1px solid var(--line);border-radius:16px;padding:17px;background:var(--app-inner,var(--card-solid));min-width:0}.fuel-station-card.best{border-color:rgba(39,181,123,.6);box-shadow:inset 0 0 0 1px rgba(39,181,123,.1)}.fuel-station-card .station-brand{font-size:1.06rem;font-weight:800;overflow-wrap:anywhere}.fuel-station-card .station-address{font-size:.85rem;line-height:1.45;color:var(--muted);margin-top:6px}.fuel-station-card .station-meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:13px;font-size:.79rem}.fuel-station-card .station-meta span{border-radius:8px;padding:6px 8px;background:rgba(108,143,170,.11)}.fuel-station-card .station-price{text-align:right;white-space:nowrap}.fuel-station-card .station-price strong{font-size:clamp(1.25rem,2vw,1.65rem);letter-spacing:-.025em;color:var(--text)}.fuel-station-card .station-price small{display:block;font-size:.72rem;color:var(--muted);margin-top:3px}.fuel-station-card .station-actions{grid-column:1/-1;display:flex;gap:9px;align-items:center;border-top:1px solid var(--line);padding-top:11px}.fuel-station-card .station-actions a,.fuel-station-card .station-actions button{color:var(--text);background:rgba(56,189,248,.12);border:1px solid var(--line);padding:9px 13px;border-radius:9px;text-decoration:none;font:inherit;font-size:.84rem;font-weight:700;cursor:pointer}.fuel-live-map{height:min(68vh,520px)!important;min-height:340px!important;border-radius:15px;overflow:hidden}.fuel-live-credit{display:block;margin-top:16px;line-height:1.5}
 @media(max-width:720px){.nav-v94{grid-template-columns:repeat(3,minmax(0,1fr))}.fuel-live-hero-icon{width:55px;height:55px;font-size:1.75rem;border-radius:15px}.fuel-live-location{padding:13px;margin:15px 0}.fuel-live-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.fuel-live-filter-grid label:last-child{grid-column:1/-1}.fuel-live-grid{grid-template-columns:minmax(0,1fr)}.fuel-live-results-head{align-items:start}.fuel-address-row{flex-direction:column;align-items:stretch}.fuel-address-row label,.fuel-address-row button{width:100%}.fuel-mode{flex:1;padding:10px 7px;font-size:.83rem}.fuel-station-card{padding:14px;gap:9px}.fuel-station-card .station-price strong{font-size:1.38rem}.fuel-live-results-head h3{font-size:1.08rem}.fuel-view-switch button{padding:9px 11px;font-size:.83rem}}
 
+/* v112: einheitliche Tankstellen-Preisanzeige in Liste und Karten-Popup */
+.fuel-station-card .station-price strong{display:inline-block;line-height:1.15;font-size:clamp(1.45rem,2.3vw,1.9rem);font-variant-numeric:tabular-nums}
+.live-fuel-price-value{display:inline-block;white-space:nowrap;letter-spacing:-.035em}
+.live-fuel-raised-digit{font-size:.58em;vertical-align:super;position:relative;top:.08em;letter-spacing:0;margin-left:.015em}
+.live-fuel-price-unit{font-size:.53em;font-weight:650;letter-spacing:0;margin-left:.35em;color:var(--muted)}
+.live-fuel-map-popup-price{font-size:1.35rem;font-weight:800;line-height:1.2;margin:9px 0 2px!important;color:#172b4d}
+.live-fuel-map-popup-price .live-fuel-price-unit{color:#5d6d83}
+@media(max-width:720px){.fuel-station-card .station-price strong{font-size:1.55rem}}
+
 /* v111: kompakte Spritpreiskarten, Tankstellen-Dreidezimalanzeige, Token-Warnungen */
 .fuel-nation-clean{display:flex;align-items:center;margin:20px 0 13px;padding:0;border:0;min-height:0}
 .fuel-nation-clean h3{margin:0;font-size:1.15rem}
@@ -1042,7 +1051,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v111</strong> · 1.3.1.146<br><small>Letzte Änderung: 20.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v112</strong> · 1.3.1.147<br><small>Letzte Änderung: 20.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -2447,7 +2456,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
     }
     function prepareStructuredMenus(){
       const locations={
-        firebaseView:['firebaseSettingsCard'],notificationsView:['pushRulesPanel','pushTestPanel'],
+        firebaseView:['githubTokenExpiryPanel','firebaseSettingsCard'],notificationsView:['pushRulesPanel','pushTestPanel'],
         carSettingsView:['carSettingsCard'],resetView:['resetCard'],
         bagView:['bagSizesCard'],offersView:['pelletMarketPriceCard'],
         purchasesView:['purchaseCard','purchaseHistoryCard'],
@@ -2501,6 +2510,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
     let nationalFuelHistory=[],nationalFuelKey='diesel';
     const fmtFuel=v=>Number(v).toLocaleString('de-DE',{minimumFractionDigits:3,maximumFractionDigits:3})+' €/l';
     const fuelPumpPrice=v=>{const value=Number(v).toFixed(3).split('.');return `${Number(value[0]).toLocaleString('de-DE')},${value[1].slice(0,2)}<span class="fuel-raised-digit">${value[1][2]}</span><span class="fuel-price-unit">€/l</span>`;};
+    const liveFuelPumpPrice=v=>{const n=Number(v);if(!Number.isFinite(n))return '–';const value=n.toFixed(3).split('.');return `<span class="live-fuel-price-value">${Number(value[0]).toLocaleString('de-DE')},${value[1].slice(0,2)}<span class="live-fuel-raised-digit">${value[1][2]}</span><span class="live-fuel-price-unit">€/l</span></span>`;};
     async function loadNationalFuelPrices(){
       const grid=document.getElementById('fuelNationalMarket'),footer=document.getElementById('fuelNationalUpdated');
       try{
@@ -2594,7 +2604,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
         const address=[s.street,s.houseNumber].filter(Boolean).join(' ')+(s.place?', '+s.place:'');
         const distance=Number.isFinite(Number(s.dist))?Number(s.dist).toLocaleString('de-DE',{maximumFractionDigits:1})+' km':'Entfernung unbekannt';
         const isBest=cheapest!==null&&Number(s[fuel])===cheapest;
-        return `<article class="fuel-station-card${isBest?' best':''}"><div><div class="station-brand">${escapeHtml(s.brand||s.name||'Tankstelle')}</div><div class="station-address">${escapeHtml(address)}</div><div class="station-meta"><span>📍 ${escapeHtml(distance)}</span><span>${s.isOpen?'🟢 Geöffnet':'⚪ Geschlossen / unbekannt'}</span>${isBest?'<span>🏷️ Günstigster Preis</span>':''}</div></div><div class="station-price"><strong>${fmtFuel(s[fuel])}</strong><small>Preis pro Liter</small></div><div class="station-actions">${nav?`<a href="${nav}" target="_blank" rel="noopener noreferrer">↗ Navigation</a><button type="button" class="fuel-pin-button" data-lat="${lat}" data-lng="${lng}">🗺 Karte</button>`:''}</div></article>`;
+        return `<article class="fuel-station-card${isBest?' best':''}"><div><div class="station-brand">${escapeHtml(s.brand||s.name||'Tankstelle')}</div><div class="station-address">${escapeHtml(address)}</div><div class="station-meta"><span>📍 ${escapeHtml(distance)}</span><span>${s.isOpen?'🟢 Geöffnet':'⚪ Geschlossen / unbekannt'}</span>${isBest?'<span>🏷️ Günstigster Preis</span>':''}</div></div><div class="station-price"><strong aria-label="${escapeHtml(fmtFuel(s[fuel]))}">${liveFuelPumpPrice(s[fuel])}</strong><small>Preis pro Liter</small></div><div class="station-actions">${nav?`<a href="${nav}" target="_blank" rel="noopener noreferrer">↗ Navigation</a><button type="button" class="fuel-pin-button" data-lat="${lat}" data-lng="${lng}">🗺 Karte</button>`:''}</div></article>`;
       }).join(''):'<div class="empty-state">Keine Tankstellen mit diesem Kraftstoff im Suchgebiet gefunden.</div>';
       if(liveFuelMapOnly)renderLiveFuelMap();
     }
@@ -2604,7 +2614,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       const stations=(liveFuelPayload.stations||[]).filter(s=>s&&Number(s[fuel])>0);
       if(!liveFuelMap){liveFuelMap=L.map('liveFuelMap');L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(liveFuelMap);liveFuelMarkers=L.layerGroup().addTo(liveFuelMap);}
       liveFuelMarkers.clearLayers();const coords=[];
-      for(const s of stations){const lat=Number(s.lat),lng=Number(s.lng);if(!Number.isFinite(lat)||!Number.isFinite(lng))continue;coords.push([lat,lng]);L.marker([lat,lng]).addTo(liveFuelMarkers).bindPopup(`<b>${escapeHtml(s.brand||s.name||'Tankstelle')}</b><p>${fmtFuel(s[fuel])}</p>`);}
+      for(const s of stations){const lat=Number(s.lat),lng=Number(s.lng);if(!Number.isFinite(lat)||!Number.isFinite(lng))continue;coords.push([lat,lng]);L.marker([lat,lng]).addTo(liveFuelMarkers).bindPopup(`<b>${escapeHtml(s.brand||s.name||'Tankstelle')}</b><p class="live-fuel-map-popup-price" aria-label="${escapeHtml(fmtFuel(s[fuel]))}">${liveFuelPumpPrice(s[fuel])}</p>`);}
       if(coords.length)liveFuelMap.fitBounds(coords,{padding:[30,30],maxZoom:13});else liveFuelMap.setView([51.2,7.8],8);
       setTimeout(()=>liveFuelMap.invalidateSize(),150);
     }
