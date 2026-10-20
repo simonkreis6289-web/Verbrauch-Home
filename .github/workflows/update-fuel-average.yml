@@ -1,0 +1,44 @@
+name: Bundesweite Spritpreise archivieren
+on:
+  schedule:
+    - cron: '15 0,4,8,12,16,20 * * *'
+      timezone: 'Europe/Berlin'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: verbrauch-fuel-average
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Aktuelle Durchschnittspreise und Historie pflegen
+        run: python update_fuel_average.py
+      - name: Daten speichern
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add fuel-prices.json fuel-price-history.json
+          if git diff --cached --quiet; then
+            echo 'Keine neuen Werte'
+            exit 0
+          fi
+          git commit -m 'Bundesweite Spritpreise aktualisieren'
+          # Nicht einfach die historischen Dateien beim Rebase überschreiben.
+          # Konflikte durch parallele Commits per frischem Neulauf lösen.
+          for i in 1 2 3; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git reset --hard origin/main
+            python update_fuel_average.py
+            git add fuel-prices.json fuel-price-history.json
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m 'Bundesweite Spritpreise aktualisieren'
+          done
+          exit 1
