@@ -842,7 +842,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 
 
 
-/* v113: Lagertrennung und lesbares saisonales Verbrauchsprofil */
+/* v114: Lagertrennung und mobiles Saisonprofil mit hochkantiger Balkenbeschriftung */
 .pellet-stock-split{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .pellet-stock-split>div{border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--card-solid)}
 .pellet-stock-split small{display:block;color:var(--muted);font-size:.79rem;margin-bottom:6px}
@@ -853,12 +853,13 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 .pellet-month-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:7px;align-items:end}
 .pellet-month-cell{display:flex;flex-direction:column;gap:5px;align-items:center;text-align:center;min-width:0}
 .pellet-month-value{font-size:.72rem;color:var(--muted);white-space:nowrap}
-.pellet-month-track{height:83px;width:100%;background:var(--line);border-radius:7px;display:flex;align-items:end;overflow:hidden}
+.pellet-month-track{position:relative;height:83px;width:100%;background:var(--line);border-radius:7px;display:flex;align-items:end;overflow:hidden}
 .pellet-month-bar{width:100%;min-height:2px;border-radius:7px 7px 0 0;background:linear-gradient(#fbbf24,#f97316)}
+.pellet-month-bar-label{display:none}
 .pellet-month-name{font-size:.71rem;font-weight:700}
 .pellet-month-cell[data-estimated="true"] .pellet-month-bar{opacity:.35}
 .pellet-month-cell[data-estimated="true"] .pellet-month-value{font-style:italic}
-@media(max-width:650px){.pellet-stock-split{grid-template-columns:1fr}.pellet-month-grid{gap:3px}.pellet-month-track{height:65px}.pellet-month-value{font-size:.58rem}.pellet-month-name{font-size:.62rem}}
+@media(max-width:650px){.pellet-stock-split{grid-template-columns:1fr}.pellet-month-grid{gap:3px}.pellet-month-track{height:72px}.pellet-month-value{display:none}.pellet-month-bar-label{display:block;position:absolute;left:50%;bottom:6px;transform:translateX(-50%);writing-mode:vertical-rl;text-orientation:mixed;font-size:.58rem;line-height:1;font-weight:700;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.22);pointer-events:none;letter-spacing:.01em}.pellet-month-name{font-size:.62rem}}
 
 /* v89: Push-Regel-Cockpit, nur UI. Bestehende IDs und Endpunkte bleiben unveraendert. */
 .push-rule-panel{position:relative;overflow:hidden}
@@ -1070,7 +1071,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v113</strong> · 1.3.1.148<br><small>Letzte Änderung: 20.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v114</strong> · 1.3.1.149<br><small>Letzte Änderung: 20.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -3406,7 +3407,7 @@ function formatStationShort(station) {
           <div class="pellet-meter"><div style="width:${percent}%"></div></div>
           <div class="pellet-balance-row"><div><small>Seit ${escapeHtml(f.from.toLocaleDateString('de-DE'))} gekauft / geliefert</small><strong>+${formatNumber(f.deliveries.total)} kg</strong></div><div><small>Verbrauch seitdem</small><strong>−${formatNumber(f.consumption)} kg</strong></div><div><small>Angenommener Start/Abgleich</small><strong>${formatNumber(f.opening)} kg</strong></div></div>
           ${(()=>{const split=pelletStockSplit(f);return split?`<div class="pellet-stock-split"><div><small>Gesamtvorrat (rechnerisch)</small><strong>${formatNumber(f.stock)} kg</strong></div><div><small>Sackreserve (geschätzt)</small><strong>${formatNumber(split.bags)} kg</strong></div><div><small>Im Bunker (geschätzt)</small><strong>${formatNumber(split.bunker)} kg</strong></div></div><p class="pellet-forecast-notes">${escapeHtml(split.warning)}</p>`:''})()}
-          ${f.coverage?`<div class="pellet-season-card"><div class="pellet-season-head"><strong>📊 Saisonprofil · kg pro Tag</strong><small>${Math.round(f.coverage.days)} erfasste Tage in den letzten 24 Monaten · ${f.coverage.observed}/12 Monate mit ≥15 Tagen Daten</small></div><div class="pellet-month-grid">${f.coverage.rates.map((rate,i)=>{const max=Math.max(...f.coverage.rates,0.1);const actual=f.coverage.monthDays[i]>=10;return `<div class="pellet-month-cell" data-estimated="${!actual}" title="${['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'][i]}: ${formatNumber(rate)} kg/Tag; ${Math.round(f.coverage.monthDays[i])} erfasste Tage"><small class="pellet-month-value">${formatNumber(rate)}</small><span class="pellet-month-track"><i class="pellet-month-bar" style="height:${Math.max(3,Math.round(rate/max*100))}%"></i></span><small class="pellet-month-name">${['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'][i]}</small></div>`;}).join('')}</div><p class="pellet-forecast-notes">Blasse Balken kennzeichnen Monate mit wenig Zählerdaten; diese Werte wurden angenähert. Vorjahresdaten dienen ausschließlich der Saisonprognose.</p></div>`:''}
+          ${f.coverage?`<div class="pellet-season-card"><div class="pellet-season-head"><strong>📊 Saisonprofil · kg pro Tag</strong><small>${Math.round(f.coverage.days)} erfasste Tage in den letzten 24 Monaten · ${f.coverage.observed}/12 Monate mit ≥15 Tagen Daten</small></div><div class="pellet-month-grid">${f.coverage.rates.map((rate,i)=>{const max=Math.max(...f.coverage.rates,0.1);const actual=f.coverage.monthDays[i]>=10;return `<div class="pellet-month-cell" data-estimated="${!actual}" title="${['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'][i]}: ${formatNumber(rate)} kg/Tag; ${Math.round(f.coverage.monthDays[i])} erfasste Tage"><small class="pellet-month-value">${formatNumber(rate)}</small><span class="pellet-month-track"><i class="pellet-month-bar" style="height:${Math.max(3,Math.round(rate/max*100))}%"></i><span class="pellet-month-bar-label">${formatNumber(rate)}</span></span><small class="pellet-month-name">${['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'][i]}</small></div>`;}).join('')}</div><p class="pellet-forecast-notes">Blasse Balken kennzeichnen Monate mit wenig Zählerdaten; diese Werte wurden angenähert. Vorjahresdaten dienen ausschließlich der Saisonprognose.</p></div>`:''}
           <p class="pellet-forecast-notes">${escapeHtml(f.note)} ${f.coverage?`Letzte Zählerablesung: ${new Date(f.coverage.end).toLocaleDateString('de-DE')}. `:''}Nachfüllungen sind interne Umlagerungen und werden nicht zusätzlich zum Gesamtbestand gezählt. Die Reichweite bleibt eine Schätzung.</p>`;
         }
       }
