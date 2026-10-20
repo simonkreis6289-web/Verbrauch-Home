@@ -841,6 +841,25 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 .pellet-forecast-months i{display:block;background:#f59e0b;border-radius:5px 5px 2px 2px;min-height:3px}
 
 
+
+/* v113: Lagertrennung und lesbares saisonales Verbrauchsprofil */
+.pellet-stock-split{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.pellet-stock-split>div{border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--card-solid)}
+.pellet-stock-split small{display:block;color:var(--muted);font-size:.79rem;margin-bottom:6px}
+.pellet-stock-split strong{font-size:1.23rem;font-variant-numeric:tabular-nums}
+.pellet-season-card{border:1px solid var(--line);border-radius:15px;padding:16px;background:var(--card-solid)}
+.pellet-season-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline;margin-bottom:12px}
+.pellet-season-head small{color:var(--muted)}
+.pellet-month-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:7px;align-items:end}
+.pellet-month-cell{display:flex;flex-direction:column;gap:5px;align-items:center;text-align:center;min-width:0}
+.pellet-month-value{font-size:.72rem;color:var(--muted);white-space:nowrap}
+.pellet-month-track{height:83px;width:100%;background:var(--line);border-radius:7px;display:flex;align-items:end;overflow:hidden}
+.pellet-month-bar{width:100%;min-height:2px;border-radius:7px 7px 0 0;background:linear-gradient(#fbbf24,#f97316)}
+.pellet-month-name{font-size:.71rem;font-weight:700}
+.pellet-month-cell[data-estimated="true"] .pellet-month-bar{opacity:.35}
+.pellet-month-cell[data-estimated="true"] .pellet-month-value{font-style:italic}
+@media(max-width:650px){.pellet-stock-split{grid-template-columns:1fr}.pellet-month-grid{gap:3px}.pellet-month-track{height:65px}.pellet-month-value{font-size:.58rem}.pellet-month-name{font-size:.62rem}}
+
 /* v89: Push-Regel-Cockpit, nur UI. Bestehende IDs und Endpunkte bleiben unveraendert. */
 .push-rule-panel{position:relative;overflow:hidden}
 .push-rule-panel:before{content:"";position:absolute;right:-100px;top:-165px;width:380px;height:380px;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(14,165,233,.10),transparent 68%)}
@@ -1051,7 +1070,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v112</strong> · 1.3.1.147<br><small>Letzte Änderung: 20.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v113</strong> · 1.3.1.148<br><small>Letzte Änderung: 20.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -3285,40 +3304,90 @@ function formatStationShort(station) {
       const stock=Math.max(0,opening+deliveries.total-consumption);
       return {ready:true,stock,baseline,from:new Date(from),opening,consumption,deliveries,correction,adjustments};
     }
-    function pelletCoverage(since){
-      const intervals=buildComputedReadings().filter(e=>e.type==='pellets'&&e.previousDate&&Number.isFinite(e.delta)&&e.delta>=0&&e.daysBetween>0);
+    // v113: Die Saison wird aus den letzten 24 Monaten der Pellet-Zählerablesungen
+    // gelernt, unabhängig von der ersten erfassten Pelletlieferung.
+    // Intervalle über Monatsgrenzen werden tagesanteilig aufgeteilt.
+    function pelletCoverage(){
+      const intervals=buildComputedReadings().filter(e=>e.type==='pellets'&&e.previousDate&&Number.isFinite(e.delta)&&e.delta>=0);
       if(!intervals.length)return null;
-      const now=Date.now(),startLimit=now-730*86400000,monthKg=new Array(12).fill(0),monthDays=new Array(12).fill(0);
-      let total=0,days=0,last=0;
+      const now=Date.now(),startLimit=now-730*86400000;
+      const monthKg=new Array(12).fill(0),monthDays=new Array(12).fill(0);
+      const recentKg=new Array(12).fill(0),recentDays=new Array(12).fill(0);
+      const olderKg=new Array(12).fill(0),olderDays=new Array(12).fill(0);
+      const recentCutoff=now-365*86400000;
+      let total=0,days=0,last=0,earliest=Infinity;
       for(const e of intervals){
-        const a=Date.parse(e.previousDate),b=Date.parse(e.date),from=Math.max(a,startLimit),to=Math.min(b,now);
+        const a=Date.parse(e.previousDate),b=Date.parse(e.date);
+        const from=Math.max(a,startLimit),to=Math.min(b,now);
         if(!(b>a&&to>from))continue;
         const rate=e.delta/((b-a)/86400000);
-        last=Math.max(last,b);
+        last=Math.max(last,b);earliest=Math.min(earliest,from);
         for(let t=from;t<to;){
-          const d=new Date(t),boundary=Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,1),next=Math.min(to,boundary);
-          const chunk=(next-t)/86400000;
-          monthKg[d.getUTCMonth()]+=rate*chunk;monthDays[d.getUTCMonth()]+=chunk;days+=chunk;total+=rate*chunk;t=next;
+          const d=new Date(t),boundary=Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,1);
+          const next=Math.min(to,boundary,recentCutoff>t?recentCutoff:Infinity);
+          const chunk=(next-t)/86400000,m=d.getUTCMonth();
+          monthKg[m]+=rate*chunk;monthDays[m]+=chunk;
+          const k=t>=recentCutoff?recentKg:olderKg, n=t>=recentCutoff?recentDays:olderDays;
+          k[m]+=rate*chunk;n[m]+=chunk;
+          days+=chunk;total+=rate*chunk;t=next;
         }
       }
-      return days>0?{days,total,daily:total/days,monthKg,monthDays,end:last}:null;
+      if(!days)return null;
+      const daily=total/days;
+      const observed=monthDays.filter(x=>x>=15).length;
+      const rates=monthKg.map((kg,m)=>{
+        // Neuere Ablesungen stärker berücksichtigen, wenn beide Jahre vorhanden sind.
+        const rd=recentDays[m],od=olderDays[m];
+        if(rd>=10&&od>=10)return 0.65*recentKg[m]/rd+0.35*olderKg[m]/od;
+        if(monthDays[m]>=10)return kg/monthDays[m];
+        // Wenige Daten: benachbarte Monate heranziehen; andernfalls Gesamtmittel.
+        const p=(m+11)%12,n=(m+1)%12;
+        const neighborKg=monthKg[p]+monthKg[n],neighborDays=monthDays[p]+monthDays[n];
+        return neighborDays>=20?neighborKg/neighborDays:daily;
+      });
+      const freshness=(now-last)/86400000;
+      const recentCovered=recentDays.reduce((a,b)=>a+b,0);
+      const olderCovered=olderDays.reduce((a,b)=>a+b,0);
+      return {days,total,daily,monthKg,monthDays,rates,observed,recentCovered,olderCovered,end:last,earliest,freshness};
+    }
+    function pelletStockSplit(balance){
+      if(!balance.ready)return null;
+      const baseline=balance.baseline.getTime(),now=Date.now();
+      const purchases=pelletDeliveriesAfter(baseline,now).total;
+      const refills=state.refills.filter(r=>Number(r.totalKg)>0&&Date.parse(r.date)>=baseline&&Date.parse(r.date)<=now)
+        .reduce((sum,r)=>sum+Number(r.totalKg),0);
+      // Nachfüllungen verschieben nur Sackware in den Bunker. Die daraus berechnete
+      // Sackreserve setzt voraus, dass beim ersten Einkauf keine alten Säcke lagerten.
+      const bags=Math.max(0,purchases-refills);
+      const bunker=balance.stock-bags;
+      return {bags,bunker:Math.max(0,bunker),purchases,refills,plausible:bunker>=-5&&bunker<=1050,
+        warning:bunker< -5?'Der berechnete Sackvorrat übersteigt den Gesamtbestand. Bitte Sackzahlen und Bestandsabgleich prüfen.':
+          bunker>1050?'Der rechnerische Bunkerbestand liegt über etwa 1.000 kg. Bitte Nachfüllungen und Ablesungen prüfen.':
+          'Bunker und Sackreserve sind Näherungen: Anfangs-Sackbestand wird mit 0 kg angenommen; der Bunker fasst ungefähr 1.000 kg.'};
     }
     function pelletForecastModel(){
       const balance=pelletBalanceModel();
       if(!balance.ready)return {...balance,reliable:false,note:balance.note};
       const coverage=pelletCoverage();
       if(!coverage||coverage.days<7)return {...balance,coverage,reliable:false,note:'Für eine Verbrauchsprognose fehlen noch ausreichend lange abgeschlossene Pellet-Ableseintervalle.'};
-      const reliable=coverage.days>=300&&coverage.monthDays.filter(d=>d>=15).length>=10;
-      const rates=coverage.monthKg.map((kg,i)=>coverage.monthDays[i]>=15?kg/coverage.monthDays[i]:coverage.daily);
-      const freshness=(Date.now()-coverage.end)/86400000;
-      if(freshness>60)return {...balance,coverage,reliable:false,note:'Die letzte Verbrauchsablesung liegt mehr als 60 Tage zurück. Bitte aktualisieren.'};
+      const reliable=coverage.days>=300&&coverage.observed>=10&&coverage.freshness<=60;
+      if(coverage.freshness>60)return {...balance,coverage,reliable:false,note:'Die letzte Verbrauchsablesung liegt mehr als 60 Tage zurück. Bitte aktualisieren.'};
       if(coverage.daily<=0)return {...balance,coverage,reliable:false,note:'Noch kein messbarer Pelletverbrauch in der vorhandenen Ablesehistorie.'};
-      const when=new Date(), remaining0=balance.stock;
-      let remaining=remaining0,days=0,estimated=null;
-      if(reliable){while(remaining>0&&days<1095){remaining-=Math.max(0,rates[when.getMonth()]);when.setDate(when.getDate()+1);days++;}}
-      else {days=Math.ceil(remaining/coverage.daily);when.setDate(when.getDate()+Math.min(days,1095));}
-      if(days<=1095)estimated=new Date(when);
-      return {...balance,coverage,reliable,rates,when:estimated,days:days<=1095?days:null,note:reliable?'Saisonale Prognose auf Basis deiner Pellet-Ablesungen der letzten zwei Jahre.':'Vorläufige Schätzung aus den verfügbaren Pellet-Ablesungen. Ohne vollständiges Winterprofil kann die Reichweite deutlich abweichen.'};
+      const when=new Date();let remaining=balance.stock,days=0;
+      // Bei ausreichender saisonaler Abdeckung in Kalendertagen voranschreiten.
+      if(reliable){
+        while(remaining>0&&days<1095){
+          remaining-=Math.max(0,coverage.rates[when.getMonth()]);
+          when.setDate(when.getDate()+1);days++;
+        }
+      }else{
+        days=Math.ceil(remaining/coverage.daily);
+        when.setDate(when.getDate()+Math.min(days,1095));
+      }
+      const estimated=days<=1095?new Date(when):null;
+      const note=reliable?'Saisonale Prognose aus bis zu 24 Monaten Zählerständen, neuere Monate bei vorhandener Vergleichsbasis stärker gewichtet.':
+        'Vorläufige Prognose aus dem bisherigen Tagesmittel. Für eine belastbarere Winter-/Sommerprognose werden möglichst 10 gut erfasste Kalendermonate benötigt.';
+      return {...balance,coverage,reliable,rates:coverage.rates,when:estimated,days:days<=1095?days:null,note};
     }
     function formatPelletUntil(f){
       if(!f.ready||!f.when)return 'Noch nicht berechenbar';
@@ -3327,7 +3396,7 @@ function formatStationShort(station) {
     function renderPelletRangeForecast(){
       const f=pelletForecastModel();const date=formatPelletUntil(f);
       const short=document.getElementById('pelletRangeDashboard');
-      if(short)short.innerHTML=`<small class="muted">🔥 Voraussichtliche Pellet-Reichweite</small><strong>${escapeHtml(date)}</strong><small class="muted">${f.ready?'Unverbindliche Schätzung. Details und Bestandsabgleich im Menü Pelletlager.':'Ersten bekannten Einkauf prüfen.'}</small>`;
+      if(short)short.innerHTML=`<small class="muted">🔥 Voraussichtliche Pellet-Reichweite</small><strong>${escapeHtml(date)}</strong><small class="muted">${f.ready?(f.reliable?'Saisonale Schätzung aus 24 Monaten. Details im Pelletlager.':'Vorläufige Schätzung. Details im Pelletlager.'):'Ersten bekannten Einkauf prüfen.'}</small>`;
       const container=document.getElementById('pelletRangeForecast');
       if(container){
         if(!f.ready){container.innerHTML=`<div class="empty-state">${escapeHtml(f.note)}</div>`;}
@@ -3336,7 +3405,9 @@ function formatStationShort(station) {
           container.innerHTML=`<div class="pellet-hero-info"><div><small class="muted">Vorrat reicht ungefähr bis</small><div class="pellet-forecast-number">${escapeHtml(date)}</div><small class="muted">${f.reliable?'Saisonale Verbrauchsprognose':'Vorläufige Reichweitenschätzung'}</small></div><div><small class="muted">Rechnerischer Bestand</small><strong>${formatNumber(f.stock)} kg</strong></div></div>
           <div class="pellet-meter"><div style="width:${percent}%"></div></div>
           <div class="pellet-balance-row"><div><small>Seit ${escapeHtml(f.from.toLocaleDateString('de-DE'))} gekauft / geliefert</small><strong>+${formatNumber(f.deliveries.total)} kg</strong></div><div><small>Verbrauch seitdem</small><strong>−${formatNumber(f.consumption)} kg</strong></div><div><small>Angenommener Start/Abgleich</small><strong>${formatNumber(f.opening)} kg</strong></div></div>
-          <p class="pellet-forecast-notes">${escapeHtml(f.note)} ${f.coverage?`Berechnungsgrundlage: ${Math.round(f.coverage.days)} Tage abgeschlossene Pellet-Ableseintervalle.`:''} Nachfüllungen (${formatNumber(f.deliveries.internalRefill)} kg seit dem letzten Abgleich) sind interne Umlagerungen aus dem gekauften Vorrat und werden nicht erneut zum Gesamtbestand addiert.</p>`;
+          ${(()=>{const split=pelletStockSplit(f);return split?`<div class="pellet-stock-split"><div><small>Gesamtvorrat (rechnerisch)</small><strong>${formatNumber(f.stock)} kg</strong></div><div><small>Sackreserve (geschätzt)</small><strong>${formatNumber(split.bags)} kg</strong></div><div><small>Im Bunker (geschätzt)</small><strong>${formatNumber(split.bunker)} kg</strong></div></div><p class="pellet-forecast-notes">${escapeHtml(split.warning)}</p>`:''})()}
+          ${f.coverage?`<div class="pellet-season-card"><div class="pellet-season-head"><strong>📊 Saisonprofil · kg pro Tag</strong><small>${Math.round(f.coverage.days)} erfasste Tage in den letzten 24 Monaten · ${f.coverage.observed}/12 Monate mit ≥15 Tagen Daten</small></div><div class="pellet-month-grid">${f.coverage.rates.map((rate,i)=>{const max=Math.max(...f.coverage.rates,0.1);const actual=f.coverage.monthDays[i]>=10;return `<div class="pellet-month-cell" data-estimated="${!actual}" title="${['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'][i]}: ${formatNumber(rate)} kg/Tag; ${Math.round(f.coverage.monthDays[i])} erfasste Tage"><small class="pellet-month-value">${formatNumber(rate)}</small><span class="pellet-month-track"><i class="pellet-month-bar" style="height:${Math.max(3,Math.round(rate/max*100))}%"></i></span><small class="pellet-month-name">${['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'][i]}</small></div>`;}).join('')}</div><p class="pellet-forecast-notes">Blasse Balken kennzeichnen Monate mit wenig Zählerdaten; diese Werte wurden angenähert. Vorjahresdaten dienen ausschließlich der Saisonprognose.</p></div>`:''}
+          <p class="pellet-forecast-notes">${escapeHtml(f.note)} ${f.coverage?`Letzte Zählerablesung: ${new Date(f.coverage.end).toLocaleDateString('de-DE')}. `:''}Nachfüllungen sind interne Umlagerungen und werden nicht zusätzlich zum Gesamtbestand gezählt. Die Reichweite bleibt eine Schätzung.</p>`;
         }
       }
       const startInfo=document.getElementById('pelletStartInfo');
