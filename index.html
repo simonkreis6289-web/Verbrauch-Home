@@ -1009,7 +1009,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v107</strong> · 1.3.1.142<br><small>Letzte Änderung: 19.10.2026</small></div>
+        <div class="hero-v94-version">Version <strong>v108</strong> · 1.3.1.143<br><small>Letzte Änderung: 20.10.2026</small></div>
       </div>
     </header>
 
@@ -1041,6 +1041,10 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
           <div class="market-fetch-status" id="marketFetchStatus" role="status" aria-live="polite"><span class="market-fetch-dot" aria-hidden="true"></span><span>Letzter Preisdatei-Stand wird geladen …</span></div>
           <div class="energy-market-grid" id="energyMarketPrices" aria-live="polite"><p class="muted">Preisübersicht wird geladen …</p></div>
           <p class="muted" id="energyMarketUpdated" style="margin:12px 0 0;font-size:.8rem"></p>
+          <div class="fuel-nation-head"><div><p class="section-kicker">DEUTSCHLANDWEITER DURCHSCHNITT</p><h3>Aktuelle Spritpreise</h3></div><small class="muted">Super E5 · Super E10 · Diesel</small></div>
+          <div id="fuelNationalMarket" class="energy-market-grid" aria-live="polite"><p class="muted">Durchschnittspreise werden geladen …</p></div>
+          <p id="fuelNationalUpdated" class="muted" style="font-size:.8rem;margin-top:9px"></p>
+
         </section>
 
         <section class="card wide" aria-label="Kostenüberblick">
@@ -1327,6 +1331,14 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
           </form>
         </section>
       
+    <section class="card wide glass" id="liveFuelPriceSection">
+      <div class="card-head"><div><p class="section-kicker">LIVE · TANKERKÖNIG</p><h2>⛽ Tankstellenpreise in meiner Nähe</h2><small class="muted">Beim Öffnen von Auto / Tanken, höchstens ein Abruf in 15 Minuten, über alle Geräte und Standorte.</small></div><span class="badge">Standortbasiert</span></div>
+      <div class="live-fuel-controls"><label>Kraftstoff<select id="liveFuelType"><option value="diesel">Diesel</option><option value="e5">Super E5</option><option value="e10">Super E10</option></select></label><label>Umkreis<select id="liveFuelRadius"><option value="5">5 km</option><option value="10" selected>10 km</option><option value="15">15 km</option><option value="25">25 km</option></select></label><label>Sortieren<select id="liveFuelSort"><option value="price">Preis aufsteigend</option><option value="dist">Entfernung</option></select></label><button class="btn secondary" type="button" id="liveFuelRefresh">Preise prüfen</button></div>
+      <div id="liveFuelStatus" class="live-fuel-status" aria-live="polite">Beim ersten Öffnen wird der Standort ermittelt.</div>
+      <div id="liveFuelResults" class="fuel-station-prices"></div>
+      <div id="liveFuelMap" class="map-box" style="min-height:290px;margin-top:16px"></div>
+      <small class="muted">Preise: Tankerkönig / Markttransparenzstelle für Kraftstoffe. Standortangaben werden für die Suche verwendet, aber nicht in die Preishistorie geschrieben.</small>
+    </section>
     <section class="card glass" id="fuelEntryCard">
       <div class="card-head">
         <div>
@@ -2042,6 +2054,13 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
   <section class="card wide glass"><p class="section-kicker">DARSTELLUNG UND INSTALLATION</p><h2>App-Einstellungen</h2><div class="settings-grid"><label for="themeSelectV94">Farbschema<select id="themeSelectV94"><option value="light">☀️ Helles Design</option><option value="dark">🌙 Dunkles Design</option></select></label><div class="app-install-v94"><strong>App installieren</strong><p class="muted">Installiere Verbrauch Zuhause als eigenständige App auf deinem Endgerät.</p><button id="installBtn" class="btn secondary hidden" type="button">📲 App installieren</button><small id="installInfoV94" class="muted">Falls kein Button erscheint, nutze die Installationsfunktion deines Browsers.</small></div></div></section>
  </div>
 </section>
+  <div id="nationalFuelHistoryModal" class="market-history-backdrop" role="dialog" aria-modal="true" aria-label="Spritpreisverlauf" aria-hidden="true" hidden>
+    <div class="market-history-panel" style="max-width:850px">
+      <div class="card-head"><div><p class="section-kicker">Spritpreis-Historie · Deutschland</p><h2 id="nationalFuelHistoryTitle">Preisverlauf</h2><small class="muted">Sechs Zeitpunkte pro Tag, maximal drei Jahre</small></div><button class="btn ghost" type="button" id="nationalFuelHistoryClose">Schließen ✕</button></div>
+      <label>Zeitraum <select id="nationalFuelHistoryPeriod"><option value="7">7 Tage</option><option value="30" selected>30 Tage</option><option value="90">3 Monate</option><option value="365">1 Jahr</option><option value="all">Gesamter Verlauf</option></select></label>
+      <div id="nationalFuelHistoryChart" style="margin-top:14px"></div><div id="nationalFuelHistoryDetails" class="market-history-details"></div>
+    </div>
+  </div>
   <div id="marketHistoryModal" class="market-history-backdrop" role="dialog" aria-modal="true" aria-labelledby="marketHistoryTitle" aria-hidden="true" hidden>
     <div class="market-history-panel" role="document">
       <div class="market-history-top">
@@ -2360,7 +2379,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       const viewName=target||options[0][1];
       sub.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view===viewName));
       els.views.forEach(v=>v.classList.toggle('active',v.id===viewName));
-      if(viewName==='carsView')setTimeout(()=>{renderFuelMap();refreshFuelMapSize();void refreshStationGps();},150);
+      if(viewName==='carsView') { void loadLiveFuelPrices(); setTimeout(()=>{renderFuelMap();refreshFuelMapSize();void refreshStationGps();},150); }
     }
     function prepareStructuredMenus(){
       const locations={
@@ -2411,6 +2430,78 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
         activatePriceTimes([...times,t]);document.querySelector('#pricePushTimeList .price-time-row:last-child input')?.focus();
       });
     }
+    // v92: Standortbasierte Tankstellenpreise und bundesweite Durchschnittspreise.
+    const LIVE_FUEL_WORKER = 'https://verbrauch-push.simonkreis6289.workers.dev';
+    let liveFuelPayload=null, liveFuelMap=null,liveFuelMarkers=null, liveFuelPending=null;
+    const NATIONAL_FUEL_TYPES={super:['Super E5','⛽','#f59e0b'],e10:['Super E10','⛽','#22c55e'],diesel:['Diesel','🚙','#38bdf8']};
+    let nationalFuelHistory=[],nationalFuelKey='diesel';
+    const fmtFuel=v=>Number(v).toLocaleString('de-DE',{minimumFractionDigits:3,maximumFractionDigits:3})+' €/l';
+    async function loadNationalFuelPrices(){
+      const grid=document.getElementById('fuelNationalMarket'),footer=document.getElementById('fuelNationalUpdated');
+      try{
+        const res=await fetch('./fuel-prices.json?t='+Date.now(),{cache:'no-store'});
+        if(!res.ok)throw new Error('Preisdaten noch nicht vorhanden');
+        const data=await res.json();
+        grid.innerHTML=Object.entries(NATIONAL_FUEL_TYPES).map(([key,[title,emoji,color]])=>{
+          const val=Number(data.prices?.[key]);const ok=Number.isFinite(val)&&val>0;
+          return `<article class="energy-market-tile" style="--market-accent:${color}" data-national-fuel="${key}" role="button" tabindex="0" aria-label="${title}: Preisverlauf öffnen"><h3>${emoji} ${title}</h3><div class="market-value">${ok?fmtFuel(val):'–'}</div><p>Deutschlandweiter Durchschnitt</p><p>${data.source_date?'Stand: '+escapeHtml(new Date(data.source_date).toLocaleString('de-DE')):'Kein Datenstand'}</p><div class="market-tile-hint">📈 Preisverlauf öffnen ↗</div></article>`;
+        }).join('');
+        footer.textContent='Quelle: Benzinpreis-Aktuell · Datenstand: '+(data.source_date?new Date(data.source_date).toLocaleString('de-DE'):'unbekannt')+' · Abgerufen: '+(data.fetched_at?new Date(data.fetched_at).toLocaleString('de-DE'):'–');
+      }catch(e){grid.innerHTML='<p class="muted">Noch keine Spritpreise gespeichert. Der erste GitHub-Workflow füllt die Daten.</p>';footer.textContent=String(e.message||e);}
+    }
+    async function openNationalFuelHistory(key){
+      if(!NATIONAL_FUEL_TYPES[key])return;
+      nationalFuelKey=key;
+      const modal=document.getElementById('nationalFuelHistoryModal');modal.hidden=false;modal.setAttribute('aria-hidden','false');
+      document.getElementById('nationalFuelHistoryTitle').textContent=NATIONAL_FUEL_TYPES[key][0];
+      document.getElementById('nationalFuelHistoryPeriod').value='30';
+      document.getElementById('nationalFuelHistoryChart').textContent='Preisverlauf wird geladen …';
+      try{const r=await fetch('./fuel-price-history.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('Noch keine Historie');const data=await r.json();nationalFuelHistory=Array.isArray(data.records)?data.records:[];renderNationalFuelHistory();}
+      catch(e){document.getElementById('nationalFuelHistoryChart').textContent='Noch keine historischen Werte vorhanden.';}
+    }
+    function closeNationalFuelHistory(){const el=document.getElementById('nationalFuelHistoryModal');el.hidden=true;el.setAttribute('aria-hidden','true');}
+    function renderNationalFuelHistory(){
+      const period=document.getElementById('nationalFuelHistoryPeriod').value,cutoff=period==='all'?0:Date.now()-Number(period)*86400000;
+      const points=nationalFuelHistory.map(r=>({time:Date.parse(r.source_date||r.fetched_at),price:Number(r.prices?.[nationalFuelKey])})).filter(p=>Number.isFinite(p.time)&&p.time>=cutoff&&Number.isFinite(p.price)&&p.price>0).sort((a,b)=>a.time-b.time);
+      const chart=document.getElementById('nationalFuelHistoryChart'),details=document.getElementById('nationalFuelHistoryDetails');
+      if(!points.length){chart.innerHTML='<div class="empty-state">Keine gespeicherten Preise im gewählten Zeitraum.</div>';details.innerHTML='';return;}
+      const w=900,h=290,l=65,r=20,t=22,b=44,min=Math.min(...points.map(p=>p.price)),max=Math.max(...points.map(p=>p.price)),pad=Math.max(.025,(max-min)*.15),low=min-pad,high=max+pad,start=points[0].time,end=points.at(-1).time;
+      const x=p=>l+(p.time-start)/(end-start||1)*(w-l-r),y=p=>t+(high-p.price)/(high-low)*(h-t-b);
+      const ticks=Array.from({length:5},(_,i)=>{const value=low+(high-low)*i/4,yy=t+(h-t-b)*(1-i/4);return `<line x1="${l}" x2="${w-r}" y1="${yy}" y2="${yy}" stroke="var(--line)"/><text x="${l-9}" y="${yy+4}" text-anchor="end" font-size="13" fill="var(--muted)">${value.toFixed(2)}</text>`;}).join('');
+      const color=NATIONAL_FUEL_TYPES[nationalFuelKey][2];
+      chart.innerHTML=`<svg viewBox="0 0 ${w} ${h}" aria-label="Preisverlauf" role="img" style="width:100%;height:auto">${ticks}<polyline points="${points.map(p=>x(p)+','+y(p)).join(' ')}" fill="none" stroke="${color}" stroke-width="3" stroke-linejoin="round"/>${points.length<=90?points.map(p=>`<circle cx="${x(p)}" cy="${y(p)}" r="4" fill="${color}"><title>${escapeHtml(new Date(p.time).toLocaleString('de-DE'))}: ${fmtFuel(p.price)}</title></circle>`).join(''):''}<text x="${l}" y="${h-12}" fill="var(--muted)" font-size="13">${escapeHtml(new Date(start).toLocaleDateString('de-DE'))}</text><text x="${w-r}" y="${h-12}" text-anchor="end" fill="var(--muted)" font-size="13">${escapeHtml(new Date(end).toLocaleDateString('de-DE'))}</text></svg>`;
+      details.innerHTML=`<div class="market-history-stat"><small>Erster Preis</small><strong>${fmtFuel(points[0].price)}</strong></div><div class="market-history-stat"><small>Letzter Preis</small><strong>${fmtFuel(points.at(-1).price)}</strong></div><div class="market-history-stat"><small>Messpunkte</small><strong>${points.length}</strong></div>`;
+    }
+    async function loadLiveFuelPrices(){
+      if(liveFuelPending)return liveFuelPending;
+      const status=document.getElementById('liveFuelStatus');status.textContent='Standort wird ermittelt und Preisspeicher geprüft …';
+      liveFuelPending=(async()=>{
+        const pos=await getCurrentPositionSafe();
+        // Standortberechtigung nur beim tatsächlichen Öffnen des Menüpunkts erfragen.
+        if(!pos){status.textContent='Standort nicht freigegeben. Bitte GPS-Berechtigung aktivieren.';return;}
+        try{
+          const r=await fetch(LIVE_FUEL_WORKER+'/fuel-prices',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lat:pos.latitude,lng:pos.longitude,radius:Number(document.getElementById('liveFuelRadius').value)})});
+          const payload=await r.json();if(!r.ok)throw Error(payload.error||'Preisabruf fehlgeschlagen ('+r.status+')');
+          liveFuelPayload=payload;renderLiveFuelPrices();
+        }catch(e){status.textContent='Preisabfrage nicht möglich: '+String(e.message||e);}
+      })();try{await liveFuelPending;}finally{liveFuelPending=null;}
+    }
+    function renderLiveFuelPrices(){
+      const status=document.getElementById('liveFuelStatus'),area=document.getElementById('liveFuelResults');
+      if(!liveFuelPayload)return;
+      const data=liveFuelPayload,sort=document.getElementById('liveFuelSort').value,fuel=document.getElementById('liveFuelType').value;
+      const stations=(data.stations||[]).filter(s=>s&&s[fuel]!=null&&Number(s[fuel])>0).sort((a,b)=>sort==='dist'?Number(a.dist||999)-Number(b.dist||999):Number(a[fuel])-Number(b[fuel]));
+      const time=data.fetched_at?new Date(data.fetched_at).toLocaleString('de-DE'):'unbekannt',available=data.next_allowed_at?new Date(data.next_allowed_at).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'–';
+      status.textContent=(data.cached?'Zwischengespeicherte Preise':'Neue Preise geladen')+' · Stand '+time+' · Neue Abfrage frühestens '+available+' · Abrufort: '+(data.origin?.label||'GPS-Position beim letzten Abruf')+'.';
+      area.innerHTML=stations.length?stations.map(s=>{const lat=Number(s.lat),lng=Number(s.lng),nav=Number.isFinite(lat)&&Number.isFinite(lng)?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(lat+','+lng):'';return `<article class="live-station-item"><strong>${escapeHtml(s.brand||s.name||'Tankstelle')}</strong><span class="muted">${escapeHtml([s.street,s.houseNumber,s.place].filter(Boolean).join(' '))}</span><div class="live-price">${fmtFuel(s[fuel])}</div><small class="muted">${Number.isFinite(Number(s.dist))?Number(s.dist).toLocaleString('de-DE',{maximumFractionDigits:1})+' km · ':''}${s.isOpen?'Geöffnet':'Öffnungsstatus unbekannt/geschlossen'}</small>${nav?`<a href="${nav}" target="_blank" rel="noopener noreferrer">Navigation ↗</a>`:''}</article>`;}).join(''):'<div class="empty-state">Keine Tankstellen mit diesem Kraftstoff gefunden.</div>';
+      if(typeof L==='undefined')return;
+      if(!liveFuelMap){liveFuelMap=L.map('liveFuelMap');L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(liveFuelMap);liveFuelMarkers=L.layerGroup().addTo(liveFuelMap);}
+      liveFuelMarkers.clearLayers();
+      const coords=[];
+      for(const s of stations){const lat=Number(s.lat),lng=Number(s.lng);if(!Number.isFinite(lat)||!Number.isFinite(lng))continue;coords.push([lat,lng]);L.marker([lat,lng]).addTo(liveFuelMarkers).bindPopup(`<b>${escapeHtml(s.brand||s.name||'Tankstelle')}</b><p>${fmtFuel(s[fuel])}</p>`);}
+      if(coords.length)liveFuelMap.fitBounds(coords,{padding:[25,25],maxZoom:13});else liveFuelMap.setView([51.2,7.8],8);
+      setTimeout(()=>liveFuelMap.invalidateSize(),150);
+    }
     async function init() {
       hydrateLocalForms();
       setDefaultDatetimes();
@@ -2444,6 +2535,17 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       });
       document.getElementById('marketRefreshBtn')?.addEventListener('click', () => loadMarketPrices(true));
       void loadMarketPrices();
+      void loadNationalFuelPrices();
+      document.getElementById('fuelNationalMarket')?.addEventListener('click',e=>{const tile=e.target.closest('[data-national-fuel]');if(tile)void openNationalFuelHistory(tile.dataset.nationalFuel);});
+      document.getElementById('fuelNationalMarket')?.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const tile=e.target.closest('[data-national-fuel]');if(tile){e.preventDefault();void openNationalFuelHistory(tile.dataset.nationalFuel);}}});
+      document.getElementById('nationalFuelHistoryClose')?.addEventListener('click',closeNationalFuelHistory);
+      document.getElementById('nationalFuelHistoryModal')?.addEventListener('click',e=>{if(e.target.id==='nationalFuelHistoryModal')closeNationalFuelHistory();});
+      document.getElementById('nationalFuelHistoryPeriod')?.addEventListener('change',renderNationalFuelHistory);
+      document.getElementById('liveFuelType')?.addEventListener('change',renderLiveFuelPrices);
+      document.getElementById('liveFuelSort')?.addEventListener('change',renderLiveFuelPrices);
+      document.getElementById('liveFuelRadius')?.addEventListener('change',()=>void loadLiveFuelPrices());
+      document.getElementById('liveFuelRefresh')?.addEventListener('click',()=>void loadLiveFuelPrices());
+
       renderAll();
       renderSavedStationOptions();
       if (state.householdId) await connectFirebase(FIREBASE_CONFIG, state.householdId, false);
