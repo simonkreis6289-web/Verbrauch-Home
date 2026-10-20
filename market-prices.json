@@ -1,19 +1,19 @@
 {
-  "generated_at": "2026-10-19T18:07:39+02:00",
+  "generated_at": "2026-10-20T06:07:39+02:00",
   "region": "57489 Drolshagen",
   "prices": {
     "pellets_loose": {
       "price": 443.77,
       "unit": "EUR/1000kg",
       "scope": "national",
-      "checked_at": "2026-10-19T18:07:39+02:00",
+      "checked_at": "2026-10-20T06:07:39+02:00",
       "source_url": "https://www.holzpellets.net/pelletspreise/"
     },
     "pellets_bag": {
-      "price": 522.43,
+      "price": 530.75,
       "unit": "EUR/1000kg",
       "scope": "national",
-      "checked_at": "2026-10-19T18:07:39+02:00",
+      "checked_at": "2026-10-20T06:07:39+02:00",
       "source_url": "https://www.holzpellets.net/pelletspreise/"
     },
     "heating_oil": {
