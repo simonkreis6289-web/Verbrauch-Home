@@ -1007,6 +1007,29 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 .fuel-live-results-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}.fuel-live-results-head h3{margin:5px 0}.fuel-count{font-size:.8rem;color:var(--muted);font-weight:600}.fuel-view-switch{display:flex;gap:6px}
 .fuel-live-grid[hidden]{display:none!important}.fuel-live-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.fuel-live-grid>.empty-state{grid-column:1/-1}.fuel-station-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start;border:1px solid var(--line);border-radius:16px;padding:17px;background:var(--app-inner,var(--card-solid));min-width:0}.fuel-station-card.best{border-color:rgba(39,181,123,.6);box-shadow:inset 0 0 0 1px rgba(39,181,123,.1)}.fuel-station-card .station-brand{font-size:1.06rem;font-weight:800;overflow-wrap:anywhere}.fuel-station-card .station-address{font-size:.85rem;line-height:1.45;color:var(--muted);margin-top:6px}.fuel-station-card .station-meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:13px;font-size:.79rem}.fuel-station-card .station-meta span{border-radius:8px;padding:6px 8px;background:rgba(108,143,170,.11)}.fuel-station-card .station-price{text-align:right;white-space:nowrap}.fuel-station-card .station-price strong{font-size:clamp(1.25rem,2vw,1.65rem);letter-spacing:-.025em;color:var(--text)}.fuel-station-card .station-price small{display:block;font-size:.72rem;color:var(--muted);margin-top:3px}.fuel-station-card .station-actions{grid-column:1/-1;display:flex;gap:9px;align-items:center;border-top:1px solid var(--line);padding-top:11px}.fuel-station-card .station-actions a,.fuel-station-card .station-actions button{color:var(--text);background:rgba(56,189,248,.12);border:1px solid var(--line);padding:9px 13px;border-radius:9px;text-decoration:none;font:inherit;font-size:.84rem;font-weight:700;cursor:pointer}.fuel-live-map{height:min(68vh,520px)!important;min-height:340px!important;border-radius:15px;overflow:hidden}.fuel-live-credit{display:block;margin-top:16px;line-height:1.5}
 @media(max-width:720px){.nav-v94{grid-template-columns:repeat(3,minmax(0,1fr))}.fuel-live-hero-icon{width:55px;height:55px;font-size:1.75rem;border-radius:15px}.fuel-live-location{padding:13px;margin:15px 0}.fuel-live-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.fuel-live-filter-grid label:last-child{grid-column:1/-1}.fuel-live-grid{grid-template-columns:minmax(0,1fr)}.fuel-live-results-head{align-items:start}.fuel-address-row{flex-direction:column;align-items:stretch}.fuel-address-row label,.fuel-address-row button{width:100%}.fuel-mode{flex:1;padding:10px 7px;font-size:.83rem}.fuel-station-card{padding:14px;gap:9px}.fuel-station-card .station-price strong{font-size:1.38rem}.fuel-live-results-head h3{font-size:1.08rem}.fuel-view-switch button{padding:9px 11px;font-size:.83rem}}
+
+/* v111: kompakte Spritpreiskarten, Tankstellen-Dreidezimalanzeige, Token-Warnungen */
+.fuel-nation-clean{display:flex;align-items:center;margin:20px 0 13px;padding:0;border:0;min-height:0}
+.fuel-nation-clean h3{margin:0;font-size:1.15rem}
+#fuelNationalMarket{gap:14px}
+#fuelNationalMarket .national-fuel-tile{border-top-width:5px;box-shadow:0 4px 14px rgba(0,0,0,.04);transition:transform .15s,box-shadow .15s;cursor:pointer}
+#fuelNationalMarket .national-fuel-tile:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.10)}
+#fuelNationalMarket .national-fuel-tile:focus-visible{outline:3px solid var(--market-accent);outline-offset:3px}
+#fuelNationalMarket .national-fuel-tile h3{margin-bottom:12px}
+#fuelNationalMarket .national-fuel-tile .fuel-pump-value{font-size:clamp(1.65rem,3.2vw,2.35rem);line-height:1.12;white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:850;letter-spacing:-.04em;color:var(--text)}
+#fuelNationalMarket .fuel-pump-value .fuel-raised-digit{font-size:.55em;vertical-align:super;position:relative;top:.11em;letter-spacing:0;margin-left:.02em}
+#fuelNationalMarket .fuel-pump-value .fuel-price-unit{font-size:.45em;font-weight:650;letter-spacing:0;margin-left:.35em;color:var(--muted)}
+#fuelNationalMarket .national-fuel-tile .fuel-national-subtitle{margin-top:9px}
+#fuelNationalMarket .national-fuel-tile .fuel-national-date{margin-top:4px}
+.token-header-status{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;margin-top:6px}
+.token-state{display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border:1px solid;border-radius:9px;font-size:.7rem;font-weight:750;line-height:1.3;background:rgba(125,125,125,.08)}
+.token-ok{color:#16a34a;border-color:rgba(22,163,74,.38)}
+.token-warn{color:#d97706;border-color:rgba(217,119,6,.48)}
+.token-expired{color:#dc2626;border-color:rgba(220,38,38,.47)}
+.token-unknown{color:var(--muted);border-color:var(--line)}
+.token-settings-preview{display:flex;gap:9px;flex-wrap:wrap}
+.token-settings-preview .token-state{font-size:.82rem;padding:8px 11px}
+@media(max-width:700px){.token-header-status{justify-content:center}.token-state{font-size:.65rem}#fuelNationalMarket .fuel-pump-value{font-size:2rem}}
 </style>
 </head>
 <body>
@@ -1019,7 +1042,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v110</strong> · 1.3.1.145<br><small>Letzte Änderung: 20.10.2026</small></div>
+        <div class="hero-v94-version">Version <strong>v111</strong> · 1.3.1.146<br><small>Letzte Änderung: 20.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -1052,7 +1075,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
           <div class="market-fetch-status" id="marketFetchStatus" role="status" aria-live="polite"><span class="market-fetch-dot" aria-hidden="true"></span><span>Letzter Preisdatei-Stand wird geladen …</span></div>
           <div class="energy-market-grid" id="energyMarketPrices" aria-live="polite"><p class="muted">Preisübersicht wird geladen …</p></div>
           <p class="muted" id="energyMarketUpdated" style="margin:12px 0 0;font-size:.8rem"></p>
-          <div class="fuel-nation-head"><div><p class="section-kicker">DEUTSCHLANDWEITER DURCHSCHNITT</p><h3>Aktuelle Spritpreise</h3></div><small class="muted">Super E5 · Super E10 · Diesel</small></div>
+          <div class="fuel-nation-head fuel-nation-clean"><h3>Aktuelle Spritpreise</h3></div>
           <div id="fuelNationalMarket" class="energy-market-grid" aria-live="polite"><p class="muted">Durchschnittspreise werden geladen …</p></div>
           <p id="fuelNationalUpdated" class="muted" style="font-size:.8rem;margin-top:9px"></p>
 
@@ -1647,6 +1670,23 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       
 <section id="settingsView" class="view">
   <div class="grid">
+    <section class="card glass wide" id="githubTokenExpiryPanel">
+      <div class="card-head"><div><p class="section-kicker">GitHub · Zugriff</p><h2>🔐 Ablauf der GitHub-Tokens</h2><small class="muted">Trage die Ablaufdaten der beiden Tokens ein. Gespeichert werden nur die Datumsangaben, niemals die Tokens selbst.</small></div></div>
+      <form id="githubTokenExpiryForm" class="settings-grid">
+        <label>GitHub-Token für Cloudflare-Automation
+          <input id="githubTokenExpiryAutomation" type="date" autocomplete="off" />
+          <small>Fine-grained Token „Verbrauch-Home-Cloudflare-Automation“</small>
+        </label>
+        <label>GitHub-Token für Spritpreis-Workflow
+          <input id="githubTokenExpiryWorkflow" type="date" autocomplete="off" />
+          <small>Cloudflare-Secret GITHUB_WORKFLOW_TOKEN · „Verbrauch-Cloudflare-Workflow“</small>
+        </label>
+        <div class="span-12 token-settings-preview" id="githubTokenSettingsStatus" aria-live="polite"></div>
+        <div class="form-actions span-12"><button type="submit" class="btn primary">Ablaufdaten speichern</button></div>
+        <p class="muted span-12" style="font-size:.8rem;margin:0">Warnung ab 30 Tagen vor Ablauf. Der Status prüft das gespeicherte Datum und nicht, ob der GitHub-Zugang technisch funktioniert. Bei verbundenem Firebase werden die Termine im Haushalt synchronisiert.</p>
+      </form>
+    </section>
+
     <section id="firebaseSettingsCard" class="card glass wide">
       <div class="card-head">
         <div>
@@ -2421,7 +2461,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       openNavGroupV94('dashboardView');
       const clock=document.getElementById('headerClock');
       const refreshClock=()=>{if(clock)clock.textContent=new Intl.DateTimeFormat('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}).format(new Date())+' Uhr';};
-      refreshClock();setInterval(refreshClock,30000);
+      refreshClock();setInterval(()=>{refreshClock();renderGithubTokenStatuses();},30000);
     }
     function activatePriceTimes(times){
       const list=document.getElementById('pricePushTimeList');if(!list)return;
@@ -2457,9 +2497,10 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
     // v92: Standortbasierte Tankstellenpreise und bundesweite Durchschnittspreise.
     const LIVE_FUEL_WORKER = 'https://verbrauch-push.simonkreis6289.workers.dev';
     let liveFuelPayload=null, liveFuelMap=null,liveFuelMarkers=null, liveFuelPending=null;
-    const NATIONAL_FUEL_TYPES={super:['Super E5','⛽','#f59e0b'],e10:['Super E10','⛽','#22c55e'],diesel:['Diesel','🚙','#38bdf8']};
+    const NATIONAL_FUEL_TYPES={super:['Super E5','⛽','#ef4444'],e10:['Super E10','⛽','#16a34a'],diesel:['Diesel','🚙','#6366f1']};
     let nationalFuelHistory=[],nationalFuelKey='diesel';
     const fmtFuel=v=>Number(v).toLocaleString('de-DE',{minimumFractionDigits:3,maximumFractionDigits:3})+' €/l';
+    const fuelPumpPrice=v=>{const value=Number(v).toFixed(3).split('.');return `${Number(value[0]).toLocaleString('de-DE')},${value[1].slice(0,2)}<span class="fuel-raised-digit">${value[1][2]}</span><span class="fuel-price-unit">€/l</span>`;};
     async function loadNationalFuelPrices(){
       const grid=document.getElementById('fuelNationalMarket'),footer=document.getElementById('fuelNationalUpdated');
       try{
@@ -2468,7 +2509,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
         const data=await res.json();
         grid.innerHTML=Object.entries(NATIONAL_FUEL_TYPES).map(([key,[title,emoji,color]])=>{
           const val=Number(data.prices?.[key]);const ok=Number.isFinite(val)&&val>0;
-          return `<article class="energy-market-tile" style="--market-accent:${color}" data-national-fuel="${key}" role="button" tabindex="0" aria-label="${title}: Preisverlauf öffnen"><h3>${emoji} ${title}</h3><div class="market-value">${ok?fmtFuel(val):'–'}</div><p>Deutschlandweiter Durchschnitt</p><p>${data.source_date?'Stand: '+escapeHtml(new Date(data.source_date).toLocaleString('de-DE')):'Kein Datenstand'}</p><div class="market-tile-hint">📈 Preisverlauf öffnen ↗</div></article>`;
+          return `<article class="energy-market-tile national-fuel-tile" style="--market-accent:${color}" data-national-fuel="${key}" role="button" tabindex="0" aria-label="${title}: ${ok?fmtFuel(val):'kein Preis'}; Preisverlauf öffnen"><h3>${emoji} ${title}</h3><div class="fuel-pump-value">${ok?fuelPumpPrice(val):'–'}</div><p class="fuel-national-subtitle">Deutschlandweiter Durchschnitt</p><p class="fuel-national-date">${data.source_date?'Stand: '+escapeHtml(new Date(data.source_date).toLocaleString('de-DE')):'Kein Datenstand'}</p><div class="market-tile-hint">📈 Preisverlauf öffnen ↗</div></article>`;
         }).join('');
         footer.textContent='Quelle: Benzinpreis-Aktuell · Datenstand: '+(data.source_date?new Date(data.source_date).toLocaleString('de-DE'):'unbekannt')+' · Abgerufen: '+(data.fetched_at?new Date(data.fetched_at).toLocaleString('de-DE'):'–');
       }catch(e){grid.innerHTML='<p class="muted">Noch keine Spritpreise gespeichert. Der erste GitHub-Workflow füllt die Daten.</p>';footer.textContent=String(e.message||e);}
@@ -2572,6 +2613,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       setDefaultDatetimes();
       syncQuickNowUi();
       restoreLocalData();
+      fillGithubTokenDates();
       prepareStructuredMenus();
       registerPriceTimeControls();
       registerEvents();
@@ -2927,6 +2969,7 @@ async function loadMarketPrices(force = false) {
 
       els.resetForm?.addEventListener("submit", handleResetSubmit);
       els.settingsForm?.addEventListener("submit", handleSettingsSubmit);
+      document.getElementById("githubTokenExpiryForm")?.addEventListener("submit",saveGithubTokenDates);
       document.getElementById("pelletMarketForm")?.addEventListener("submit", savePelletMarketQuote);
       els.pricePeriodForm?.addEventListener("submit", handlePricePeriodSubmit);
       els.bagSizeForm?.addEventListener("submit", handleBagSizeSubmit);
@@ -6112,6 +6155,49 @@ async function updateRecord(kind, id, payload) {
       }
     }
 
+    // v111: Ablaufdaten dienen nur als Erinnerung, keine Authentifizierungsprüfung.
+    const githubTokenDefinitions=[['automation','Automation','githubTokenExpiryAutomation'],['workflow','Workflow','githubTokenExpiryWorkflow']];
+    function getGithubTokenStatus(date){
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(date||''))return {css:'token-unknown',label:'Datum fehlt'};
+      const deadline=new Date(date+'T00:00:00Z');
+      if(!Number.isFinite(deadline.getTime())||deadline.toISOString().slice(0,10)!==date)return {css:'token-unknown',label:'Datum ungültig'};
+      const todayParts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+      const parts=Object.fromEntries(todayParts.map(x=>[x.type,x.value]));
+      const today=Date.UTC(Number(parts.year),Number(parts.month)-1,Number(parts.day));
+      const days=Math.round((deadline.getTime()-today)/86400000);
+      if(days<0)return {css:'token-expired',label:'Abgelaufen'};
+      if(days<=30)return {css:'token-warn',label:days===0?'Läuft heute ab':`Noch ${days} Tage`};
+      return {css:'token-ok',label:'Gültig'};
+    }
+    function renderGithubTokenStatuses(){
+      const dates=state.settings?.githubTokenExpiry||{};
+      const items=githubTokenDefinitions.map(([key,title])=>{
+        const date=dates[key]||'';const status=getGithubTokenStatus(date);
+        return `<span class="token-state ${status.css}" title="${title}: ${date||'kein Ablaufdatum'} · Status nur anhand des eingetragenen Datums">${title}: ${status.label}</span>`;
+      }).join('');
+      const header=document.getElementById('githubTokenHeader');if(header)header.innerHTML=items;
+      const settings=document.getElementById('githubTokenSettingsStatus');if(settings)settings.innerHTML=items;
+    }
+    function fillGithubTokenDates(){
+      const dates=state.settings?.githubTokenExpiry||{};
+      for(const [key,,id] of githubTokenDefinitions){const el=document.getElementById(id);if(el&&document.activeElement!==el)el.value=dates[key]||'';}
+      renderGithubTokenStatuses();
+    }
+    async function saveGithubTokenDates(event){
+      event.preventDefault();
+      const previous={...(state.settings.githubTokenExpiry||{})};
+      const values={};
+      for(const [key,,id] of githubTokenDefinitions)values[key]=document.getElementById(id)?.value||'';
+      state.settings.githubTokenExpiry=values;
+      persistLocalSnapshot();renderGithubTokenStatuses();
+      try{
+        if(state.firebaseEnabled)await saveSettingsToFirestore();
+        showToast('GitHub-Token-Ablaufdaten gespeichert.','success');
+      }catch(e){
+        state.settings.githubTokenExpiry=previous;persistLocalSnapshot();fillGithubTokenDates();
+        showToast('Speichern in Firebase fehlgeschlagen: '+String(e.message||e),'error');
+      }
+    }
     function fillSettingsForm() {
       els.priceStromBase.value = state.settings.strom.basePrice ?? 0;
       els.priceStromUnit.value = state.settings.strom.unitPrice ?? 0;
@@ -6119,6 +6205,7 @@ async function updateRecord(kind, id, payload) {
       els.priceWasserUnit.value = state.settings.wasser.unitPrice ?? 0;
       els.pricePelletsBase.value = state.settings.pellets.basePrice ?? 0;
       els.pricePelletsUnit.value = state.settings.pellets.unitPrice ?? 0;
+      fillGithubTokenDates();
     }
 
     function mergeSettings(incoming) {
@@ -6126,6 +6213,10 @@ async function updateRecord(kind, id, payload) {
         strom: { basePrice: toNumber(incoming?.strom?.basePrice) || 0, unitPrice: toNumber(incoming?.strom?.unitPrice) || 0 },
         wasser: { basePrice: toNumber(incoming?.wasser?.basePrice) || 0, unitPrice: toNumber(incoming?.wasser?.unitPrice) || 0 },
         pellets: { basePrice: toNumber(incoming?.pellets?.basePrice) || 0, unitPrice: toNumber(incoming?.pellets?.unitPrice) || 0 },
+        githubTokenExpiry: {
+          automation: /^\d{4}-\d{2}-\d{2}$/.test(incoming?.githubTokenExpiry?.automation||'') ? incoming.githubTokenExpiry.automation : '',
+          workflow: /^\d{4}-\d{2}-\d{2}$/.test(incoming?.githubTokenExpiry?.workflow||'') ? incoming.githubTokenExpiry.workflow : ''
+        },
         pelletBalance: {
           initialRestKg: Math.max(0, Number(incoming?.pelletBalance?.initialRestKg) || 0),
           adjustments: Array.isArray(incoming?.pelletBalance?.adjustments) ? incoming.pelletBalance.adjustments.filter(a=>a&&Number.isFinite(Number(a.stockKg))&&Number.isFinite(Date.parse(a.date))).slice(-100) : []
