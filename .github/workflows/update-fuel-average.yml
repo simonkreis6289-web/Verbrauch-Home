@@ -1,8 +1,5 @@
 name: Bundesweite Spritpreise archivieren
 on:
-  schedule:
-    - cron: '15 0,4,8,12,16,20 * * *'
-      timezone: 'Europe/Berlin'
   workflow_dispatch:
 permissions:
   contents: write
