@@ -1103,7 +1103,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
   .card-head h2, .card-head h3 { font-size: 1.22rem; }
 }
 
-/* v118: Mobile Fotoauswahl und sichtbarer, drehbarer OCR-Ausschnitt */
+/* v119: Mobile Fotoauswahl und sichtbarer, drehbarer OCR-Ausschnitt */
 .meter-source-group{min-width:0;display:flex;flex-direction:column;gap:8px}.meter-source-buttons{display:flex;flex-wrap:wrap;gap:8px}.meter-source-buttons button{flex:1;min-width:105px}.meter-image-editor[hidden]{display:none}.meter-image-stage{position:relative;max-width:100%;width:fit-content;line-height:0;touch-action:none;overflow:hidden;border-radius:10px;border:1px solid var(--line);background:#15232d}.meter-image-stage canvas{display:block;max-width:100%;height:auto}.meter-crop-frame{position:absolute;border:2px solid #27d7ed;box-shadow:0 0 0 9999px #0005;cursor:move;touch-action:none;box-sizing:border-box}.meter-handle{position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid #008ba5;box-sizing:border-box;touch-action:none}.meter-handle.tl{left:-9px;top:-9px}.meter-handle.tr{right:-9px;top:-9px}.meter-handle.bl{left:-9px;bottom:-9px}.meter-handle.br{right:-9px;bottom:-9px}.meter-crop-preview{display:block;max-width:100%;width:auto;max-height:180px;margin-top:8px;border:1px solid var(--line);border-radius:8px;background:white}.meter-image-editor .meter-ocr-actions button{font-size:.83rem}
 </style>
 </head>
@@ -1117,7 +1117,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v118</strong> · 1.3.1.152<br><small>Letzte Änderung: 20.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v119</strong> · 1.3.1.152<br><small>Letzte Änderung: 20.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -1324,7 +1324,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
               <div class="meter-ocr-actions"><button type="button" class="btn ghost" id="meterRotateLeft">↶ 90° links</button><button type="button" class="btn ghost" id="meterRotateRight">↷ 90° rechts</button><button type="button" class="btn ghost" id="meterCropReset">Rahmen zurücksetzen</button></div>
               <strong style="display:block;margin-top:12px">Ausgewählter Bildausschnitt</strong><canvas id="meterOcrCropPreview" class="meter-crop-preview"></canvas>
             </div>
-            <div class="meter-ocr-actions"><button type="button" class="btn ghost" id="meterOcrRecognize">🔍 Automatisch erkennen</button><button type="button" class="btn ghost" id="meterOcrReadCrop">🔢 Markierten Bereich lesen</button></div>
+            <div id="meterOcrDiagnostics" role="status" style="display:none;margin:12px 0;padding:12px;border:1px solid #c9dce7;border-radius:12px;background:#f4f9fc;white-space:pre-wrap;font-size:.86rem"></div><div class="meter-ocr-actions"><button type="button" class="btn ghost" id="meterOcrRecognize">🔍 Automatisch erkennen</button><button type="button" class="btn ghost" id="meterOcrReadCrop">🔢 Markierten Bereich lesen</button></div>
             <label style="display:block;margin-top:14px">Erkannter Wert, bitte sorgfältig prüfen
               <input id="meterOcrResult" type="text" inputmode="decimal" placeholder="z. B. 12345,67" autocomplete="off" />
             </label>
@@ -5809,7 +5809,7 @@ renderFuelMap();
       const file=event?.target?.files?.[0];if(!file)return;
       if(!file.type.startsWith('image/'))return meterOcrStatus('Bitte eine Bilddatei auswählen.');
       if(meterOcrImageUrl)URL.revokeObjectURL(meterOcrImageUrl);meterOcrImageUrl=URL.createObjectURL(file);
-      try{meterBitmap?.close?.();meterBitmap=await createImageBitmap(file);meterAngle=0;meterCrop={x:.15,y:.32,w:.7,h:.32};document.getElementById('meterImageEditor').hidden=false;drawMeterImage();document.getElementById('meterOcrResult').value='';meterOcrStatus('Bild geladen. Automatische Erkennung starten oder Rahmen anpassen. Der Ausschnitt wird unten angezeigt.');}
+      try{meterBitmap?.close?.();meterBitmap=await createImageBitmap(file);meterAngle=0;meterCrop={x:.15,y:.32,w:.7,h:.32};document.getElementById('meterImageEditor').hidden=false;drawMeterImage();document.getElementById('meterOcrResult').value='';const diag=document.getElementById('meterOcrDiagnostics');if(diag)diag.style.display='none';meterOcrStatus('Bild geladen. Automatische Erkennung starten oder Rahmen anpassen. Der Ausschnitt wird unten angezeigt.');}
       catch(err){meterOcrStatus('Bild konnte nicht geöffnet werden. Bitte ein anderes Foto wählen.');}
     }
     function updateMeterDialControls(){
@@ -5843,47 +5843,116 @@ renderFuelMap();
       // OCR auf dem gesamten Foto ist nur zur Lokalisierung erlaubt. Keine Seriennummer blind übernehmen.
       return candidates.sort((a,b)=>b.confidence-a.confidence)[0]||null;
     }
+    // v119: OCR-Diagnose und Bildvorverarbeitung. Keine geratenen Nachkommastellen.
+    function meterDiagnostics(lines){
+      const el=document.getElementById('meterOcrDiagnostics');if(!el)return;
+      el.style.display='block';el.textContent=lines.join('\n');
+    }
+    function meterVariant(source,kind){
+      const scale=Math.max(1,Math.min(4,1600/Math.max(source.width,1)));
+      const c=document.createElement('canvas');c.width=Math.max(1,Math.round(source.width*scale));c.height=Math.max(1,Math.round(source.height*scale));
+      const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(source,0,0,c.width,c.height);
+      if(kind==='original')return c;
+      const im=ctx.getImageData(0,0,c.width,c.height),d=im.data;
+      const gray=new Uint8Array(c.width*c.height),hist=new Uint32Array(256);
+      for(let i=0,j=0;i<d.length;i+=4,j++){const v=Math.round(.299*d[i]+.587*d[i+1]+.114*d[i+2]);gray[j]=v;hist[v]++;}
+      let total=gray.length,acc=0,lo=0,hi=255;
+      for(let i=0;i<256;i++){acc+=hist[i];if(acc>=total*.04){lo=i;break;}}
+      acc=0;for(let i=255;i>=0;i--){acc+=hist[i];if(acc>=total*.04){hi=i;break;}}
+      const span=Math.max(1,hi-lo);
+      for(let j=0,i=0;j<gray.length;j++,i+=4){let v=Math.max(0,Math.min(255,(gray[j]-lo)*255/span));
+        if(kind==='binary')v=v<135?0:255;
+        else if(kind==='inverted')v=255-v;
+        d[i]=d[i+1]=d[i+2]=v;d[i+3]=255;
+      }
+      ctx.putImageData(im,0,0);return c;
+    }
+    function meterOcrCandidates(raw,type){
+      const text=String(raw||'').replace(/[Oo]/g,'0').replace(/[Il|]/g,'1');
+      const chunks=text.split(/[\n\r]+/).map(x=>x.trim()).filter(Boolean);
+      const found=[];
+      for(const line of chunks){
+        const digits=line.replace(/[^0-9.,]/g,'');
+        const compact=digits.replace(/[.,]/g,'');
+        if(/^\d{3,8}$/.test(compact) && !/[.,].*[.,]/.test(digits)){
+          const value=type==='strom'?compact:digits;
+          if(!found.includes(value))found.push(value);
+        }
+      }
+      return found;
+    }
+    async function meterReadVariants(source,ocr,type,limit=4){
+      const all=[];
+      for(const kind of ['original','contrast','binary','inverted'].slice(0,limit)){
+        const image=meterVariant(source,kind);
+        try{
+          const result=await ocr.recognize(image,'eng',{tessedit_pageseg_mode:'7',tessedit_char_whitelist:'0123456789.,'});
+          const vals=meterOcrCandidates(result.data?.text,type);
+          all.push({kind,vals,confidence:Math.round(result.data?.confidence||0)});
+        }catch(e){all.push({kind,vals:[],confidence:0});}
+      }
+      return all;
+    }
+    function meterChooseCandidate(results){
+      const counts=new Map();for(const r of results)for(const val of r.vals){const old=counts.get(val)||{votes:0,confidence:0};old.votes++;old.confidence+=r.confidence;counts.set(val,old);}
+      const ranked=[...counts].sort((a,b)=>b[1].votes-a[1].votes||b[1].confidence-a[1].confidence);
+      return ranked.length?{value:ranked[0][0],votes:ranked[0][1].votes,ambiguous:ranked.length>1&&ranked[0][1].votes===ranked[1][1].votes}:null;
+    }
     async function recognizeMeterCrop(){
       if(!meterBitmap)return meterOcrStatus('Bitte zuerst ein Foto aufnehmen oder aus der Galerie wählen.');
       const btn=document.getElementById('meterOcrReadCrop');btn.disabled=true;
+      const type=document.getElementById('meterOcrType')?.value||'strom';
       try{
-        meterOcrStatus('Markierten Bereich wird ausgelesen …');const ocr=await loadMeterOcrLibrary();
-        const src=document.getElementById('meterOcrCropPreview'),work=document.createElement('canvas');const factor=Math.max(1,Math.min(4,1200/src.width));work.width=Math.round(src.width*factor);work.height=Math.round(src.height*factor);
-        const ctx=work.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,work.width,work.height);ctx.drawImage(src,0,0,work.width,work.height);
-        const results=[];
-        for(const filter of ['none','grayscale(1) contrast(1.8)']){
-          const temp=document.createElement('canvas');temp.width=work.width;temp.height=work.height;const t=temp.getContext('2d');t.filter=filter;t.drawImage(work,0,0);
-          const r=await ocr.recognize(temp,'eng',{tessedit_char_whitelist:'0123456789.,'});
-          const lines=(r.data.text||'').split(/\n/).map(x=>x.replace(/[^0-9.,]/g,'')).filter(x=>/^\d{4,8}(?:[.,]\d{1,3})?$/.test(x));
-          if(lines.length)results.push({value:lines[0],confidence:r.data.confidence||0});
+        meterOcrStatus('Zahlenbereich wird mit mehreren Bildfiltern untersucht …');
+        const ocr=await loadMeterOcrLibrary();
+        const src=document.getElementById('meterOcrCropPreview');
+        const results=await meterReadVariants(src,ocr,type);
+        const chosen=meterChooseCandidate(results);
+        meterDiagnostics(['OCR-Diagnose (markierter Bereich):',...results.map(r=>`${r.kind}: ${r.vals.join(' / ')||'keine Ziffern'} (OCR ${r.confidence} %)`) ,chosen?`Häufigster Vorschlag: ${chosen.value} (${chosen.votes}/4 Durchläufe)`:'Keine lesbare Ziffernfolge','Hinweis: OCR-Prozentwerte sind keine garantierte Messgenauigkeit.']);
+        if(chosen && chosen.votes>=2 && !chosen.ambiguous){
+          document.getElementById('meterOcrResult').value=chosen.value.replace('.',',');
+          meterOcrStatus(type==='wasser'?'Vorschlag für das Zahlenwerk. Rote Zeiger weiterhin manuell prüfen und ergänzen.':'Ziffernvorschlag aus dem markierten Bereich. Vor Übernahme am Foto kontrollieren.');
+        }else{
+          document.getElementById('meterOcrResult').value='';
+          meterOcrStatus('Keine übereinstimmende, sichere Ziffernfolge. Bitte Rahmen enger auf die Ziffern setzen oder Wert manuell eingeben.');
         }
-        if(results.length){results.sort((a,b)=>b.confidence-a.confidence);document.getElementById('meterOcrResult').value=results[0].value.replace('.',',');meterOcrStatus('OCR-Vorschlag aus dem sichtbaren Ausschnitt. Bitte alle Ziffern prüfen! Rote Wasserzeiger werden noch nicht automatisch ausgewertet.');}
-        else meterOcrStatus('Im markierten Bereich keine sichere Ziffernfolge gefunden. Rahmen korrigieren oder Wert manuell eingeben.');
-      }catch(err){console.warn('OCR',err);meterOcrStatus('OCR nicht verfügbar. Bitte den Wert manuell eingeben.');}finally{btn.disabled=false;}
+      }catch(err){console.warn('OCR',err);meterOcrStatus('OCR nicht verfügbar. Bitte den Wert manuell eingeben.');}
+      finally{btn.disabled=false;}
     }
     async function recognizeMeterPhoto(){
       if(!meterBitmap)return meterOcrStatus('Bitte zuerst ein Foto aufnehmen oder aus der Galerie wählen.');
       const btn=document.getElementById('meterOcrRecognize');btn.disabled=true;
+      const type=document.getElementById('meterOcrType')?.value||'strom';
       try{
-        meterOcrStatus('Suche das Zahlenwerk im Foto …');const ocr=await loadMeterOcrLibrary();
-        const c=meterCanvas();let best=null;
-        // Vierteldrehungen: automatische Orientierung und OCR-basierte Lokalisierung.
+        meterOcrStatus('Suche Zahlenwerk und prüfe Bilddrehungen …');
+        const ocr=await loadMeterOcrLibrary();const c=meterCanvas();let best=null;
+        const notes=[];
         for(const angle of [0,90,270,180]){
-          meterAngle=angle;drawMeterImage();const r=await ocr.recognize(c,'eng');
-          const words=r.data.words||[];
-          for(const w of words){const txt=(w.text||'').replace(/[^0-9]/g,'');if(!/^\d{4,7}$/.test(txt)||!w.bbox)continue;
+          meterAngle=angle;drawMeterImage();
+          const r=await ocr.recognize(meterVariant(c,'contrast'),'eng');
+          const words=r.data?.words||[];let found=0;
+          for(const w of words){
+            const txt=(w.text||'').replace(/[^0-9]/g,'');if(!/^\d{3,8}$/.test(txt)||!w.bbox)continue;
             const b=w.bbox,width=b.x1-b.x0,height=b.y1-b.y0;
-            if(width<30||height<8||width/height<1.5)continue;
-            const score=(w.confidence||0)+Math.min(25,width/c.width*50)+(angle===0?2:0);
-            if(!best||score>best.score)best={angle,score,box:b,cw:c.width,ch:c.height};
+            if(width<25||height<8||width/height<1.3)continue;
+            found++;
+            const score=(w.confidence||0)+Math.min(30,width/Math.max(1,c.width)*70)+Math.min(12,txt.length*1.5);
+            if(!best||score>best.score)best={angle,score,box:b,cw:c.width,ch:c.height,text:txt};
           }
+          notes.push(`${angle}°: ${found} mögliche Zahlenbereiche`);
         }
-        if(best){meterAngle=best.angle;drawMeterImage();const b=best.box,padX=(b.x1-b.x0)*.12,padY=(b.y1-b.y0)*.35;
+        if(best){
+          meterAngle=best.angle;drawMeterImage();const b=best.box,padX=(b.x1-b.x0)*.18,padY=(b.y1-b.y0)*.6;
           const x=Math.max(0,(b.x0-padX)/best.cw),y=Math.max(0,(b.y0-padY)/best.ch);
           meterCrop={x,y,w:Math.min(1-x,(b.x1-b.x0+2*padX)/best.cw),h:Math.min(1-y,(b.y1-b.y0+2*padY)/best.ch)};drawMeterCrop();
-          meterOcrStatus('Möglichen Zahlenbereich gefunden und gedreht. Bitte den angezeigten Ausschnitt prüfen, dann „Markierten Bereich lesen“ tippen.');
-        }else{meterAngle=0;drawMeterImage();meterOcrStatus('Kein eindeutiges Zahlenwerk gefunden. Bitte Rahmen mit dem Finger auf die Ziffern schieben und „Markierten Bereich lesen“ wählen.');}
-      }catch(err){console.warn('OCR-Lokalisierung',err);meterOcrStatus('Automatische Suche nicht verfügbar. Du kannst den Rahmen manuell einstellen.');}
+          meterOcrStatus('Möglichen Zahlenbereich gefunden. Bitte Ausschnitt prüfen und „Markierten Bereich lesen“ wählen.');
+          notes.push(`Ausgewählte Orientierung: ${best.angle}°. Kandidat: ${best.text}. Nicht als Zählerstand bestätigt.`);
+        }else{
+          meterAngle=0;drawMeterImage();meterOcrStatus('Kein eindeutiges Zahlenwerk gefunden. Rahmen mit dem Finger auf die Ziffern setzen.');
+        }
+        if(type==='wasser')notes.push('Rote Zeigerskalen werden noch nicht automatisch ausgelesen.');
+        meterDiagnostics(['Bildsuche:',...notes]);
+      }catch(err){console.warn('OCR-Lokalisierung',err);meterOcrStatus('Automatische Suche nicht verfügbar. Rahmen manuell einstellen.');}
       finally{btn.disabled=false;}
     }
     function transferMeterReading(){
