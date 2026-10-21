@@ -862,7 +862,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 @media(max-width:650px){.pellet-stock-split{grid-template-columns:1fr}.pellet-month-grid{gap:3px}.pellet-month-track{height:72px}.pellet-month-value{display:none}.pellet-month-bar-label{display:block;position:absolute;left:50%;bottom:6px;transform:translateX(-50%);writing-mode:vertical-rl;text-orientation:mixed;font-size:.58rem;line-height:1;font-weight:700;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.22);pointer-events:none;letter-spacing:.01em}.pellet-month-name{font-size:.62rem}}
 
 
-/* v115: Kameraunterstützte Zählererfassung (Wert wird nie automatisch gespeichert) */
+/* Alte OCR-Styles ohne Funktion, ausgebaut */
 .meter-ocr-card{border:1px solid var(--line);border-radius:15px;padding:16px;background:var(--card-solid);margin-top:18px}
 .meter-ocr-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
 .meter-ocr-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:end}
@@ -1105,6 +1105,20 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 
 /* v119: Mobile Fotoauswahl und sichtbarer, drehbarer OCR-Ausschnitt */
 .meter-source-group{min-width:0;display:flex;flex-direction:column;gap:8px}.meter-source-buttons{display:flex;flex-wrap:wrap;gap:8px}.meter-source-buttons button{flex:1;min-width:105px}.meter-image-editor[hidden]{display:none}.meter-image-stage{position:relative;max-width:100%;width:fit-content;line-height:0;touch-action:none;overflow:hidden;border-radius:10px;border:1px solid var(--line);background:#15232d}.meter-image-stage canvas{display:block;max-width:100%;height:auto}.meter-crop-frame{position:absolute;border:2px solid #27d7ed;box-shadow:0 0 0 9999px #0005;cursor:move;touch-action:none;box-sizing:border-box}.meter-handle{position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid #008ba5;box-sizing:border-box;touch-action:none}.meter-handle.tl{left:-9px;top:-9px}.meter-handle.tr{right:-9px;top:-9px}.meter-handle.bl{left:-9px;bottom:-9px}.meter-handle.br{right:-9px;bottom:-9px}.meter-crop-preview{display:block;max-width:100%;width:auto;max-height:180px;margin-top:8px;border:1px solid var(--line);border-radius:8px;background:white}.meter-image-editor .meter-ocr-actions button{font-size:.83rem}
+
+.weather-overview{margin:16px 0;padding:16px;border:1px solid var(--line);border-radius:18px;background:var(--card-solid)}
+.weather-row{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.weather-row button{padding:7px 11px;border:1px solid var(--line);border-radius:11px;background:var(--card-solid);color:var(--text);cursor:pointer}
+.weather-row button.selected{background:#d9effb;color:#123f56;border-color:#65b8df}
+.weather-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.weather-kpis>div{border-radius:13px;background:rgba(125,145,175,.09);padding:12px 6px;text-align:center;min-width:0}
+.weather-kpis strong{display:block;font-size:clamp(1rem,3.5vw,1.5rem);margin:6px 0}
+.weather-muted{font-size:.82rem;color:var(--muted)}
+.weather-config{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:10px;margin:12px 0}
+.weather-config label{display:flex;flex-direction:column;gap:5px;font-size:.88rem}
+.weather-config input,.weather-config select{width:100%;min-width:0}
+.weather-plot{width:100%;height:240px;border:1px solid var(--line);border-radius:12px;background:var(--card-solid)}
+@media(max-width:390px){.weather-kpis{gap:4px}.weather-kpis>div{padding:9px 3px}}
 </style>
 </head>
 <body>
@@ -1117,9 +1131,11 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v123</strong> · 1.3.1.156<br><small>Letzte Änderung: 20.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v124</strong> · 1.3.1.157<br><small>Letzte Änderung: 21.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
+
+    <section id="weatherOverview" class="weather-overview" hidden></section>
 
     <nav class="tabs nav-v94" id="mainTabs" aria-label="Hauptnavigation">
       <button class="main-nav-btn selected" type="button" data-group="dashboardView">🏠 Übersicht</button>
@@ -1127,10 +1143,13 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       <button class="main-nav-btn" type="button" data-group="refillsView">🔥 Pellets</button>
       <button class="main-nav-btn" type="button" data-group="carsView">🚗 Auto</button>
       <button class="main-nav-btn" type="button" data-group="spritpreiseView">⛽ Spritpreise</button>
+      <button class="main-nav-btn" type="button" data-group="weatherView">🌤️ Wetter</button>
       <button class="main-nav-btn" type="button" data-group="firebaseView">⚙️ Einstellungen</button>
     </nav>
     <nav id="subTabs" class="subnav-v94" aria-label="Untermenü" hidden></nav>
 
+    <section id="weatherView" class="view"><section class="card wide"><h2>🌤️ Wetterstationen</h2><div id="weatherHistory">Stationen werden geladen …</div></section></section>
+    <section id="weatherSettingsView" class="view"><section class="card wide"><h2>🌡️ Wetterstationen verwalten</h2><p class="muted">Stationen, Grenzwerte und Benachrichtigungen. Die Messwerte werden vom ESP8266 alle 10 Minuten an den Cloudflare-Worker gesendet, auch wenn die App geschlossen ist.</p><div id="weatherSettings"></div></section></section>
     <section id="dashboardView" class="view active">
       <div class="grid">
         <section class="card wide glass">
@@ -1309,39 +1328,6 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
             </div>
           </form>
 
-          <div class="meter-ocr-card" id="meterOcrBox">
-            <div class="meter-ocr-header"><strong>📷 Zählerstand mit Kamera erfassen</strong><span class="badge">Strom / Wasser</span></div>
-            <p class="muted">Zähler fotografieren oder vorhandenes Foto auswählen. Die Texterkennung schlägt einen Wert vor; du bestätigst ihn vor dem Speichern.</p>
-            <div class="meter-ocr-fields">
-              <label>Welcher Zähler?
-                <select id="meterOcrType"><option value="strom">Strom (kWh)</option><option value="wasser">Wasser (m³)</option></select>
-              </label>
-              <div class="meter-source-group"><strong>Zählerfoto</strong><div class="meter-source-buttons"><button type="button" class="btn ghost" id="meterCameraButton">📷 Kamera</button><button type="button" class="btn ghost" id="meterGalleryButton">🖼️ Galerie</button></div><input id="meterOcrImage" type="file" accept="image/*" style="display:none" /><input id="meterCameraInput" type="file" accept="image/*" capture="environment" style="display:none" /></div>
-            </div>
-            <div id="meterImageEditor" class="meter-image-editor" hidden>
-              <p class="muted" style="margin:8px 0">Erkannten Bereich prüfen. Den Rahmen mit dem Finger verschieben oder an den Ecken verändern.</p>
-              <div class="meter-image-stage" id="meterImageStage"><canvas id="meterImageCanvas"></canvas><div id="meterCropFrame" class="meter-crop-frame"><i class="meter-handle tl" data-handle="tl"></i><i class="meter-handle tr" data-handle="tr"></i><i class="meter-handle bl" data-handle="bl"></i><i class="meter-handle br" data-handle="br"></i></div></div>
-              <div class="meter-ocr-actions"><button type="button" class="btn ghost" id="meterRotateLeft">↶ 90° links</button><button type="button" class="btn ghost" id="meterRotateRight">↷ 90° rechts</button><button type="button" class="btn ghost" id="meterCropReset">Rahmen zurücksetzen</button></div>
-              <strong style="display:block;margin-top:12px">Ausgewählter Bildausschnitt</strong><canvas id="meterOcrCropPreview" class="meter-crop-preview"></canvas>
-            </div>
-            <div class="meter-ocr-actions" style="margin-top:10px"><button type="button" class="btn ghost" id="meterCropTighten">🎯 Ausschnitt enger setzen</button><button type="button" class="btn ghost" id="meterSegmentRead">▦ LCD im Gesamtfoto suchen</button></div><div id="meterLcdPreview" style="display:none;margin-top:12px"></div><div id="meterOcrDiagnostics" role="status" style="display:none;margin:12px 0;padding:12px;border:1px solid #c9dce7;border-radius:12px;background:#f4f9fc;white-space:pre-wrap;font-size:.86rem"></div><div class="meter-ocr-actions"><button type="button" class="btn ghost" id="meterOcrRecognize">🔍 Automatisch erkennen</button><button type="button" class="btn ghost" id="meterOcrReadCrop">🔢 Markierten Bereich lesen</button></div>
-            <label style="display:block;margin-top:14px">Erkannter Wert, bitte sorgfältig prüfen
-              <input id="meterOcrResult" type="text" inputmode="decimal" placeholder="z. B. 12345,67" autocomplete="off" />
-            </label>
-            <div id="meterDialControls" style="display:none;margin:12px 0;padding:12px;border:1px solid #b9d6e4;border-radius:12px;background:#f2f9fc">
-              <strong>🔴 Rote Zeigerskalen (Wasser)</strong>
-              <p style="margin:6px 0 10px;font-size:.9em">Die Zeiger lassen sich nicht zuverlässig als Text lesen. Trage die angezeigten Ziffern der Skalen ein. Leere Felder bleiben unberücksichtigt.</p>
-              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px">
-                <label>× 0,1 m³<input id="meterDialTenths" type="number" min="0" max="9" step="1" inputmode="numeric" placeholder="0–9" /></label>
-                <label>× 0,01 m³<input id="meterDialHundredths" type="number" min="0" max="9" step="1" inputmode="numeric" placeholder="0–9" /></label>
-                <label>× 0,001 m³<input id="meterDialThousandths" type="number" min="0" max="9" step="1" inputmode="numeric" placeholder="0–9" /></label>
-              </div>
-              <button type="button" class="btn ghost" id="meterDialCombine" style="margin-top:10px">🔢 Zeiger mit OCR-Wert kombinieren</button>
-              <p style="font-size:.85em;margin:8px 0 0">Skalenbeschriftung am eigenen Zähler prüfen. Bei Zeigerstellungen zwischen Zahlen die niedrigere bereits erreichte Ziffer verwenden.</p>
-            </div>
-            <div class="meter-ocr-actions"><button type="button" class="btn primary" id="meterOcrTransfer">✓ In Schnellerfassung übernehmen</button></div>
-            <p id="meterOcrStatus" class="meter-ocr-status" role="status" aria-live="polite">Es wird kein Foto gespeichert oder hochgeladen. Die Erkennung benötigt beim ersten Mal eine Internetverbindung.</p>
-          </div>
         </section>
 
         <section class="card wide">
@@ -2282,6 +2268,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+  <script src="./weather.js" defer></script>
   <script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getMessaging, getToken, onMessage, deleteToken, isSupported } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-messaging.js";
@@ -2533,7 +2520,8 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       refillsView: [['🪣 Nachfüllen','refillsView'],['🏠 Pelletlager','pelletStoreView'],['📦 Sackgrößen','bagView'],['🏷️ Angebotsabfragen','offersView'],['🧾 Käufe','purchasesView']],
       carsView: [['⛽ Tanken','carsView'],['🚙 Fahrzeugeinstellungen','carSettingsView']],
       spritpreiseView: [['⛽ Tankstellenpreise','spritpreiseView']],
-      firebaseView: [['☁️ Firebase','firebaseView'],['🔔 Benachrichtigungen','notificationsView'],['💰 Preise','pricesView'],['💾 Backup','backupView']]
+      weatherView: [['📈 Diagramme','weatherView']],
+      firebaseView: [['☁️ Firebase','firebaseView'],['🔔 Benachrichtigungen','notificationsView'],['💰 Preise','pricesView'],['💾 Backup','backupView'],['🌡️ Wetterstationen','weatherSettingsView']]
     };
     let currentNavGroupV94='dashboardView';
     function openNavGroupV94(group, target){
@@ -2551,6 +2539,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       const viewName=target||options[0][1];
       sub.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view===viewName));
       els.views.forEach(v=>v.classList.toggle('active',v.id===viewName));
+      window.weatherViewOpened?.(viewName);
       if(viewName==='carsView') { setTimeout(()=>{renderFuelMap();refreshFuelMapSize();void refreshStationGps();},150); }
       if(viewName==='spritpreiseView') { void loadLiveFuelPrices(); setTimeout(()=>liveFuelMap?.invalidateSize(),150); }
     }
@@ -3046,22 +3035,6 @@ async function loadMarketPrices(force = false) {
       document.getElementById('backupRestoreFile')?.addEventListener('change',previewBackupV94);
       document.getElementById('backupRestoreBtn')?.addEventListener('click',()=>void restoreBackupV94());
 
-      document.getElementById('meterOcrImage')?.addEventListener('change',meterOcrImageChanged);
-      document.getElementById('meterCameraInput')?.addEventListener('change',meterOcrImageChanged);
-      document.getElementById('meterCameraButton')?.addEventListener('click',()=>document.getElementById('meterCameraInput')?.click());
-      document.getElementById('meterGalleryButton')?.addEventListener('click',()=>document.getElementById('meterOcrImage')?.click());
-      document.getElementById('meterRotateLeft')?.addEventListener('click',()=>rotateMeterImage(-90));
-      document.getElementById('meterRotateRight')?.addEventListener('click',()=>rotateMeterImage(90));
-      document.getElementById('meterCropReset')?.addEventListener('click',()=>{meterCrop={x:.15,y:.32,w:.7,h:.32};drawMeterCrop();});
-      document.getElementById('meterOcrReadCrop')?.addEventListener('click',()=>void recognizeMeterCrop());
-      document.getElementById('meterCropTighten')?.addEventListener('click',()=>tightenMeterCrop());
-      document.getElementById('meterSegmentRead')?.addEventListener('click',()=>inspectMeterSegments());
-      initMeterCropDrag();
-      document.getElementById('meterOcrRecognize')?.addEventListener('click',()=>void recognizeMeterPhoto());
-      document.getElementById('meterOcrTransfer')?.addEventListener('click',transferMeterReading);
-      document.getElementById('meterOcrType')?.addEventListener('change',updateMeterDialControls);
-      document.getElementById('meterDialCombine')?.addEventListener('click',combineMeterDialReading);
-      updateMeterDialControls();
       els.quickUseNow?.addEventListener("change", syncQuickNowUi);
       els.searchFuelStationByTextBtn?.addEventListener("click", searchFuelStationByText);
       els.batchReadingForm?.addEventListener("submit", handleBatchReadingSubmit);
@@ -5762,563 +5735,6 @@ renderFuelMap();
 
 
     // v115: OCR nur auf explizite Benutzeraktion und nur lokal im Browser.
-    let meterOcrImageUrl = null;
-    let meterOcrLibraryLoading = null;
-    function meterOcrStatus(message){
-      const el=document.getElementById('meterOcrStatus');if(el)el.textContent=message;
-    }
-    function loadMeterOcrLibrary(){
-      if(window.Tesseract)return Promise.resolve(window.Tesseract);
-      if(meterOcrLibraryLoading)return meterOcrLibraryLoading;
-      meterOcrLibraryLoading=new Promise((resolve,reject)=>{
-        const script=document.createElement('script');
-        script.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
-        script.onload=()=>window.Tesseract?resolve(window.Tesseract):reject(new Error('OCR-Bibliothek konnte nicht geladen werden'));
-        script.onerror=()=>reject(new Error('OCR-Bibliothek nicht erreichbar'));
-        document.head.appendChild(script);
-      }).catch(e=>{meterOcrLibraryLoading=null;throw e;});
-      return meterOcrLibraryLoading;
-    }
-    let meterBitmap=null,meterAngle=0,meterCrop={x:.15,y:.32,w:.7,h:.32};
-    const meterCanvas=()=>document.getElementById('meterImageCanvas');
-    function drawMeterImage(){
-      if(!meterBitmap)return;
-      const c=meterCanvas(),swap=Math.abs(meterAngle%180)===90;
-      const iw=swap?meterBitmap.height:meterBitmap.width,ih=swap?meterBitmap.width:meterBitmap.height;
-      const scale=Math.min(1,1400/Math.max(iw,ih));c.width=Math.round(iw*scale);c.height=Math.round(ih*scale);
-      const ctx=c.getContext('2d');ctx.translate(c.width/2,c.height/2);ctx.rotate(meterAngle*Math.PI/180);ctx.drawImage(meterBitmap,-meterBitmap.width*scale/2,-meterBitmap.height*scale/2,meterBitmap.width*scale,meterBitmap.height*scale);
-      drawMeterCrop();
-    }
-    function rotateMeterImage(deg){if(!meterBitmap)return;meterAngle=(meterAngle+deg+360)%360;meterCrop={x:.15,y:.32,w:.7,h:.32};drawMeterImage();}
-    function drawMeterCrop(){
-      const c=meterCanvas();if(!c?.width)return;const f=document.getElementById('meterCropFrame');
-      for(const [key,val] of Object.entries(meterCrop))f.style[key==='x'?'left':key==='y'?'top':key==='w'?'width':'height']=(val*100)+'%';
-      const out=document.getElementById('meterOcrCropPreview');out.width=Math.max(1,Math.round(meterCrop.w*c.width));out.height=Math.max(1,Math.round(meterCrop.h*c.height));
-      out.getContext('2d').drawImage(c,meterCrop.x*c.width,meterCrop.y*c.height,meterCrop.w*c.width,meterCrop.h*c.height,0,0,out.width,out.height);
-    }
-    function initMeterCropDrag(){
-      const stage=document.getElementById('meterImageStage'),frame=document.getElementById('meterCropFrame');if(!stage||!frame)return;
-      let start=null;
-      stage.addEventListener('pointerdown',e=>{if(!meterBitmap)return;const rect=stage.getBoundingClientRect();start={px:e.clientX,py:e.clientY,rect,original:{...meterCrop},handle:e.target.dataset.handle||'move'};stage.setPointerCapture(e.pointerId);e.preventDefault();});
-      stage.addEventListener('pointermove',e=>{if(!start)return;const dx=(e.clientX-start.px)/start.rect.width,dy=(e.clientY-start.py)/start.rect.height;let {x,y,w,h}=start.original;
-        if(start.handle==='move'){x=Math.max(0,Math.min(1-w,x+dx));y=Math.max(0,Math.min(1-h,y+dy));}
-        else{if(start.handle.includes('l')){x+=dx;w-=dx;}else{w+=dx;}if(start.handle.includes('t')){y+=dy;h-=dy;}else{h+=dy;}
-          const right=Math.min(1,Math.max(.03,x+w)),bottom=Math.min(1,Math.max(.03,y+h));x=Math.max(0,Math.min(x,right-.03));y=Math.max(0,Math.min(y,bottom-.03));w=Math.max(.03,right-x);h=Math.max(.03,bottom-y);}
-        meterCrop={x,y,w,h};drawMeterCrop();e.preventDefault();});
-      for(const ev of ['pointerup','pointercancel'])stage.addEventListener(ev,()=>start=null);
-    }
-    async function meterOcrImageChanged(event){
-      const file=event?.target?.files?.[0];if(!file)return;
-      if(!file.type.startsWith('image/'))return meterOcrStatus('Bitte eine Bilddatei auswählen.');
-      if(meterOcrImageUrl)URL.revokeObjectURL(meterOcrImageUrl);meterOcrImageUrl=URL.createObjectURL(file);
-      try{meterBitmap?.close?.();meterBitmap=await createImageBitmap(file);meterAngle=0;meterCrop={x:.15,y:.32,w:.7,h:.32};document.getElementById('meterImageEditor').hidden=false;drawMeterImage();document.getElementById('meterOcrResult').value='';const diag=document.getElementById('meterOcrDiagnostics');if(diag)diag.style.display='none';meterOcrStatus('Bild geladen. Automatische Erkennung starten oder Rahmen anpassen. Der Ausschnitt wird unten angezeigt.');}
-      catch(err){meterOcrStatus('Bild konnte nicht geöffnet werden. Bitte ein anderes Foto wählen.');}
-    }
-    function updateMeterDialControls(){
-      const el=document.getElementById('meterDialControls');
-      if(el)el.style.display=document.getElementById('meterOcrType')?.value==='wasser'?'block':'none';
-    }
-    function guessMeterReading(raw){
-      // Nur zusammenhängende Ziffernfolgen als Vorschlag; niemals Dezimalstellen erfinden.
-      const matches=(String(raw||'').match(/\d{4,8}(?:[.,]\d{1,3})?/g)||[]);
-      return matches.sort((a,b)=>b.replace(/\D/g,'').length-a.replace(/\D/g,'').length)[0]||'';
-    }
-    function combineMeterDialReading(){
-      if(document.getElementById('meterOcrType')?.value!=='wasser')return;
-      const input=document.getElementById('meterOcrResult');
-      const raw=input?.value?.trim()||'';
-      if(!/^\d+(?:[,.]\d{1,3})?$/.test(raw))return meterOcrStatus('Zuerst die schwarzen Kubikmeter-Ziffern erkennen oder eingeben.');
-      const whole=raw.split(/[,.]/)[0];
-      const ids=['meterDialTenths','meterDialHundredths','meterDialThousandths'];
-      const digits=ids.map(id=>document.getElementById(id)?.value?.trim()||'');
-      if(digits.every(x=>x===''))return meterOcrStatus('Bitte zuerst mindestens eine rote Zeigerskala ablesen.');
-      if(digits.some(x=>x!==''&&!/^[0-9]$/.test(x)))return meterOcrStatus('Pro Zeigerskala bitte genau eine Ziffer von 0 bis 9 eingeben.');
-      // Keine fehlenden Zwischenstellen als Null ausgeben.
-      const last=digits.reduce((n,x,i)=>x!==''?i:n,-1);
-      if(digits.slice(0,last+1).some(x=>x===''))return meterOcrStatus('Bitte die Zeigerskalen lückenlos von ×0,1 an ausfüllen.');
-      input.value=whole+','+digits.slice(0,last+1).join('');
-      meterOcrStatus('Schwarze Ziffern und manuell abgelesene rote Zeiger kombiniert. Bitte Ergebnis am Foto kontrollieren.');
-    }
-    function meterDigitsFromOcr(data,type){
-      const words=data?.words||[];
-      const candidates=words.map(w=>({text:(w.text||'').replace(/[^0-9.,]/g,''),box:w.bbox,confidence:w.confidence||0})).filter(w=>/^\d{4,8}(?:[.,]\d{1,3})?$/.test(w.text));
-      // OCR auf dem gesamten Foto ist nur zur Lokalisierung erlaubt. Keine Seriennummer blind übernehmen.
-      return candidates.sort((a,b)=>b.confidence-a.confidence)[0]||null;
-    }
-    // v120: gezielte, lokale Analyse der LCD-Ziffern. Diagnose statt ungesicherter Übernahme.
-    function tightenMeterCrop(){
-      if(!meterBitmap)return meterOcrStatus('Bitte zuerst ein Foto auswählen.');
-      const f=.64;meterCrop={x:Math.max(0,meterCrop.x+meterCrop.w*(1-f)/2),y:Math.max(0,meterCrop.y+meterCrop.h*(1-f)/2),w:meterCrop.w*f,h:meterCrop.h*f};
-      drawMeterCrop();meterOcrStatus('Rahmen enger gesetzt. Auf die Ziffern verschieben, ohne Beschriftungen oder rote Zeiger.');
-    }
-    // v123: feste sechsstellige LCD-Anzeige. Suche im gesamten Foto und Segment-Flächenanalyse.
-    // Keine Referenzziffern und keine automatische Übernahme von Decoder-Kandidaten.
-    function inspectMeterSegments(){
-      if(!meterBitmap)return meterOcrStatus('Bitte zuerst ein Foto auswählen.');
-      if(document.getElementById('meterOcrType')?.value!=='strom')return meterOcrStatus('Nur für Stromzähler.');
-      const src=meterCanvas(),out=document.getElementById('meterLcdPreview');
-      const w=800,h=Math.max(1,Math.round(src.height*800/src.width));
-      const c=document.createElement('canvas');c.width=w;c.height=h;const cx=c.getContext('2d',{willReadFrequently:true});cx.drawImage(src,0,0,w,h);
-      const rgba=cx.getImageData(0,0,w,h).data,gray=new Uint8Array(w*h);
-      for(let i=0;i<gray.length;i++){const k=i*4;gray[i]=Math.round(.299*rgba[k]+.587*rgba[k+1]+.114*rgba[k+2]);}
-      const patterns=['1111110','0110000','1101101','1111001','0110011','1011011','1011111','1110000','1111111','1111011'];
-      const segs=[ [.28,.08,.72,.19],[.77,.17,.90,.48],[.77,.54,.90,.84],[.28,.82,.72,.94],[.10,.54,.23,.84],[.10,.17,.23,.48],[.28,.45,.72,.57] ];
-      function meanRect(x0,y0,x1,y1){let total=0,n=0;const step=Math.max(1,Math.floor((x1-x0)/14));for(let y=Math.max(0,Math.floor(y0));y<Math.min(h,Math.ceil(y1));y+=step)for(let x=Math.max(0,Math.floor(x0));x<Math.min(w,Math.ceil(x1));x+=step){total+=gray[y*w+x];n++;}return n?total/n:255;}
-      function decode(x,y,bw,bh,spacing=1){
-        const dw=bw/6,results=[];let total=0,weak=0,contrastSum=0;
-        for(let i=0;i<6;i++){
-          const left=x+i*dw+dw*.07,top=y+bh*.035,ww=dw*.86,hh=bh*.93;
-          const values=segs.map(([a,b,c,d])=>meanRect(left+a*ww,top+b*hh,left+c*ww,top+d*hh));
-          const bg=meanRect(left+ww*.32,top+hh*.24,left+ww*.68,top+hh*.37);
-          const bright=Math.max(bg,...values),dark=Math.min(...values),contrast=bright-dark;
-          contrastSum+=contrast;
-          const ranked=patterns.map((pattern,digit)=>{
-            let cost=0;for(let j=0;j<7;j++){
-              const norm=(values[j]-dark)/Math.max(1,contrast);
-              cost+=pattern[j]==='1'?norm*norm:(1-norm)*(1-norm);
-            }
-            return {digit,cost};
-          }).sort((a,b)=>a.cost-b.cost);
-          const margin=ranked[1].cost-ranked[0].cost;
-          if(margin<.34||contrast<22)weak++;
-          total+=ranked[0].cost+Math.max(0,.34-margin)*2;
-          results.push({digit:ranked[0].digit,alternative:ranked[1].digit,margin,contrast,values,bright,dark,left,top,ww,hh});
-        }
-        const avgContrast=contrastSum/6;
-        return {x,y,bw,bh,results,text:results.map(v=>v.digit).join(''),weak,avgContrast,score:total/6+Math.max(0,36-avgContrast)/18};
-      }
-      const candidates=[];
-      // Erst Gesamtbild untersuchen. Mehrere Größen, Positionen und Anzeigehöhen zulassen.
-      for(const bw of [150,205,270,350,450,560,690]){
-        if(bw>w*.95)continue;
-        for(const ratio of [.20,.25,.30,.36,.43]){
-          const bh=Math.round(bw*ratio);if(bh>h*.75||bh<28)continue;
-          const sx=Math.max(12,Math.round(bw*.13)),sy=Math.max(9,Math.round(bh*.30));
-          for(let y=0;y+bh<h;y+=sy)for(let x=0;x+bw<w;x+=sx){
-            const v=decode(x,y,bw,bh);
-            if(v.avgContrast>20&&v.score<2.1)candidates.push(v);
-          }
-        }
-      }
-      // Den manuell gewählten Bereich ebenfalls berücksichtigen, aber nie voraussetzen.
-      const m=meterCrop;const manual=decode(m.x*w,m.y*h,m.w*w,m.h*h);candidates.push(manual);
-      candidates.sort((a,b)=>a.score-b.score);
-      const best=candidates[0];if(!best)return meterOcrStatus('Kein LCD-Bereich gefunden.');
-      const near=candidates.filter(v=>v.score<best.score+.14);
-      const differing=[...new Set(near.map(v=>v.text))];
-      out.style.display='block';out.replaceChildren();
-      const title=document.createElement('strong');title.textContent='Automatisch gefundener LCD-Kandidat (sechs Stellen):';out.appendChild(title);
-      const preview=document.createElement('canvas');preview.width=Math.round(best.bw*1.15);preview.height=Math.round(best.bh*1.25);
-      const pc=preview.getContext('2d');pc.drawImage(c,best.x-best.bw*.075,best.y-best.bh*.10,best.bw*1.15,best.bh*1.25,0,0,preview.width,preview.height);
-      pc.lineWidth=2;best.results.forEach((v,i)=>{pc.strokeStyle=v.margin<.34?'#ed9c28':'#00b9cf';pc.strokeRect((v.left-best.x+best.bw*.075)*1.0,(v.top-best.y+best.bh*.10),v.ww,v.hh);});
-      preview.style.cssText='display:block;width:100%;height:auto;margin:8px 0;border:1px solid #bad4df;border-radius:9px';out.appendChild(preview);
-      const hint=document.createElement('p');hint.textContent='Blau: untersuchte Ziffer · Orange: uneindeutige Ziffer. Der Ausschnitt wurde im Gesamtfoto gesucht.';out.appendChild(hint);
-      const plausible=best.weak===0&&best.score<.30&&differing.length===1&&best.avgContrast>45;
-      meterDiagnostics(['LCD-Suche v123 (sechsstellig, experimentell):',`Gesamtfoto: ${src.width} × ${src.height} Pixel`,`Gefundener Bereich (Analysepixel): x=${Math.round(best.x)}, y=${Math.round(best.y)}`,`Größe des Bereichs: ${Math.round(best.bw)} × ${Math.round(best.bh)} Analysepixel`,`Decoder-Kandidat: ${best.text}`,`Mittlerer Kontrast: ${best.avgContrast.toFixed(1)}; Bewertungsfehler: ${best.score.toFixed(2)}`,`Uneindeutige Ziffern: ${best.weak}; verschiedene nahe Kandidaten: ${differing.length}`,...best.results.map((v,i)=>`Stelle ${i+1}: ${v.digit} (Alternative ${v.alternative}, Abstand ${v.margin.toFixed(2)}, Kontrast ${v.contrast.toFixed(0)})`),plausible?'Intern konsistent, aber NICHT unabhängig bestätigt.':'Unsicher: bitte Bildausschnitt prüfen.','Es erfolgt bewusst KEINE automatische Übernahme. Zählerstand am Foto kontrollieren.']);
-      meterOcrStatus('Sechsstelligen LCD-Kandidaten gesucht. Bitte angezeigten Bereich und Ziffern mit dem Foto vergleichen.');
-    }
-    // v119: OCR-Diagnose und Bildvorverarbeitung. Keine geratenen Nachkommastellen.
-    function meterDiagnostics(lines){
-      const el=document.getElementById('meterOcrDiagnostics');if(!el)return;
-      el.style.display='block';el.textContent=lines.join('\n');
-    }
-    function meterVariant(source,kind){
-      const scale=Math.max(1,Math.min(4,1600/Math.max(source.width,1)));
-      const c=document.createElement('canvas');c.width=Math.max(1,Math.round(source.width*scale));c.height=Math.max(1,Math.round(source.height*scale));
-      const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(source,0,0,c.width,c.height);
-      if(kind==='original')return c;
-      const im=ctx.getImageData(0,0,c.width,c.height),d=im.data;
-      const gray=new Uint8Array(c.width*c.height),hist=new Uint32Array(256);
-      for(let i=0,j=0;i<d.length;i+=4,j++){const v=Math.round(.299*d[i]+.587*d[i+1]+.114*d[i+2]);gray[j]=v;hist[v]++;}
-      let total=gray.length,acc=0,lo=0,hi=255;
-      for(let i=0;i<256;i++){acc+=hist[i];if(acc>=total*.04){lo=i;break;}}
-      acc=0;for(let i=255;i>=0;i--){acc+=hist[i];if(acc>=total*.04){hi=i;break;}}
-      const span=Math.max(1,hi-lo);
-      for(let j=0,i=0;j<gray.length;j++,i+=4){let v=Math.max(0,Math.min(255,(gray[j]-lo)*255/span));
-        if(kind==='binary')v=v<135?0:255;
-        else if(kind==='inverted')v=255-v;
-        d[i]=d[i+1]=d[i+2]=v;d[i+3]=255;
-      }
-      ctx.putImageData(im,0,0);return c;
-    }
-    function meterOcrCandidates(raw,type){
-      const text=String(raw||'').replace(/[Oo]/g,'0').replace(/[Il|]/g,'1');
-      const chunks=text.split(/[\n\r]+/).map(x=>x.trim()).filter(Boolean);
-      const found=[];
-      for(const line of chunks){
-        const digits=line.replace(/[^0-9.,]/g,'');
-        const compact=digits.replace(/[.,]/g,'');
-        if(/^\d{3,8}$/.test(compact) && !/[.,].*[.,]/.test(digits)){
-          const value=type==='strom'?compact:digits;
-          if(!found.includes(value))found.push(value);
-        }
-      }
-      return found;
-    }
-    async function meterReadVariants(source,ocr,type,limit=4){
-      const all=[];
-      for(const kind of ['original','contrast','binary','inverted'].slice(0,limit)){
-        const image=meterVariant(source,kind);
-        try{
-          const result=await ocr.recognize(image,'eng',{tessedit_pageseg_mode:'7',tessedit_char_whitelist:'0123456789.,'});
-          const vals=meterOcrCandidates(result.data?.text,type);
-          all.push({kind,vals,confidence:Math.round(result.data?.confidence||0)});
-        }catch(e){all.push({kind,vals:[],confidence:0});}
-      }
-      return all;
-    }
-    function meterChooseCandidate(results){
-      const counts=new Map();for(const r of results)for(const val of r.vals){const old=counts.get(val)||{votes:0,confidence:0};old.votes++;old.confidence+=r.confidence;counts.set(val,old);}
-      const ranked=[...counts].sort((a,b)=>b[1].votes-a[1].votes||b[1].confidence-a[1].confidence);
-      return ranked.length?{value:ranked[0][0],votes:ranked[0][1].votes,ambiguous:ranked.length>1&&ranked[0][1].votes===ranked[1][1].votes}:null;
-    }
-    async function recognizeMeterCrop(){
-      if(!meterBitmap)return meterOcrStatus('Bitte zuerst ein Foto aufnehmen oder aus der Galerie wählen.');
-      const btn=document.getElementById('meterOcrReadCrop');btn.disabled=true;
-      const type=document.getElementById('meterOcrType')?.value||'strom';
-      try{
-        meterOcrStatus('Zahlenbereich wird mit mehreren Bildfiltern untersucht …');
-        const ocr=await loadMeterOcrLibrary();
-        const src=document.getElementById('meterOcrCropPreview');
-        const results=await meterReadVariants(src,ocr,type);
-        const chosen=meterChooseCandidate(results);
-        meterDiagnostics(['OCR-Diagnose (markierter Bereich):',...results.map(r=>`${r.kind}: ${r.vals.join(' / ')||'keine Ziffern'} (OCR ${r.confidence} %)`) ,chosen?`Häufigster Vorschlag: ${chosen.value} (${chosen.votes}/4 Durchläufe)`:'Keine lesbare Ziffernfolge','Hinweis: OCR-Prozentwerte sind keine garantierte Messgenauigkeit.']);
-        if(chosen && chosen.votes>=2 && !chosen.ambiguous && (type!=='strom' || results.filter(r=>r.vals.includes(chosen.value)&&r.confidence>=70).length>=2)){
-          document.getElementById('meterOcrResult').value=chosen.value.replace('.',',');
-          meterOcrStatus(type==='wasser'?'Vorschlag für das Zahlenwerk. Rote Zeiger weiterhin manuell prüfen und ergänzen.':'Ziffernvorschlag aus dem markierten Bereich. Vor Übernahme am Foto kontrollieren.');
-        }else{
-          document.getElementById('meterOcrResult').value='';
-          meterOcrStatus('Keine übereinstimmende, sichere Ziffernfolge. Bitte Rahmen enger auf die Ziffern setzen oder Wert manuell eingeben.');
-        }
-      }catch(err){console.warn('OCR',err);meterOcrStatus('OCR nicht verfügbar. Bitte den Wert manuell eingeben.');}
-      finally{btn.disabled=false;}
-    }
-    async function recognizeMeterPhoto(){
-      if(!meterBitmap)return meterOcrStatus('Bitte zuerst ein Foto aufnehmen oder aus der Galerie wählen.');
-      const btn=document.getElementById('meterOcrRecognize');btn.disabled=true;
-      const type=document.getElementById('meterOcrType')?.value||'strom';
-      try{
-        meterOcrStatus('Suche Zahlenwerk und prüfe Bilddrehungen …');
-        const ocr=await loadMeterOcrLibrary();const c=meterCanvas();let best=null;
-        const notes=[];
-        for(const angle of [0,90,270,180]){
-          meterAngle=angle;drawMeterImage();
-          const r=await ocr.recognize(meterVariant(c,'contrast'),'eng');
-          const words=r.data?.words||[];let found=0;
-          for(const w of words){
-            const txt=(w.text||'').replace(/[^0-9]/g,'');if(!/^\d{3,8}$/.test(txt)||!w.bbox)continue;
-            const b=w.bbox,width=b.x1-b.x0,height=b.y1-b.y0;
-            if(width<25||height<8||width/height<1.3)continue;
-            found++;
-            const score=(w.confidence||0)+Math.min(30,width/Math.max(1,c.width)*70)+Math.min(12,txt.length*1.5);
-            if(!best||score>best.score)best={angle,score,box:b,cw:c.width,ch:c.height,text:txt};
-          }
-          notes.push(`${angle}°: ${found} mögliche Zahlenbereiche`);
-        }
-        if(best){
-          meterAngle=best.angle;drawMeterImage();const b=best.box,padX=(b.x1-b.x0)*.18,padY=(b.y1-b.y0)*.6;
-          const x=Math.max(0,(b.x0-padX)/best.cw),y=Math.max(0,(b.y0-padY)/best.ch);
-          meterCrop={x,y,w:Math.min(1-x,(b.x1-b.x0+2*padX)/best.cw),h:Math.min(1-y,(b.y1-b.y0+2*padY)/best.ch)};drawMeterCrop();
-          meterOcrStatus('Möglichen Zahlenbereich gefunden. Bitte Ausschnitt prüfen und „Markierten Bereich lesen“ wählen.');
-          notes.push(`Ausgewählte Orientierung: ${best.angle}°. Kandidat: ${best.text}. Nicht als Zählerstand bestätigt.`);
-        }else{
-          meterAngle=0;drawMeterImage();meterOcrStatus('Kein eindeutiges Zahlenwerk gefunden. Rahmen mit dem Finger auf die Ziffern setzen.');
-        }
-        if(type==='wasser')notes.push('Rote Zeigerskalen werden noch nicht automatisch ausgelesen.');
-        meterDiagnostics(['Bildsuche:',...notes]);
-      }catch(err){console.warn('OCR-Lokalisierung',err);meterOcrStatus('Automatische Suche nicht verfügbar. Rahmen manuell einstellen.');}
-      finally{btn.disabled=false;}
-    }
-    function transferMeterReading(){
-      const type=document.getElementById('meterOcrType')?.value;
-      const raw=document.getElementById('meterOcrResult')?.value?.trim()||'';
-      // Tausendertrenner nicht automatisch raten, um Ablesefehler zu vermeiden.
-      if(!/^\d+(?:[,.]\d{1,3})?$/.test(raw))return meterOcrStatus('Bitte einen Zählerstand als Zahl eingeben, z. B. 12345,67.');
-      const value=Number(raw.replace(',','.'));
-      if(!Number.isFinite(value)||value<0)return meterOcrStatus('Der Zählerstand ist ungültig.');
-      els.quickReadingType.value=type;
-      els.quickReadingValue.value=String(value);
-      els.quickUseNow.checked=true;
-      syncQuickNowUi();
-      meterOcrStatus('Wert übernommen. Bitte die Schnellerfassung kontrollieren und dort auf „Einzelwert speichern“ tippen.');
-      els.quickReadingValue.scrollIntoView({behavior:'smooth',block:'center'});
-      els.quickReadingValue.focus({preventScroll:true});
-    }
-
-    async function handleBatchReadingSubmit(event) {
-      event.preventDefault();
-      if (!els.batchReadingDatetime.value) return showToast("Bitte Datum und Uhrzeit eingeben.", "error");
-      const dt = new Date(els.batchReadingDatetime.value);
-      if (Number.isNaN(dt.getTime())) return showToast("Datum ist ungültig.", "error");
-      const datetime = dt.toISOString();
-      const note = els.batchReadingNote.value.trim();
-      const entries = [
-        { type: "strom", value: toNumber(els.batchStromValue.value) },
-        { type: "wasser", value: toNumber(els.batchWasserValue.value) },
-        { type: "pellets", value: toNumber(els.batchPelletsValue.value) }
-      ].filter((item) => Number.isFinite(item.value));
-
-      if (!entries.length) return showToast("Bitte mindestens einen Wert eintragen.", "error");
-
-      for (const item of entries) {
-        const duplicate = findDuplicateReading(item.type, datetime, item.value);
-        if (duplicate) {
-          showToast(`${typeConfig[item.type].label}: Dieser Zählerstand ist zu diesem Zeitpunkt bereits vorhanden.`, "error");
-          return;
-        }
-        const sameTimestampOtherValue = findSameTimestampReading(item.type, datetime, item.value);
-        if (sameTimestampOtherValue) {
-          showToast(`${typeConfig[item.type].label}: Für diesen Zeitpunkt gibt es schon einen anderen Wert. Bitte alten Eintrag löschen oder Zeitpunkt ändern.`, "error");
-          return;
-        }
-        const comparable = getComparableReferenceValue(item.type, datetime);
-        if (Number.isFinite(comparable) && item.value < comparable) {
-          showToast(`${typeConfig[item.type].label}: Neuer Zählerstand darf nicht kleiner als ${formatNumber(comparable)} ${typeConfig[item.type].unit} sein.`, "error");
-          return;
-        }
-      }
-
-      for (const item of entries) {
-        await saveRecord("readings", {
-          type: item.type,
-          value: item.value,
-          note,
-          date: datetime,
-          createdAt: new Date().toISOString()
-        });
-      }
-
-      els.batchReadingForm.reset();
-      els.batchReadingDatetime.value = toDatetimeLocal(new Date());
-      showToast("Zeitpunkt mit Zählerständen gespeichert.", "success");
-    }
-
-    async function handleQuickReadingSubmit(event) {
-      event.preventDefault();
-      const useNow = !!els.quickUseNow.checked;
-      let datetime;
-      if (useNow) {
-        datetime = new Date().toISOString();
-      } else {
-        if (!els.quickReadingDatetime.value) return showToast("Bitte Datum und Uhrzeit eingeben.", "error");
-        const dt = new Date(els.quickReadingDatetime.value);
-        if (Number.isNaN(dt.getTime())) return showToast("Datum ist ungültig.", "error");
-        datetime = dt.toISOString();
-      }
-
-      const type = els.quickReadingType.value;
-      const value = toNumber(els.quickReadingValue.value);
-      const note = els.quickReadingNote.value.trim();
-
-      if (!Number.isFinite(value) || value < 0) return showToast("Bitte einen gültigen Zählerstand eingeben.", "error");
-
-      if (findDuplicateReading(type, datetime, value)) {
-        showToast("Dieser Zählerstand ist zu diesem Zeitpunkt bereits vorhanden.", "error");
-        return;
-      }
-
-      if (findSameTimestampReading(type, datetime, value)) {
-        showToast("Für diesen Zeitpunkt gibt es schon einen anderen Wert. Bitte alten Eintrag löschen oder Zeitpunkt ändern.", "error");
-        return;
-      }
-
-      const comparable = getComparableReferenceValue(type, datetime);
-      if (Number.isFinite(comparable) && value < comparable) {
-        showToast(`Neuer Zählerstand darf nicht kleiner als ${formatNumber(comparable)} ${typeConfig[type].unit} sein.`, "error");
-        return;
-      }
-
-      await saveRecord("readings", {
-        type,
-        value,
-        note,
-        date: datetime,
-        createdAt: new Date().toISOString()
-      });
-
-      els.quickReadingForm.reset();
-      els.quickUseNow.checked = true;
-      els.quickReadingDatetime.value = toDatetimeLocal(new Date());
-      syncQuickNowUi();
-      showToast("Zählerstand gespeichert.", "success");
-    }
-
-    async function handleRefillSubmit(event) {
-      event.preventDefault();
-      if (!els.refillDate.value) return showToast("Bitte ein Datum eingeben.", "error");
-      const dt = new Date(`${els.refillDate.value}T12:00:00`);
-      if (Number.isNaN(dt.getTime())) return showToast("Datum ist ungültig.", "error");
-
-      const bags = toNumber(els.refillBags.value);
-      const kgPerBag = toNumber(els.refillKgPerBag.value);
-      const totalKg = round2(bags * kgPerBag);
-
-      if (!Number.isFinite(bags) || !Number.isFinite(kgPerBag) || bags <= 0 || kgPerBag <= 0) return showToast("Bitte Säcke und kg pro Sack korrekt eingeben.", "error");
-
-      rememberBagSize(kgPerBag);
-      await saveRecord("refills", {
-        bags,
-        kgPerBag,
-        totalKg,
-        note: els.refillNote.value.trim(),
-        date: dt.toISOString(),
-        createdAt: new Date().toISOString()
-      });
-
-      els.refillForm.reset();
-      els.refillDate.value = toDatetimeLocal(new Date()).slice(0, 10);
-      hydrateBagSizeSelects();
-      syncRefillTotal();
-      showToast("Pellets-Nachfüllung gespeichert.", "success");
-    }
-
-    async function handlePurchaseSubmit(event) {
-      event.preventDefault();
-      const dt = new Date(els.purchaseDatetime.value);
-      if (Number.isNaN(dt.getTime())) return showToast("Datum ist ungültig.", "error");
-
-      const bags = toNumber(els.purchaseBags.value);
-      const kgPerBag = toNumber(els.purchaseKgPerBag.value);
-      const totalPrice = toNumber(els.purchasePrice.value);
-      const totalKg = round2(bags * kgPerBag);
-
-      if (!Number.isFinite(bags) || !Number.isFinite(kgPerBag) || !Number.isFinite(totalPrice) || bags <= 0 || kgPerBag <= 0 || totalPrice < 0) return showToast("Bitte Kaufdaten korrekt eingeben.", "error");
-
-      rememberBagSize(kgPerBag);
-      await saveRecord("purchases", {
-        bags,
-        kgPerBag,
-        totalKg,
-        totalPrice: round2(totalPrice),
-        pricePerKg: totalKg > 0 ? round4(totalPrice / totalKg) : 0,
-        date: dt.toISOString(),
-        createdAt: new Date().toISOString()
-      });
-
-      els.purchaseForm.reset();
-      els.purchaseDatetime.value = toDatetimeLocal(new Date());
-      hydrateBagSizeSelects();
-      syncPurchaseTotals();
-      showToast("Pellets-Kauf gespeichert.", "success");
-    }
-
-    async function handleResetSubmit(event) {
-      event.preventDefault();
-      const dt = new Date(els.resetDatetime.value);
-      if (Number.isNaN(dt.getTime())) return showToast("Datum ist ungültig.", "error");
-
-      const payload = {
-        type: els.resetType.value,
-        previousMeterValue: toNumber(els.resetPreviousValue.value),
-        newMeterStartValue: toNumber(els.resetNewValue.value),
-        note: els.resetNote.value.trim(),
-        date: dt.toISOString(),
-        createdAt: new Date().toISOString()
-      };
-
-      if (!Number.isFinite(payload.previousMeterValue) || !Number.isFinite(payload.newMeterStartValue)) return showToast("Bitte Reset-Daten korrekt eingeben.", "error");
-
-      await saveRecord("resets", payload);
-      els.resetForm.reset();
-      els.resetDatetime.value = toDatetimeLocal(new Date());
-      els.resetNewValue.value = 0;
-      showToast("Zähler-Reset gespeichert.", "success");
-    }
-
-    async function handlePricePeriodSubmit(event) {
-      event.preventDefault();
-      const from = new Date(els.pricePeriodFrom.value);
-      const to = new Date(els.pricePeriodTo.value);
-      if (Number.isNaN(from.getTime())) return showToast("Bitte ein gültiges Startdatum eingeben.", "error");
-      if (Number.isNaN(to.getTime())) return showToast("Bitte ein gültiges Enddatum eingeben.", "error");
-      if (to < from) return showToast("Enddatum darf nicht vor Startdatum liegen.", "error");
-
-      const unitPrice = toNumber(els.pricePeriodUnit.value);
-      const basePrice = toNumber(els.pricePeriodBase.value) || 0;
-      if (!Number.isFinite(unitPrice) || unitPrice < 0) return showToast("Bitte einen gültigen Preis pro Einheit eingeben.", "error");
-
-      await saveRecord("pricePeriods", {
-        type: els.pricePeriodType.value,
-        fromDate: from.toISOString(),
-        toDate: to.toISOString(),
-        basePrice,
-        unitPrice,
-        note: els.pricePeriodNote.value.trim(),
-        date: from.toISOString(),
-        createdAt: new Date().toISOString()
-      });
-
-      els.pricePeriodForm.reset();
-      els.pricePeriodFrom.value = toDatetimeLocal(new Date());
-      els.pricePeriodTo.value = toDatetimeLocal(new Date());
-      showToast("Preiszeitraum gespeichert.", "success");
-    }
-
-    async function handleSettingsSubmit(event) {
-      event.preventDefault();
-      state.settings = mergeSettings({
-        ...state.settings,
-        strom: { basePrice: toNumber(els.priceStromBase.value) || 0, unitPrice: toNumber(els.priceStromUnit.value) || 0 },
-        wasser: { basePrice: toNumber(els.priceWasserBase.value) || 0, unitPrice: toNumber(els.priceWasserUnit.value) || 0 },
-        pellets: { basePrice: toNumber(els.pricePelletsBase.value) || 0, unitPrice: toNumber(els.pricePelletsUnit.value) || 0 }
-      });
-      persistLocalSnapshot();
-      renderAll();
-      if (state.firebaseEnabled) await saveSettingsToFirestore();
-      showToast("Basispreise gespeichert.", "success");
-    }
-
-    async function handleFirebaseSubmit(event) {
-      event.preventDefault();
-      const newId = els.newHouseholdId.value.trim();
-      const selectedId = els.householdSelect.value.trim();
-      const householdId = newId || selectedId || els.householdId.value.trim() || DEFAULT_HOUSEHOLD_ID;
-      localStorage.setItem(LOCAL_KEYS.householdId, householdId);
-      state.householdId = householdId;
-      els.householdId.value = householdId;
-      await connectFirebase(FIREBASE_CONFIG, householdId, true);
-      if (newId && !state.availableHouseholds.includes(newId)) {
-        state.availableHouseholds.push(newId);
-        state.availableHouseholds.sort((a, b) => a.localeCompare(b));
-      }
-      els.newHouseholdId.value = "";
-      renderHouseholdOptions();
-    }
-
-    async function connectFirebase(config, householdId, showSuccess) {
-      try {
-        cleanupListeners();
-        state.firebaseError = null;
-        state.householdId = householdId;
-        els.firebaseStatus.textContent = `Firestore-Verbindung wird geprüft (Haushalt: ${householdId}) …`;
-        els.syncBadge.textContent = 'Firestore verbindet';
-        els.syncBadge.className = 'badge warn';
-        const app = getApps().length ? getApps()[0] : initializeApp(config);
-        const db = getFirestore(app);
-        state.app = app;
-        state.db = db;
-        state.firebaseEnabled = true;
-        await loadAvailableHouseholds();
-        listenToFirestore();
-        // Einstellungen sind nicht Voraussetzung für die Verbindung; Firestore-Regeln können Schreiben verhindern.
-        // Initiale Einstellungen dürfen den UI-Status nicht unbegrenzt blockieren.
-        void ensureInitialSettingsDoc().catch(settingsError => {
-          console.warn('Einstellungen konnten nicht initialisiert werden:', settingsError);
-          state.firebaseError = `settings/main: ${settingsError.code || settingsError.message || settingsError}`;
-          updateFirebaseStatus(settingsError);
-        });
-        updateFirebaseStatus();
-        renderHouseholdOptions();
-        if (showSuccess) showToast("Firebase verbunden.", "success");
-      } catch (error) {
-        console.error(error);
-        cleanupListeners();
-        state.firebaseEnabled = false;
-        updateFirebaseStatus(error);
-        showToast("Firebase-Verbindung fehlgeschlagen.", "error");
-      }
-    }
-
     function disconnectFirebase() {
       cleanupListeners();
       state.firebaseEnabled = false;
