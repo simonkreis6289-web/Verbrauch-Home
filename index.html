@@ -3024,6 +3024,280 @@ async function loadMarketPrices(force = false) {
       hydrateBagSizeSelects();
     }
 
+    async function handleBatchReadingSubmit(event) {
+      event.preventDefault();
+      if (!els.batchReadingDatetime.value) return showToast("Bitte Datum und Uhrzeit eingeben.", "error");
+      const dt = new Date(els.batchReadingDatetime.value);
+      if (Number.isNaN(dt.getTime())) return showToast("Datum ist ungültig.", "error");
+      const datetime = dt.toISOString();
+      const note = els.batchReadingNote.value.trim();
+      const entries = [
+        { type: "strom", value: toNumber(els.batchStromValue.value) },
+        { type: "wasser", value: toNumber(els.batchWasserValue.value) },
+        { type: "pellets", value: toNumber(els.batchPelletsValue.value) }
+      ].filter((item) => Number.isFinite(item.value));
+
+      if (!entries.length) return showToast("Bitte mindestens einen Wert eintragen.", "error");
+
+      for (const item of entries) {
+        const duplicate = findDuplicateReading(item.type, datetime, item.value);
+        if (duplicate) {
+          showToast(`${typeConfig[item.type].label}: Dieser Zählerstand ist zu diesem Zeitpunkt bereits vorhanden.`, "error");
+          return;
+        }
+        const sameTimestampOtherValue = findSameTimestampReading(item.type, datetime, item.value);
+        if (sameTimestampOtherValue) {
+          showToast(`${typeConfig[item.type].label}: Für diesen Zeitpunkt gibt es schon einen anderen Wert. Bitte alten Eintrag löschen oder Zeitpunkt ändern.`, "error");
+          return;
+        }
+        const comparable = getComparableReferenceValue(item.type, datetime);
+        if (Number.isFinite(comparable) && item.value < comparable) {
+          showToast(`${typeConfig[item.type].label}: Neuer Zählerstand darf nicht kleiner als ${formatNumber(comparable)} ${typeConfig[item.type].unit} sein.`, "error");
+          return;
+        }
+      }
+
+      for (const item of entries) {
+        await saveRecord("readings", {
+          type: item.type,
+          value: item.value,
+          note,
+          date: datetime,
+          createdAt: new Date().toISOString()
+        });
+      }
+
+      els.batchReadingForm.reset();
+      els.batchReadingDatetime.value = toDatetimeLocal(new Date());
+      showToast("Zeitpunkt mit Zählerständen gespeichert.", "success");
+    }
+
+    async function connectFirebase(config, householdId, showSuccess) {
+      try {
+        cleanupListeners();
+        state.firebaseError = null;
+        state.householdId = householdId;
+        els.firebaseStatus.textContent = `Firestore-Verbindung wird geprüft (Haushalt: ${householdId}) …`;
+        els.syncBadge.textContent = 'Firestore verbindet';
+        els.syncBadge.className = 'badge warn';
+        const app = getApps().length ? getApps()[0] : initializeApp(config);
+        const db = getFirestore(app);
+        state.app = app;
+        state.db = db;
+        state.firebaseEnabled = true;
+        await loadAvailableHouseholds();
+        listenToFirestore();
+        // Einstellungen sind nicht Voraussetzung für die Verbindung; Firestore-Regeln können Schreiben verhindern.
+        // Initiale Einstellungen dürfen den UI-Status nicht unbegrenzt blockieren.
+        void ensureInitialSettingsDoc().catch(settingsError => {
+          console.warn('Einstellungen konnten nicht initialisiert werden:', settingsError);
+          state.firebaseError = `settings/main: ${settingsError.code || settingsError.message || settingsError}`;
+          updateFirebaseStatus(settingsError);
+        });
+        updateFirebaseStatus();
+        renderHouseholdOptions();
+        if (showSuccess) showToast("Firebase verbunden.", "success");
+      } catch (error) {
+        console.error(error);
+        cleanupListeners();
+        state.firebaseEnabled = false;
+        updateFirebaseStatus(error);
+        showToast("Firebase-Verbindung fehlgeschlagen.", "error");
+      }
+    }
+
+    async function handleFirebaseSubmit(event) {
+      event.preventDefault();
+      const newId = els.newHouseholdId.value.trim();
+      const selectedId = els.householdSelect.value.trim();
+      const householdId = newId || selectedId || els.householdId.value.trim() || DEFAULT_HOUSEHOLD_ID;
+      localStorage.setItem(LOCAL_KEYS.householdId, householdId);
+      state.householdId = householdId;
+      els.householdId.value = householdId;
+      await connectFirebase(FIREBASE_CONFIG, householdId, true);
+      if (newId && !state.availableHouseholds.includes(newId)) {
+        state.availableHouseholds.push(newId);
+        state.availableHouseholds.sort((a, b) => a.localeCompare(b));
+      }
+      els.newHouseholdId.value = "";
+      renderHouseholdOptions();
+    }
+
+    async function handlePricePeriodSubmit(event) {
+      event.preventDefault();
+      const from = new Date(els.pricePeriodFrom.value);
+      const to = new Date(els.pricePeriodTo.value);
+      if (Number.isNaN(from.getTime())) return showToast("Bitte ein gültiges Startdatum eingeben.", "error");
+      if (Number.isNaN(to.getTime())) return showToast("Bitte ein gültiges Enddatum eingeben.", "error");
+      if (to < from) return showToast("Enddatum darf nicht vor Startdatum liegen.", "error");
+
+      const unitPrice = toNumber(els.pricePeriodUnit.value);
+      const basePrice = toNumber(els.pricePeriodBase.value) || 0;
+      if (!Number.isFinite(unitPrice) || unitPrice < 0) return showToast("Bitte einen gültigen Preis pro Einheit eingeben.", "error");
+
+      await saveRecord("pricePeriods", {
+        type: els.pricePeriodType.value,
+        fromDate: from.toISOString(),
+        toDate: to.toISOString(),
+        basePrice,
+        unitPrice,
+        note: els.pricePeriodNote.value.trim(),
+        date: from.toISOString(),
+        createdAt: new Date().toISOString()
+      });
+
+      els.pricePeriodForm.reset();
+      els.pricePeriodFrom.value = toDatetimeLocal(new Date());
+      els.pricePeriodTo.value = toDatetimeLocal(new Date());
+      showToast("Preiszeitraum gespeichert.", "success");
+    }
+
+    async function handlePurchaseSubmit(event) {
+      event.preventDefault();
+      const dt = new Date(els.purchaseDatetime.value);
+      if (Number.isNaN(dt.getTime())) return showToast("Datum ist ungültig.", "error");
+
+      const bags = toNumber(els.purchaseBags.value);
+      const kgPerBag = toNumber(els.purchaseKgPerBag.value);
+      const totalPrice = toNumber(els.purchasePrice.value);
+      const totalKg = round2(bags * kgPerBag);
+
+      if (!Number.isFinite(bags) || !Number.isFinite(kgPerBag) || !Number.isFinite(totalPrice) || bags <= 0 || kgPerBag <= 0 || totalPrice < 0) return showToast("Bitte Kaufdaten korrekt eingeben.", "error");
+
+      rememberBagSize(kgPerBag);
+      await saveRecord("purchases", {
+        bags,
+        kgPerBag,
+        totalKg,
+        totalPrice: round2(totalPrice),
+        pricePerKg: totalKg > 0 ? round4(totalPrice / totalKg) : 0,
+        date: dt.toISOString(),
+        createdAt: new Date().toISOString()
+      });
+
+      els.purchaseForm.reset();
+      els.purchaseDatetime.value = toDatetimeLocal(new Date());
+      hydrateBagSizeSelects();
+      syncPurchaseTotals();
+      showToast("Pellets-Kauf gespeichert.", "success");
+    }
+
+    async function handleQuickReadingSubmit(event) {
+      event.preventDefault();
+      const useNow = !!els.quickUseNow.checked;
+      let datetime;
+      if (useNow) {
+        datetime = new Date().toISOString();
+      } else {
+        if (!els.quickReadingDatetime.value) return showToast("Bitte Datum und Uhrzeit eingeben.", "error");
+        const dt = new Date(els.quickReadingDatetime.value);
+        if (Number.isNaN(dt.getTime())) return showToast("Datum ist ungültig.", "error");
+        datetime = dt.toISOString();
+      }
+
+      const type = els.quickReadingType.value;
+      const value = toNumber(els.quickReadingValue.value);
+      const note = els.quickReadingNote.value.trim();
+
+      if (!Number.isFinite(value) || value < 0) return showToast("Bitte einen gültigen Zählerstand eingeben.", "error");
+
+      if (findDuplicateReading(type, datetime, value)) {
+        showToast("Dieser Zählerstand ist zu diesem Zeitpunkt bereits vorhanden.", "error");
+        return;
+      }
+
+      if (findSameTimestampReading(type, datetime, value)) {
+        showToast("Für diesen Zeitpunkt gibt es schon einen anderen Wert. Bitte alten Eintrag löschen oder Zeitpunkt ändern.", "error");
+        return;
+      }
+
+      const comparable = getComparableReferenceValue(type, datetime);
+      if (Number.isFinite(comparable) && value < comparable) {
+        showToast(`Neuer Zählerstand darf nicht kleiner als ${formatNumber(comparable)} ${typeConfig[type].unit} sein.`, "error");
+        return;
+      }
+
+      await saveRecord("readings", {
+        type,
+        value,
+        note,
+        date: datetime,
+        createdAt: new Date().toISOString()
+      });
+
+      els.quickReadingForm.reset();
+      els.quickUseNow.checked = true;
+      els.quickReadingDatetime.value = toDatetimeLocal(new Date());
+      syncQuickNowUi();
+      showToast("Zählerstand gespeichert.", "success");
+    }
+
+    async function handleRefillSubmit(event) {
+      event.preventDefault();
+      if (!els.refillDate.value) return showToast("Bitte ein Datum eingeben.", "error");
+      const dt = new Date(`${els.refillDate.value}T12:00:00`);
+      if (Number.isNaN(dt.getTime())) return showToast("Datum ist ungültig.", "error");
+
+      const bags = toNumber(els.refillBags.value);
+      const kgPerBag = toNumber(els.refillKgPerBag.value);
+      const totalKg = round2(bags * kgPerBag);
+
+      if (!Number.isFinite(bags) || !Number.isFinite(kgPerBag) || bags <= 0 || kgPerBag <= 0) return showToast("Bitte Säcke und kg pro Sack korrekt eingeben.", "error");
+
+      rememberBagSize(kgPerBag);
+      await saveRecord("refills", {
+        bags,
+        kgPerBag,
+        totalKg,
+        note: els.refillNote.value.trim(),
+        date: dt.toISOString(),
+        createdAt: new Date().toISOString()
+      });
+
+      els.refillForm.reset();
+      els.refillDate.value = toDatetimeLocal(new Date()).slice(0, 10);
+      hydrateBagSizeSelects();
+      syncRefillTotal();
+      showToast("Pellets-Nachfüllung gespeichert.", "success");
+    }
+
+    async function handleResetSubmit(event) {
+      event.preventDefault();
+      const dt = new Date(els.resetDatetime.value);
+      if (Number.isNaN(dt.getTime())) return showToast("Datum ist ungültig.", "error");
+
+      const payload = {
+        type: els.resetType.value,
+        previousMeterValue: toNumber(els.resetPreviousValue.value),
+        newMeterStartValue: toNumber(els.resetNewValue.value),
+        note: els.resetNote.value.trim(),
+        date: dt.toISOString(),
+        createdAt: new Date().toISOString()
+      };
+
+      if (!Number.isFinite(payload.previousMeterValue) || !Number.isFinite(payload.newMeterStartValue)) return showToast("Bitte Reset-Daten korrekt eingeben.", "error");
+
+      await saveRecord("resets", payload);
+      els.resetForm.reset();
+      els.resetDatetime.value = toDatetimeLocal(new Date());
+      els.resetNewValue.value = 0;
+      showToast("Zähler-Reset gespeichert.", "success");
+    }
+
+    async function handleSettingsSubmit(event) {
+      event.preventDefault();
+      state.settings = mergeSettings({
+        ...state.settings,
+        strom: { basePrice: toNumber(els.priceStromBase.value) || 0, unitPrice: toNumber(els.priceStromUnit.value) || 0 },
+        wasser: { basePrice: toNumber(els.priceWasserBase.value) || 0, unitPrice: toNumber(els.priceWasserUnit.value) || 0 },
+        pellets: { basePrice: toNumber(els.pricePelletsBase.value) || 0, unitPrice: toNumber(els.pricePelletsUnit.value) || 0 }
+      });
+      persistLocalSnapshot();
+      renderAll();
+      if (state.firebaseEnabled) await saveSettingsToFirestore();
+      showToast("Basispreise gespeichert.", "success");
+    }
+
     function registerEvents() {
       document.getElementById("subTabs")?.addEventListener("click", handleTabClick);
       document.getElementById('openPelletStore')?.addEventListener('click',()=>openNavGroupV94('refillsView','pelletStoreView'));
