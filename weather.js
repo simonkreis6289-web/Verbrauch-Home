@@ -28,7 +28,7 @@ function renderStationSettings(){
  <h4>🎨 Symbol der Station</h4><div class="weather-emoji-picker">${WEATHER_EMOJIS.map(e=>`<label title="${e}"><input type="radio" name="emoji-${esc(s.id)}" data-emoji="${esc(s.id)}" value="${e}" ${(s.emoji||'🌡️')===e?'checked':''}><span>${e}</span></label>`).join('')}</div>
  <h4>🔔 Wetterbericht</h4><div class="weather-config">${toggle(s,'Morgendlichen Bericht senden','morning')}${field({...s,reportTime:s.reportTime||'07:00'},'Push-Uhrzeit (Deutschland)','reportTime','time')}${field({...s,dayStart:s.dayStart||'06:00'},'Tag beginnt','dayStart','time')}${field({...s,nightStart:s.nightStart||'18:00'},'Nacht beginnt','nightStart','time')}</div>
  <div class="weather-day-preview" data-day-preview><div class="weather-day-heading">🌗 Tagesverlauf · <span data-day-date></span></div><div class="weather-day-bar" data-day-bar></div><div class="weather-day-ticks"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div><p class="weather-muted" data-day-description></p><p class="weather-muted" data-solar-description>☀️ Sonnenzeiten: Standort eintragen</p></div>
- <div class="weather-config"><label>Breitengrad (optional, z. B. 51.1)<input type="number" data-field="latitude" min="-90" max="90" step="0.0001" placeholder="Breitengrad" value="${esc(s.latitude??'')}"></label><label>Längengrad (optional, z. B. 8.1)<input type="number" data-field="longitude" min="-180" max="180" step="0.0001" placeholder="Längengrad" value="${esc(s.longitude??'')}"></label></div>
+ <div class="weather-config"><label>Breitengrad (optional, z. B. 51.1)<input type="number" data-field="latitude" min="-90" max="90" step="0.0001" placeholder="Breitengrad" value="${esc(s.latitude??'')}"></label><label>Längengrad (optional, z. B. 8.1)<input type="number" data-field="longitude" min="-180" max="180" step="0.0001" placeholder="Längengrad" value="${esc(s.longitude??'')}"></label></div><div class="weather-row"><button type="button" class="btn secondary" data-gps>📍 GPS-Position übernehmen</button><span class="weather-muted" data-gps-status aria-live="polite">Standort wird erst nach deiner Zustimmung abgefragt.</span></div>
  <h4>⚠️ Grenzwerte und Ausfall</h4><div class="weather-config">${toggle(s,'Grenzwertwarnungen','alerts')}${slider(s,'Temperatur unter','tempMin',-30,50,0.5,'°C')}${slider(s,'Temperatur über','tempMax',-30,50,0.5,'°C')}${slider(s,'Luftfeuchte unter','humidityMin',0,100,1,'%')}${slider(s,'Luftfeuchte über','humidityMax',0,100,1,'%')}${slider(s,'Helligkeit unter','lightMin',0,100,1,'%')}${slider(s,'Helligkeit über','lightMax',0,100,1,'%')}${slider(s,'Ausfallwarnung nach','offlineMinutes',10,240,5,'Min.')}</div>
  <div class="weather-row"><button class="btn primary" type="button" data-save="${esc(s.id)}">💾 Speichern</button><button class="btn ghost" type="button" data-remove="${esc(s.id)}">Entfernen</button></div></div></details>`).join('');
  el.querySelectorAll('.weather-station-card').forEach(card=>{
@@ -56,7 +56,23 @@ function renderStationSettings(){
      try{const ymd=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(today);const url=`https://api.sunrise-sunset.org/json?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lon)}&date=${ymd}&formatted=0`;const response=await fetch(url);if(!response.ok)throw Error('HTTP '+response.status);const json=await response.json();if(json.status!=='OK')throw Error('Keine Sonnenzeiten');const fmtTime=v=>new Date(v).toLocaleTimeString('de-DE',{timeZone:'Europe/Berlin',hour:'2-digit',minute:'2-digit'});solar.textContent=`🌅 Sonnenaufgang ${fmtTime(json.results.sunrise)} · 🌇 Sonnenuntergang ${fmtTime(json.results.sunset)} · ${moon()}`;}catch(_){solar.textContent='Sonnenzeiten derzeit nicht verfügbar · '+moon();}
    };
    latitude.addEventListener('change',showSolar);longitude.addEventListener('change',showSolar);void showSolar();
+   const gpsButton=card.querySelector('[data-gps]'),gpsStatus=card.querySelector('[data-gps-status]');
+   gpsButton.addEventListener('click',()=>{
+     if(!navigator.geolocation){gpsStatus.textContent='GPS-Standort wird von diesem Browser nicht unterstützt.';return;}
+     gpsButton.disabled=true;gpsStatus.textContent='Standort wird abgefragt …';
+     navigator.geolocation.getCurrentPosition(pos=>{
+       latitude.value=pos.coords.latitude.toFixed(6);
+       longitude.value=pos.coords.longitude.toFixed(6);
+       card.dataset.unsaved='true';
+       gpsStatus.textContent='📍 Position übernommen (Genauigkeit ca. '+Math.round(pos.coords.accuracy)+' m). Bitte Speichern drücken.';
+       gpsButton.disabled=false;void showSolar();
+     },err=>{
+       gpsStatus.textContent=err.code===1?'Standortfreigabe verweigert. Bitte Browser-Berechtigung prüfen.':err.code===2?'Standort konnte nicht ermittelt werden.':'Standortabfrage hat zu lange gedauert.';
+       gpsButton.disabled=false;
+     },{enableHighAccuracy:true,timeout:15000,maximumAge:60000});
+   });
  });
+ el.querySelectorAll('.weather-station-card').forEach(card=>card.addEventListener('input',()=>{card.dataset.unsaved='true';}));
  el.querySelectorAll('[data-save]').forEach(b=>b.onclick=async()=>{
    const id=b.dataset.save,card=b.closest('details'),config={};
    card.querySelectorAll('[data-field]').forEach(x=>{const k=x.dataset.field;config[k]=['enabled','alerts','morning'].includes(k)?x.value==='true':['name','reportTime','dayStart','nightStart'].includes(k)?x.value:Number(x.value);});
@@ -64,7 +80,7 @@ function renderStationSettings(){
    config.emoji=card.querySelector('[data-emoji]:checked')?.value||'🌡️';
    if(['tempMin','humidityMin','lightMin'].some(k=>config[k]>=config[({tempMin:'tempMax',humidityMin:'humidityMax',lightMin:'lightMax'})[k]])){showError('Unterer Grenzwert muss kleiner als oberer Grenzwert sein.');return;}
    if(config.dayStart>=config.nightStart){showError('Der Tagesbeginn muss vor dem Nachtbeginn liegen.');return;}
-   try{await request('/weather/admin',{action:'update',id,config});await refresh();showError('Station gespeichert.');}catch(e){showError(e.message);}
+   try{await request('/weather/admin',{action:'update',id,config});card.dataset.unsaved='false';await refresh();showError('Station gespeichert.');}catch(e){showError(e.message);}
  });
  el.querySelectorAll('[data-remove]').forEach(b=>b.onclick=async()=>{if(!confirm('Station '+b.dataset.remove+' wirklich entfernen? Die Historie bleibt zunächst erhalten.'))return;try{await request('/weather/admin',{action:'remove',id:b.dataset.remove});await refresh();}catch(e){showError(e.message);}});
 }
@@ -72,5 +88,5 @@ function graph(data){const vals=data.map(p=>Number(p[metric])).filter(Number.isF
 async function renderHistory(){const el=$('weatherHistory');if(!el)return;if(!stations.length){el.innerHTML='<p class="muted">Noch keine Station eingerichtet. Unter Einstellungen → Wetterstationen hinzufügen.</p>';return;}const st=selectedStation();if(!st)return;selected=st.id;el.innerHTML=`<div class="weather-config"><label>Station<select id="weatherChartStation">${stations.map(x=>`<option value="${esc(x.id)}" ${x.id===selected?'selected':''}>${esc(x.emoji||'🌡️')} ${esc(x.name)}</option>`).join('')}</select></label><label>Messwert<select id="weatherChartMetric"><option value="temperatureC">Temperatur (°C)</option><option value="humidityPercent">Luftfeuchtigkeit (%)</option><option value="brightnessPercent">Helligkeit (%)</option></select></label><label>Zeitraum<select id="weatherChartPeriod"><option value="24">24 Stunden</option><option value="168">7 Tage</option><option value="720">30 Tage</option><option value="8760">1 Jahr</option></select></label></div><div id="weatherChart">Lade Messwerte …</div>`;$('weatherChartMetric').value=metric;$('weatherChartPeriod').value=period;$('weatherChartStation').onchange=e=>{selected=e.target.value;renderOverview();void renderHistory();};$('weatherChartMetric').onchange=e=>{metric=e.target.value;$('weatherChart').innerHTML=graph(history);};$('weatherChartPeriod').onchange=e=>{period=e.target.value;void renderHistory();};try{const j=await request('/weather/history',{id:st.id,hours:Number(period)});history=j.points||[];$('weatherChart').innerHTML=graph(history);}catch(e){$('weatherChart').textContent=e.message;}}
 async function refresh(){try{const j=await request('/weather/list');stations=j.stations||[];if(!stations.some(s=>s.id===selected))selected=stations[0]?.id||'';renderOverview();renderStationSettings();if($('weatherView')?.classList.contains('active'))await renderHistory();showError('Stand: '+date(new Date().toISOString()));}catch(e){showError(e.message);}}
 window.weatherViewOpened=view=>{if(view==='weatherView')void renderHistory();if(view==='weatherSettingsView')renderSettings();};
-document.addEventListener('DOMContentLoaded',()=>{renderSettings();if(key())void refresh();rotateTimer=setInterval(rotate,8000);loadTimer=setInterval(()=>{if(key())void refresh();},60000);});
+document.addEventListener('DOMContentLoaded',()=>{renderSettings();if(key())void refresh();rotateTimer=setInterval(rotate,8000);loadTimer=setInterval(()=>{if(key()&&!document.querySelector('.weather-station-card[data-unsaved="true"]'))void refresh();},60000);});
 })();
