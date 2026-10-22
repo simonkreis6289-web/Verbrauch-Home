@@ -1129,6 +1129,21 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 .weather-emoji-picker span{display:grid;place-items:center;font-size:1.45rem;width:43px;height:43px;border:1px solid var(--line);border-radius:10px}
 .weather-emoji-picker input:checked+span{outline:2px solid #0891b2;background:rgba(8,145,178,.12)}
 .weather-emoji-picker input:focus-visible+span{outline:3px solid #0891b2}
+
+.weather-range-field{display:flex;flex-direction:column;gap:6px;font-size:.88rem}
+.weather-range-row{display:flex;align-items:center;gap:10px}
+.weather-range-row input[type=range]{flex:1;min-width:0;accent-color:#0284c7;cursor:pointer}
+.weather-range-row input[type=number]{width:76px;flex:none;padding:8px;text-align:right}
+.weather-range-row>span{min-width:30px;color:var(--muted)}
+.weather-range-limits{display:flex;justify-content:space-between;color:var(--muted);font-size:.72rem;padding-right:112px}
+.weather-day-preview{border:1px solid var(--line);border-radius:13px;padding:14px;margin:16px 0}
+.weather-day-heading{font-weight:700;margin-bottom:12px}
+.weather-day-bar{display:flex;overflow:hidden;border-radius:9px;height:35px;background:#203557}
+.weather-night{background:#263a65}.weather-day{background:#f8c862}
+.weather-day-ticks{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-top:6px}
+.weather-day-preview p{margin:9px 0 0}
+@media(max-width:550px){.weather-range-limits{padding-right:105px}.weather-range-row input[type=number]{width:66px}}
+
 .weather-config{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:10px;margin:12px 0}
 .weather-config label{display:flex;flex-direction:column;gap:5px;font-size:.88rem}
 .weather-config input,.weather-config select{width:100%;min-width:0}
@@ -1146,7 +1161,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v127</strong> · 1.3.1.160<br><small>Letzte Änderung: 22.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v128</strong> · 1.3.1.161<br><small>Letzte Änderung: 22.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 

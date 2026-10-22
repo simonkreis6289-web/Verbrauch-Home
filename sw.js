@@ -1,4 +1,4 @@
-const CACHE_NAME = "verbrauch-app-v125";
+const CACHE_NAME = "verbrauch-app-v128";
 
 const urlsToCache = [
   "./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png", "./push-badge-72.png"
@@ -39,5 +39,10 @@ self.addEventListener("activate", (event) => {
   }))).then(() => self.clients.claim()));
 });
 self.addEventListener("fetch", (event) => {
-  event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+  // API calls (especially authenticated POST /weather/list) must never be intercepted.
+  if (event.request.method !== "GET" || new URL(event.request.url).origin !== self.location.origin) return;
+  event.respondWith(fetch(event.request).catch(async () => {
+    const cached = await caches.match(event.request);
+    return cached || Response.error();
+  }));
 });
