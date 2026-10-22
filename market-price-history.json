@@ -69,6 +69,14 @@
         "pellets_loose": 442.42,
         "pellets_bag": 525.34
       }
+    },
+    {
+      "date": "2026-10-22",
+      "checked_at": "2026-10-22T06:07:40+02:00",
+      "prices": {
+        "pellets_loose": 442.42,
+        "pellets_bag": 528.57
+      }
     }
   ]
 }
