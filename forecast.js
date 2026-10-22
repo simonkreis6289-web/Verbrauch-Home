@@ -38,16 +38,21 @@ function draw(record){
  $('forecastUpdated').textContent='Zuletzt aktualisiert: '+new Date(record.updatedAt).toLocaleString('de-DE',{timeZone:'Europe/Berlin',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+' Uhr';
  $('forecastBody').innerHTML=day.time.slice(start,start+4).map((date,i)=>{
   const j=start+i;
-  return `<div class="forecast-day"><small>${i===0?'Heute':dateLabel(date)}</small><span class="forecast-icon">${codeIcon(day.weather_code[j])}</span><strong>${Math.round(day.temperature_2m_max[j])}°</strong> <span class="low">${Math.round(day.temperature_2m_min[j])}°</span></div>`;
+  return `<div class="forecast-day"><small>${i===0?'Heute':dateLabel(date)}</small><span class="forecast-icon">${codeIcon(day.weather_code[j])}</span><strong>${Math.round(day.temperature_2m_max[j])}°</strong> <span class="low">${Math.round(day.temperature_2m_min[j])}°</span><div class="forecast-day-detail">☔ ${Math.round(day.precipitation_probability_max?.[j]??0)} % · ${Number(day.precipitation_sum?.[j]??0).toFixed(1)} mm</div><div class="forecast-day-detail">💨 ${Math.round(day.wind_speed_10m_max?.[j]??0)} km/h</div></div>`;
  }).join('');
  $('forecastAstro').innerHTML=`<div>🌅 Sonnenaufgang<strong>${fmtTime(day.sunrise[start])} Uhr</strong></div><div>🌇 Sonnenuntergang<strong>${fmtTime(day.sunset[start])} Uhr</strong></div><div>${moon().split(' ')[0]} Mondphase<strong>${moon().split(' ').slice(1).join(' ')}</strong></div>`;
  const current=new Date().toLocaleString('sv-SE',{timeZone:'Europe/Berlin'}).replace(' ','T').slice(0,13);
  const first=hour.time.findIndex(x=>x.slice(0,13)>=current);
- const offset=Math.max(0,first);
- $('forecastHours').innerHTML=hour.time.slice(offset,offset+48).map((date,i)=>{
-  const j=offset+i;
-  return `<div><strong>${esc(dateLabel(date.slice(0,10)))} ${esc(date.slice(11,16))}</strong><div>${codeIcon(hour.weather_code[j])} ${Math.round(hour.temperature_2m[j])} °C</div><span>☔ ${Math.round(hour.precipitation_probability[j]??0)} %</span></div>`;
- }).join('');
+ const offset=first<0?0:first;
+ const entries=hour.time.slice(offset,offset+48).map((date,i)=>({date,j:offset+i})).filter((entry,i)=>i%2===0);
+ const groups=new Map();
+ for(const entry of entries){const date=entry.date.slice(0,10);if(!groups.has(date))groups.set(date,[]);groups.get(date).push(entry);}
+ const n=v=>Number.isFinite(Number(v))?Math.round(Number(v)):null;
+ $('forecastHours').innerHTML=[...groups].map(([date,entries])=>`<section class="forecast-hour-group"><h4>${esc(dateLabel(date))}</h4><div class="forecast-hour-grid">${entries.map(({date,j})=>{
+   const t=n(hour.temperature_2m[j]),rain=n(hour.precipitation_probability?.[j]);
+   const mm=n(hour.precipitation?.[j]),wind=n(hour.wind_speed_10m?.[j]);
+   return `<div class="forecast-hour-item"><strong class="forecast-hour-time">${esc(date.slice(11,16))} Uhr</strong><span class="forecast-hour-weather">${codeIcon(hour.weather_code[j])} ${t===null?'–':t+' °C'}</span><span class="forecast-hour-rain">☔ ${rain===null?'–':rain+' %'}${mm===null?'':' · '+mm+' mm'}</span>${wind===null?'':`<span class="forecast-hour-wind">💨 ${wind} km/h</span>`}</div>`;
+  }).join('')}</div></section>`).join('');
 }
 async function load(){
  const body=$('forecastBody');if(!body)return;

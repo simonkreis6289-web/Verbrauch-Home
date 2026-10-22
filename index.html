@@ -1159,8 +1159,13 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 .forecast-astro{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;border-top:1px solid var(--line);padding-top:15px}
 .forecast-astro>div{text-align:center;font-size:.87rem}.forecast-astro strong{display:block;margin-top:5px}
 .forecast-hourly{margin-top:14px}.forecast-hourly summary{cursor:pointer;font-weight:650}
-.forecast-hours{display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));gap:7px;margin-top:10px}
-.forecast-hours>div{padding:9px;border-radius:9px;background:rgba(125,145,175,.08);font-size:.81rem}
+.forecast-hours{display:block;margin-top:12px}
+.forecast-hour-group{margin:0 0 18px}.forecast-hour-group h4{font-size:.94rem;margin:0 0 8px;border-bottom:1px solid var(--line);padding:7px 0}
+.forecast-hour-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px}
+.forecast-hour-item{display:flex;flex-direction:column;gap:5px;padding:12px;border:1px solid var(--line);border-radius:12px;background:rgba(125,145,175,.07);font-size:.82rem;min-width:0}
+.forecast-hour-time{font-size:1.05rem;white-space:nowrap}.forecast-hour-weather{font-size:1rem}.forecast-hour-rain,.forecast-hour-wind{color:var(--muted)}
+.forecast-day-detail{font-size:.72rem;color:var(--muted);margin-top:5px;white-space:nowrap}
+@media(max-width:440px){.forecast-hour-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.forecast-hour-item{padding:10px}.forecast-day-detail{font-size:.66rem;white-space:normal}}
 .forecast-credit{display:block;margin-top:13px}.display-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:15px 0}
 .display-options label{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:13px;cursor:pointer;background:var(--card-solid)}
 .display-options input{width:19px;height:19px;accent-color:#0284c7}
@@ -1179,11 +1184,11 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v133</strong> · 1.3.1.166<br><small>Letzte Änderung: 22.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v134</strong> · 1.3.1.167<br><small>Letzte Änderung: 22.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
-    <section id="forecastPanel" class="forecast-panel" data-display-key="forecast"><div class="forecast-title"><h2>🌤️ Wettervorhersage · 48 Stunden</h2><small id="forecastUpdated">Lade gespeicherte Vorhersage …</small></div><div id="forecastBody" class="forecast-days"></div><div id="forecastAstro" class="forecast-astro"></div><details class="forecast-hourly"><summary>Stündliche Vorhersage anzeigen</summary><div id="forecastHours" class="forecast-hours"></div></details><small class="forecast-credit">Wetterdaten: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a></small></section>
+    <section id="forecastPanel" class="forecast-panel" data-display-key="forecast"><div class="forecast-title"><h2>🌤️ Wettervorhersage · 48 Stunden</h2><small id="forecastUpdated">Lade gespeicherte Vorhersage …</small></div><div id="forecastBody" class="forecast-days"></div><div id="forecastAstro" class="forecast-astro"></div><details class="forecast-hourly"><summary>48-Stunden-Vorhersage in 2-Stunden-Schritten anzeigen</summary><div id="forecastHours" class="forecast-hours"></div></details><small class="forecast-credit">Wetterdaten: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a></small></section>
     <section id="weatherOverview" class="weather-overview" data-display-key="stations" hidden></section>
 
     <nav class="tabs nav-v94" id="mainTabs" aria-label="Hauptnavigation">
