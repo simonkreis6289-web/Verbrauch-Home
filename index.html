@@ -1131,7 +1131,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v125</strong> · 1.3.1.158<br><small>Letzte Änderung: 22.10.2026, 06:18 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v126</strong> · 1.3.1.159<br><small>Letzte Änderung: 22.10.2026, 06:35 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -3136,6 +3136,7 @@ async function loadMarketPrices(force = false) {
         state.firebaseEnabled = true;
         await loadAvailableHouseholds();
         listenToFirestore();
+        void migratePelletOffersV126().catch(e=>{console.error('Pellet-Migration:',e);showToast('Lokale Angebote konnten nicht vollständig synchronisiert werden.','error');});
         // Einstellungen sind nicht Voraussetzung für die Verbindung; Firestore-Regeln können Schreiben verhindern.
         // Initiale Einstellungen dürfen den UI-Status nicht unbegrenzt blockieren.
         void ensureInitialSettingsDoc().catch(settingsError => {
@@ -6062,6 +6063,7 @@ renderFuelMap();
     function disconnectFirebase() {
       cleanupListeners();
       state.firebaseEnabled = false;
+      remotePelletOffers=null;remotePelletSuppliers=null;
       state.db = null;
       state.app = null;
       updateFirebaseStatus();
@@ -6111,6 +6113,18 @@ renderFuelMap();
       const fuelEntriesQuery = query(collection(state.db, `${basePath}/fuelEntries`), orderBy("date", "desc"));
       const chargeEntriesQuery = query(collection(state.db, `${basePath}/chargeEntries`), orderBy("date", "desc"));
       const stationsCollection = collection(state.db, `${basePath}/stations`);
+      remotePelletOffers=null;remotePelletSuppliers=null;
+      state.unsubscribers.push(onSnapshot(collection(state.db,`${basePath}/pelletOffers`),snapshot=>{
+        remotePelletOffers=snapshot.docs.map(d=>({id:d.id,...d.data()}));
+        const latest=remotePelletOffers.slice().sort((a,b)=>String(b.savedAt||'').localeCompare(String(a.savedAt||'')))[0];
+        if(latest)localStorage.setItem(PELLET_MARKET_KEY,JSON.stringify({price:latest.price,kg:latest.kg,date:latest.date,source:latest.supplier,type:latest.type}));
+        renderPelletOffers();renderPelletPriceComparisons();
+      },error=>{console.error('Pellet-Angebote:',error);state.firebaseError='pelletOffers: '+(error.code||error.message);updateFirebaseStatus(error);}));
+      state.unsubscribers.push(onSnapshot(collection(state.db,`${basePath}/pelletSuppliers`),snapshot=>{
+        remotePelletSuppliers=[...new Set(['Holz Bald',...snapshot.docs.map(d=>d.data().name).filter(Boolean)])].sort((a,b)=>a.localeCompare(b,'de'));
+        renderPelletOffers();
+      },error=>{console.error('Pellet-Lieferanten:',error);state.firebaseError='pelletSuppliers: '+(error.code||error.message);updateFirebaseStatus(error);}));
+
       state.unsubscribers.push(onSnapshot(collection(state.db,`${basePath}/marketQuotes`),snapshot=>{
         manualMarketRecords=snapshot.docs.map(d=>d.data()).filter(r=>r&&r.prices);
         marketHistoryCache=null;void loadMarketPrices(true);
@@ -6744,8 +6758,25 @@ async function updateRecord(kind, id, payload) {
       } catch (e) { console.warn('Pellet-Angebot ungültig:',e); }
       return null;
     }
-    function pelletOfferData(){try{return JSON.parse(localStorage.getItem(PELLET_OFFERS_KEY)||'[]')||[];}catch{return [];}}
-    function pelletSupplierData(){try{return JSON.parse(localStorage.getItem(PELLET_SUPPLIERS_KEY)||'["Holz Bald"]')||["Holz Bald"];}catch{return ["Holz Bald"];}}
+    let remotePelletOffers=null,remotePelletSuppliers=null;
+    function pelletOfferData(){if(state.firebaseEnabled)return remotePelletOffers||[];try{return JSON.parse(localStorage.getItem(PELLET_OFFERS_KEY)||'[]')||[];}catch{return [];}}
+    function pelletSupplierData(){if(state.firebaseEnabled)return remotePelletSuppliers||["Holz Bald"];try{return JSON.parse(localStorage.getItem(PELLET_SUPPLIERS_KEY)||'["Holz Bald"]')||["Holz Bald"];}catch{return ["Holz Bald"];}}
+    async function migratePelletOffersV126(){
+      if(!state.firebaseEnabled||!state.db)return;
+      const marker='pellet-migrated-v126:'+state.householdId;
+      if(localStorage.getItem(marker)==='yes')return;
+      const offers=JSON.parse(localStorage.getItem(PELLET_OFFERS_KEY)||'[]');
+      const suppliers=JSON.parse(localStorage.getItem(PELLET_SUPPLIERS_KEY)||'["Holz Bald"]');
+      for(const [i,r] of offers.entries()){
+        if(!r||!r.supplier||!(Number(r.kg)>0)||!(Number(r.price)>0))continue;
+        const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(r)+':'+i));
+        const id='local-'+Array.from(new Uint8Array(hash)).slice(0,16).map(x=>x.toString(16).padStart(2,'0')).join('');
+        await setDoc(doc(state.db,householdBasePath()+'/pelletOffers/'+id),r);
+      }
+      for(const name of suppliers)if(typeof name==='string'&&name.trim())
+        await setDoc(doc(state.db,householdBasePath()+'/pelletSuppliers/'+encodeURIComponent(name.trim())),{name:name.trim()},{merge:true});
+      localStorage.setItem(marker,'yes');
+    }
     function renderPelletOffers(){
       const select=document.getElementById('pelletOfferSupplier');if(!select)return;
       const prev=select.value;const suppliers=pelletSupplierData();select.innerHTML='<option value="">Lieferant wählen</option>'+suppliers.map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('');if(suppliers.includes(prev))select.value=prev;
@@ -6753,7 +6784,7 @@ async function updateRecord(kind, id, payload) {
       const el=document.getElementById('pelletOfferHistory');if(!el)return;
       el.innerHTML='<h3>📈 Angebotshistorie</h3>'+(rows.length?'<div style="overflow-x:auto"><table style="width:100%;text-align:left"><thead><tr><th>Datum</th><th>Lieferant</th><th>Art</th><th>Menge</th><th>Gesamt</th><th>€/t</th></tr></thead><tbody>'+rows.slice(0,40).map(r=>`<tr><td>${escapeHtml(r.date)}</td><td>${escapeHtml(r.supplier)}</td><td>${r.type==='loose'?'Lose Ware':'Sackware'}</td><td>${formatNumber(r.kg)} kg</td><td>${formatCurrency(r.price)}</td><td>${formatCurrency(r.price/r.kg*1000)}</td></tr>`).join('')+'</tbody></table></div>':'<p class="muted">Noch keine Angebote erfasst.</p>');
     }
-    function savePelletMarketQuote(event) {
+    async function savePelletMarketQuote(event) {
       event.preventDefault();
       const price = Number(document.getElementById('pelletMarketPrice')?.value);
       const kg = Number(document.getElementById('pelletMarketKg')?.value);
@@ -6763,13 +6794,21 @@ async function updateRecord(kind, id, payload) {
       }
       const input=document.getElementById('pelletNewSupplier');const newSupplier=input.value.trim();const supplier=newSupplier||document.getElementById('pelletOfferSupplier').value;
       if(!supplier){showToast('Bitte einen Lieferanten auswählen oder anlegen.','error');return;}
-      const suppliers=pelletSupplierData();if(!suppliers.includes(supplier)){suppliers.push(supplier);localStorage.setItem(PELLET_SUPPLIERS_KEY,JSON.stringify(suppliers));}
       const type=document.getElementById('pelletOfferType').value;
-      const rows=pelletOfferData();rows.push({supplier,type,price,kg,date,savedAt:new Date().toISOString()});localStorage.setItem(PELLET_OFFERS_KEY,JSON.stringify(rows));
-      localStorage.setItem(PELLET_MARKET_KEY,JSON.stringify({price,kg,date,source:supplier,type}));
-      input.value='';renderPelletOffers();document.getElementById('pelletOfferSupplier').value=supplier;
-      renderPelletPriceComparisons();
-      showToast('Angebotspreis als Information gespeichert.','success');
+      const record={supplier,type,price,kg,date,savedAt:new Date().toISOString()};
+      try{
+        if(state.firebaseEnabled){
+          await setDoc(doc(state.db,householdBasePath()+'/pelletSuppliers/'+encodeURIComponent(supplier)),{name:supplier},{merge:true});
+          await addDoc(collection(state.db,householdBasePath()+'/pelletOffers'),record);
+        }else{
+          const suppliers=pelletSupplierData();if(!suppliers.includes(supplier)){suppliers.push(supplier);localStorage.setItem(PELLET_SUPPLIERS_KEY,JSON.stringify(suppliers));}
+          const rows=pelletOfferData();rows.push(record);localStorage.setItem(PELLET_OFFERS_KEY,JSON.stringify(rows));
+        }
+        localStorage.setItem(PELLET_MARKET_KEY,JSON.stringify({price,kg,date,source:supplier,type}));
+        input.value='';renderPelletOffers();document.getElementById('pelletOfferSupplier').value=supplier;
+        renderPelletPriceComparisons();
+        showToast(state.firebaseEnabled?'Angebot in Firebase gespeichert.':'Angebot lokal gespeichert.','success');
+      }catch(error){showToast('Speichern fehlgeschlagen: '+String(error.message||error),'error');}
     }
     function pelletYearConsumptionEstimate() {
       const reading = annualReadingAverage('pellets');
