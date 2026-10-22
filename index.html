@@ -1165,6 +1165,8 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 .display-options label{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:13px;cursor:pointer;background:var(--card-solid)}
 .display-options input{width:19px;height:19px;accent-color:#0284c7}
 @media(max-width:460px){.forecast-panel{padding:12px}.forecast-day .forecast-icon{font-size:1.8rem}.forecast-day{padding:9px 2px}.forecast-day strong{font-size:.94rem}.forecast-astro>div{font-size:.75rem}}
+/* Darstellung: hidden muss Vorrang vor Grid- und Card-Styles haben. */
+[data-display-key][hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -1177,7 +1179,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v132</strong> · 1.3.1.165<br><small>Letzte Änderung: 22.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v133</strong> · 1.3.1.166<br><small>Letzte Änderung: 22.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
