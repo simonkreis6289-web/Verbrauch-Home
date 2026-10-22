@@ -1,0 +1,72 @@
+name: Bundesweite Spritpreise aktualisieren
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 00:15, 04:15, 08:15, 12:15, 16:15, 20:15 Europe/Berlin
+    # Sommerzeit (UTC+2)
+    - cron: '15 2,6,10,14,18,22 * * *'
+    # Winterzeit (UTC+1)
+    - cron: '15 3,7,11,15,19,23 * * *'
+    # Extra 11:45 Europe/Berlin, Sommer- und Winterzeit
+    - cron: '45 9,10 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: verbrauch-fuel-average
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Nur zur richtigen Berliner Zeit aktualisieren
+        id: due
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          python - <<'PY'
+          import os
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          now = datetime.now(ZoneInfo('Europe/Berlin'))
+          regular = now.hour in (0, 4, 8, 12, 16, 20) and now.minute >= 15 and now.minute < 45
+          extra = now.hour == 11 and now.minute >= 45
+          # GitHub Actions kann Cron-Läufe verzögern. Außerhalb des Fensters nicht abrufen.
+          due = os.environ['EVENT_NAME'] == 'workflow_dispatch' or regular or extra
+          print(f'Berlin: {now:%Y-%m-%d %H:%M %Z}, fällig: {due}')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f'run={str(due).lower()}\n')
+          PY
+      - name: Bundesweite Durchschnittspreise abrufen
+        if: steps.due.outputs.run == 'true'
+        run: python update_fuel_average.py
+      - name: Aktualisierte Daten speichern
+        if: steps.due.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add fuel-prices.json fuel-price-history.json
+          if git diff --cached --quiet; then
+            echo 'Keine neuen Werte'
+            exit 0
+          fi
+          git commit -m 'Bundesweite Spritpreise aktualisieren'
+          for i in 1 2 3; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git reset --hard origin/main
+            python update_fuel_average.py
+            git add fuel-prices.json fuel-price-history.json
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m 'Bundesweite Spritpreise aktualisieren'
+          done
+          exit 1
