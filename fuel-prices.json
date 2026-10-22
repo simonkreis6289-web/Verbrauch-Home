@@ -1,10 +1,10 @@
 {
   "source": "https://www.benzinpreis-aktuell.de/api.v2.php?data=nationwide",
-  "source_date": "2026-10-22T02:15:01Z",
-  "fetched_at": "2026-10-22T02:15:29.869850Z",
+  "source_date": "2026-10-22T08:30:01Z",
+  "fetched_at": "2026-10-22T08:34:57.598646Z",
   "prices": {
-    "super": 2.134,
-    "e10": 2.08,
-    "diesel": 2.236
+    "super": 2.11,
+    "e10": 2.054,
+    "diesel": 2.214
   }
 }
