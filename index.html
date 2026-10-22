@@ -1031,7 +1031,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 
 
 /* v109: eigenständige, responsive Spritpreisübersicht */
-.nav-v94{grid-template-columns:repeat(6,minmax(0,1fr))}
+.nav-v94{grid-template-columns:repeat(7,minmax(0,1fr))}.nav-v94 .main-nav-btn{padding:10px 3px;font-size:.88rem;white-space:nowrap}
 .fuel-live-shell{display:grid;gap:18px;min-width:0}.fuel-live-shell>.card{min-width:0;max-width:100%;box-sizing:border-box}
 .fuel-live-hero{display:flex;align-items:center;justify-content:space-between;gap:20px}.fuel-live-hero h2{font-size:clamp(1.35rem,2.6vw,2rem);line-height:1.2;margin:4px 0 10px}.fuel-live-hero p{margin:0;line-height:1.5}.fuel-live-hero-icon{width:76px;height:76px;border-radius:23px;background:rgba(41,165,128,.13);display:grid;place-items:center;font-size:2.5rem;flex-shrink:0}
 .fuel-live-location{padding:17px;border-radius:16px;border:1px solid var(--line);background:var(--app-inner,var(--card-solid));margin:20px 0}.fuel-location-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:13px}.fuel-location-mode{display:flex;gap:9px;flex-wrap:wrap}.fuel-mode,.fuel-view-switch button{border:1px solid var(--line);background:transparent;color:var(--text);border-radius:10px;padding:11px 15px;font-weight:700;cursor:pointer}.fuel-mode.active,.fuel-view-switch button.active{background:rgba(56,189,248,.17);border-color:rgba(56,189,248,.55)}.fuel-address-row{display:flex;gap:10px;align-items:end;margin-top:14px}.fuel-address-row[hidden],#liveFuelMapWrap[hidden]{display:none!important}.fuel-address-row label{flex:1;min-width:0}.fuel-address-row input{width:100%;box-sizing:border-box}.fuel-live-location>small{display:block;margin-top:10px;line-height:1.5}
@@ -1106,13 +1106,13 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 /* v119: Mobile Fotoauswahl und sichtbarer, drehbarer OCR-Ausschnitt */
 .meter-source-group{min-width:0;display:flex;flex-direction:column;gap:8px}.meter-source-buttons{display:flex;flex-wrap:wrap;gap:8px}.meter-source-buttons button{flex:1;min-width:105px}.meter-image-editor[hidden]{display:none}.meter-image-stage{position:relative;max-width:100%;width:fit-content;line-height:0;touch-action:none;overflow:hidden;border-radius:10px;border:1px solid var(--line);background:#15232d}.meter-image-stage canvas{display:block;max-width:100%;height:auto}.meter-crop-frame{position:absolute;border:2px solid #27d7ed;box-shadow:0 0 0 9999px #0005;cursor:move;touch-action:none;box-sizing:border-box}.meter-handle{position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid #008ba5;box-sizing:border-box;touch-action:none}.meter-handle.tl{left:-9px;top:-9px}.meter-handle.tr{right:-9px;top:-9px}.meter-handle.bl{left:-9px;bottom:-9px}.meter-handle.br{right:-9px;bottom:-9px}.meter-crop-preview{display:block;max-width:100%;width:auto;max-height:180px;margin-top:8px;border:1px solid var(--line);border-radius:8px;background:white}.meter-image-editor .meter-ocr-actions button{font-size:.83rem}
 
-.weather-overview{margin:16px 0;padding:16px;border:1px solid var(--line);border-radius:18px;background:var(--card-solid)}
+.weather-overview{margin:8px 0;padding:9px 12px;border:1px solid var(--line);border-radius:18px;background:var(--card-solid)}
 .weather-row{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:10px 0}
 .weather-row button{padding:7px 11px;border:1px solid var(--line);border-radius:11px;background:var(--card-solid);color:var(--text);cursor:pointer}
 .weather-row button.selected{background:#d9effb;color:#123f56;border-color:#65b8df}
 .weather-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
-.weather-kpis>div{border-radius:13px;background:rgba(125,145,175,.09);padding:12px 6px;text-align:center;min-width:0}
-.weather-kpis strong{display:block;font-size:clamp(1rem,3.5vw,1.5rem);margin:6px 0}
+.weather-kpis>div{border-radius:10px;background:rgba(125,145,175,.09);padding:6px 5px;text-align:center;min-width:0}
+.weather-kpis strong{display:inline-block;font-size:clamp(.95rem,2vw,1.2rem);margin:2px 5px}
 .weather-muted{font-size:.82rem;color:var(--muted)}
 .weather-config{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:10px;margin:12px 0}
 .weather-config label{display:flex;flex-direction:column;gap:5px;font-size:.88rem}
@@ -1131,7 +1131,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v124</strong> · 1.3.1.157<br><small>Letzte Änderung: 21.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v125</strong> · 1.3.1.158<br><small>Letzte Änderung: 22.10.2026, 06:18 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -1164,7 +1164,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
         </section>
 
         <section class="card wide" aria-label="Marktpreise in Drolshagen">
-          <div class="card-head"><div><p class="section-kicker">ENERGIEPREISE · 57489 DROLSHAGEN</p><h2>Aktuelle Marktpreise</h2><small class="muted">Nur zur Information. Für die Pellets-Kostenrechnung zählt ausschließlich der letzte gespeicherte Kauf.</small></div><button class="btn ghost" id="marketRefreshBtn" type="button">Preise manuell eintragen</button></div>
+          <div class="card-head"><div><p class="section-kicker">ENERGIEPREISE · 57489 DROLSHAGEN</p><h2>Aktuelle Marktpreise</h2><small class="muted"></small></div><button class="btn ghost" id="marketRefreshBtn" type="button">Preise manuell eintragen</button></div>
           <p class="muted" style="margin:-5px 0 12px;font-size:.84rem">Kachel anklicken, um Preisverlauf und Zeitraum auszuwählen.</p>
           <div class="market-fetch-status" id="marketFetchStatus" role="status" aria-live="polite"><span class="market-fetch-dot" aria-hidden="true"></span><span>Letzte manuelle Eingabe wird geladen …</span></div>
           <form id="manualMarketForm" class="card" style="display:none;margin:12px 0;padding:16px" aria-label="Marktpreise manuell eintragen">
@@ -2025,16 +2025,20 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 
 
     <section class="card wide glass" id="pelletMarketPriceCard">
-      <div class="card-head"><div><p class="section-kicker">Pellets · Vergleichspreis</p><h2>Holz Bald: optionaler Angebotspreis (nur Notiz)</h2></div></div>
-      <p class="muted">Der Angebotspreis wird nur als Notiz auf diesem Gerät gespeichert und fließt nicht in die Kostenberechnung ein.</p>
+      <div class="card-head"><div><p class="section-kicker">Pellets · Vergleichspreis</p><h2>Lieferantenangebote und Preisverlauf</h2></div></div>
+      <p class="muted">Angebote verschiedener Lieferanten vergleichen. Die Verbrauchskosten werden weiterhin anhand der tatsächlichen Käufe berechnet.</p>
       <p><a href="https://www.heizpellets24.de/holzpellets-sackware/angebotsliste?zipCode=57489&amp;amount=1&amp;stations=1&amp;product=23&amp;options=229,248,-41,244,468&amp;ap=0&amp;pcert=4,2,6,1" target="_blank" rel="noopener noreferrer">Aktuelles Angebot bei HeizPellets24 öffnen ↗</a></p>
       <form id="pelletMarketForm" class="form-grid">
+        <label>Lieferant<select id="pelletOfferSupplier" required></select></label>
+        <label>Neuen Lieferanten anlegen<input id="pelletNewSupplier" placeholder="z. B. Holz Bald" maxlength="80" /></label>
+        <label>Lieferart<select id="pelletOfferType"><option value="bag">Sackware</option><option value="loose">Lose Ware</option></select></label>
         <label>Gesamtpreis inklusive Lieferung (€)<input id="pelletMarketPrice" type="number" min="0.01" step="0.01" required placeholder="z. B. 559,61" /></label>
         <label>Gelieferte Menge (kg)<input id="pelletMarketKg" type="number" min="0.01" step="0.01" required placeholder="z. B. 990" /></label>
         <label>Datum des Angebots<input id="pelletMarketDate" type="date" required /></label>
         <div class="form-actions" style="align-items:end"><button type="submit" class="btn primary">Angebotspreis übernehmen</button></div>
       </form>
       <small class="muted">Ein direkter Live-Preisabruf aus der externen Webseite ist nicht verfügbar. Der hinterlegte Preis wird auf diesem Gerät gespeichert und bleibt als Angebot mit Datum gekennzeichnet.</small>
+      <div id="pelletOfferHistory" style="margin-top:14px"></div>
       <div id="pelletComparisonSettings" class="pellet-compare-grid" style="margin-top:16px"></div>
     </section>
     <section id="basePricesCard" class="card glass">
@@ -2366,6 +2370,8 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
     let stationAddressLookupRunning = false;
     // Auch dieser Schlüssel wird bereits beim ersten Dashboard-Rendering gebraucht.
     const PELLET_MARKET_KEY = 'verbrauch-holzbald-angebot-v1';
+    const PELLET_OFFERS_KEY = 'verbrauch-pellet-offers-v125';
+    const PELLET_SUPPLIERS_KEY = 'verbrauch-pellet-suppliers-v125';
 
     const els = {
       mainTabs: document.getElementById("mainTabs"),
@@ -2913,7 +2919,7 @@ async function loadMarketPrices(force = false) {
       const change = valid && priceDay ? marketDayChange(history,key,priceDay,n) : null;
       return `<article class="energy-market-tile" style="--market-accent:${color}" data-market-key="${key}" role="button" tabindex="0" aria-label="Preisverlauf ${label} öffnen"><h3>${symbol} ${label}</h3><div class="market-value">${valid ? formatCurrency(n) : 'Nicht verfügbar'}</div><p>${unit} · ${escapeHtml(scope)}</p>${valid ? marketDeltaMarkup(change) : ''}<p>${valid ? (item.scope==='manual' ? 'Letzte manuelle Eingabe' : 'Historischer Ausgangswert') : 'Noch kein Preis eingetragen'}${item.checked_at ? ' · '+escapeHtml(marketCheckedDisplay(item.checked_at) || 'Zeitpunkt unbekannt') : ''}</p>${source ? `<p><a href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Quelle öffnen ↗</a></p>` : ''}<div class="market-tile-hint">📈 Preisverlauf anzeigen ↗</div></article>`;
     }).join('');
-    footer.textContent = 'Manuell gepflegte Marktpreise. Der letzte Wert bleibt bis zur nächsten Eingabe sichtbar. Keine Verwendung für Verbrauchs- oder Kostenberechnungen.';
+    footer.textContent = ''; 
   } catch(err) {
     area.innerHTML = '<div class="empty-state" style="grid-column:1/-1">Marktpreise derzeit nicht verfügbar. Die übrigen Funktionen der App sind davon nicht betroffen.</div>';
     footer.textContent = String(err.message || err);
@@ -3387,6 +3393,7 @@ async function loadMarketPrices(force = false) {
       els.settingsForm?.addEventListener("submit", handleSettingsSubmit);
       document.getElementById("githubTokenExpiryForm")?.addEventListener("submit",saveGithubTokenDates);
       document.getElementById("pelletMarketForm")?.addEventListener("submit", savePelletMarketQuote);
+      renderPelletOffers();
       els.pricePeriodForm?.addEventListener("submit", handlePricePeriodSubmit);
       els.bagSizeForm?.addEventListener("submit", handleBagSizeSubmit);
       els.pricePeriodForm?.addEventListener("reset", () => setTimeout(() => {
@@ -6737,6 +6744,15 @@ async function updateRecord(kind, id, payload) {
       } catch (e) { console.warn('Pellet-Angebot ungültig:',e); }
       return null;
     }
+    function pelletOfferData(){try{return JSON.parse(localStorage.getItem(PELLET_OFFERS_KEY)||'[]')||[];}catch{return [];}}
+    function pelletSupplierData(){try{return JSON.parse(localStorage.getItem(PELLET_SUPPLIERS_KEY)||'["Holz Bald"]')||["Holz Bald"];}catch{return ["Holz Bald"];}}
+    function renderPelletOffers(){
+      const select=document.getElementById('pelletOfferSupplier');if(!select)return;
+      const prev=select.value;const suppliers=pelletSupplierData();select.innerHTML='<option value="">Lieferant wählen</option>'+suppliers.map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('');if(suppliers.includes(prev))select.value=prev;
+      const rows=pelletOfferData().slice().sort((a,b)=>b.date.localeCompare(a.date)||b.savedAt.localeCompare(a.savedAt));
+      const el=document.getElementById('pelletOfferHistory');if(!el)return;
+      el.innerHTML='<h3>📈 Angebotshistorie</h3>'+(rows.length?'<div style="overflow-x:auto"><table style="width:100%;text-align:left"><thead><tr><th>Datum</th><th>Lieferant</th><th>Art</th><th>Menge</th><th>Gesamt</th><th>€/t</th></tr></thead><tbody>'+rows.slice(0,40).map(r=>`<tr><td>${escapeHtml(r.date)}</td><td>${escapeHtml(r.supplier)}</td><td>${r.type==='loose'?'Lose Ware':'Sackware'}</td><td>${formatNumber(r.kg)} kg</td><td>${formatCurrency(r.price)}</td><td>${formatCurrency(r.price/r.kg*1000)}</td></tr>`).join('')+'</tbody></table></div>':'<p class="muted">Noch keine Angebote erfasst.</p>');
+    }
     function savePelletMarketQuote(event) {
       event.preventDefault();
       const price = Number(document.getElementById('pelletMarketPrice')?.value);
@@ -6745,7 +6761,13 @@ async function updateRecord(kind, id, payload) {
       if (!(price > 0) || !(kg > 0) || !date || !Number.isFinite(Date.parse(date))) {
         showToast('Bitte gültige Angebotsdaten eingeben.','error'); return;
       }
-      localStorage.setItem(PELLET_MARKET_KEY,JSON.stringify({price,kg,date,source:'Holz Bald / HeizPellets24'}));
+      const input=document.getElementById('pelletNewSupplier');const newSupplier=input.value.trim();const supplier=newSupplier||document.getElementById('pelletOfferSupplier').value;
+      if(!supplier){showToast('Bitte einen Lieferanten auswählen oder anlegen.','error');return;}
+      const suppliers=pelletSupplierData();if(!suppliers.includes(supplier)){suppliers.push(supplier);localStorage.setItem(PELLET_SUPPLIERS_KEY,JSON.stringify(suppliers));}
+      const type=document.getElementById('pelletOfferType').value;
+      const rows=pelletOfferData();rows.push({supplier,type,price,kg,date,savedAt:new Date().toISOString()});localStorage.setItem(PELLET_OFFERS_KEY,JSON.stringify(rows));
+      localStorage.setItem(PELLET_MARKET_KEY,JSON.stringify({price,kg,date,source:supplier,type}));
+      input.value='';renderPelletOffers();document.getElementById('pelletOfferSupplier').value=supplier;
       renderPelletPriceComparisons();
       showToast('Angebotspreis als Information gespeichert.','success');
     }
