@@ -1149,6 +1149,22 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 .weather-config input,.weather-config select{width:100%;min-width:0}
 .weather-plot{width:100%;height:240px;border:1px solid var(--line);border-radius:12px;background:var(--card-solid)}
 @media(max-width:390px){.weather-kpis{gap:4px}.weather-kpis>div{padding:9px 3px}}
+
+.forecast-panel{margin:12px 0 8px;background:var(--card-solid);border:1px solid var(--line);border-radius:18px;padding:18px;color:var(--text)}
+.forecast-title{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}
+.forecast-title h2{font-size:1.12rem;margin:0}.forecast-title small,.forecast-credit{color:var(--muted);font-size:.78rem}
+.forecast-days{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:17px 0}
+.forecast-day{text-align:center;min-width:0;padding:12px 4px;background:rgba(125,145,175,.07);border-radius:12px}
+.forecast-day .forecast-icon{font-size:2.15rem;display:block;margin:10px 0}.forecast-day strong{font-size:1.12rem}.forecast-day .low{color:var(--muted);font-size:.88rem}
+.forecast-astro{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;border-top:1px solid var(--line);padding-top:15px}
+.forecast-astro>div{text-align:center;font-size:.87rem}.forecast-astro strong{display:block;margin-top:5px}
+.forecast-hourly{margin-top:14px}.forecast-hourly summary{cursor:pointer;font-weight:650}
+.forecast-hours{display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));gap:7px;margin-top:10px}
+.forecast-hours>div{padding:9px;border-radius:9px;background:rgba(125,145,175,.08);font-size:.81rem}
+.forecast-credit{display:block;margin-top:13px}.display-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:15px 0}
+.display-options label{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:13px;cursor:pointer;background:var(--card-solid)}
+.display-options input{width:19px;height:19px;accent-color:#0284c7}
+@media(max-width:460px){.forecast-panel{padding:12px}.forecast-day .forecast-icon{font-size:1.8rem}.forecast-day{padding:9px 2px}.forecast-day strong{font-size:.94rem}.forecast-astro>div{font-size:.75rem}}
 </style>
 </head>
 <body>
@@ -1161,11 +1177,12 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v130</strong> · 1.3.1.163<br><small>Letzte Änderung: 22.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v131</strong> · 1.3.1.164<br><small>Letzte Änderung: 22.10.2026</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
-    <section id="weatherOverview" class="weather-overview" hidden></section>
+    <section id="forecastPanel" class="forecast-panel" data-display-key="forecast"><div class="forecast-title"><h2>🌤️ Wettervorhersage · 48 Stunden</h2><small id="forecastUpdated">Lade gespeicherte Vorhersage …</small></div><div id="forecastBody" class="forecast-days"></div><div id="forecastAstro" class="forecast-astro"></div><details class="forecast-hourly"><summary>Stündliche Vorhersage anzeigen</summary><div id="forecastHours" class="forecast-hours"></div></details><small class="forecast-credit">Wetterdaten: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a></small></section>
+    <section id="weatherOverview" class="weather-overview" data-display-key="stations" hidden></section>
 
     <nav class="tabs nav-v94" id="mainTabs" aria-label="Hauptnavigation">
       <button class="main-nav-btn selected" type="button" data-group="dashboardView">🏠 Übersicht</button>
@@ -1193,7 +1210,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
           <div id="dashboardStats" class="dash-kpis"></div>
         </section>
 
-        <section class="card wide" aria-label="Marktpreise in Drolshagen">
+        <section class="card wide" aria-label="Marktpreise in Drolshagen" data-display-key="energy">
           <div class="card-head"><div><p class="section-kicker">ENERGIEPREISE · 57489 DROLSHAGEN</p><h2>Aktuelle Marktpreise</h2><small class="muted"></small></div><button class="btn ghost" id="marketRefreshBtn" type="button">Preise manuell eintragen</button></div>
           <p class="muted" style="margin:-5px 0 12px;font-size:.84rem">Kachel anklicken, um Preisverlauf und Zeitraum auszuwählen.</p>
           <div class="market-fetch-status" id="marketFetchStatus" role="status" aria-live="polite"><span class="market-fetch-dot" aria-hidden="true"></span><span>Letzte manuelle Eingabe wird geladen …</span></div>
@@ -1210,27 +1227,29 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
           </form>
           <div class="energy-market-grid" id="energyMarketPrices" aria-live="polite"><p class="muted">Preisübersicht wird geladen …</p></div>
           <p class="muted" id="energyMarketUpdated" style="margin:12px 0 0;font-size:.8rem"></p>
-          <div class="fuel-nation-head fuel-nation-clean"><h3>Aktuelle Spritpreise</h3></div>
+        </section>
+        <section class="card wide" data-display-key="fuel" aria-label="Spritpreise Deutschland">
+          <div class="fuel-nation-head fuel-nation-clean"><h3>⛽ Aktuelle Spritpreise</h3></div>
           <div id="fuelNationalMarket" class="energy-market-grid" aria-live="polite"><p class="muted">Durchschnittspreise werden geladen …</p></div>
           <p id="fuelNationalUpdated" class="muted" style="font-size:.8rem;margin-top:9px"></p>
 
         </section>
 
-        <section class="card wide" aria-label="Kostenüberblick">
+        <section class="card wide" aria-label="Kostenüberblick" data-display-key="cost">
           <div class="dash-section-header"><div><p class="section-kicker">Kostenblick</p><h2>Monatskosten und Trends</h2></div></div>
           <div id="dashboardCostTotals" class="dash-totals" aria-live="polite"></div>
         </section>
 
-    <section class="card wide" id="pelletComparisonSection">
+    <section class="card wide" id="pelletComparisonSection" data-display-key="pellet">
       <div class="card-head"><div><p class="section-kicker">Pelletspreise</p><h2>Heizkosten nach letztem Pelletskauf</h2></div><span class="badge">Nur letzter Kauf zählt</span></div>
       <div id="pelletComparisonDashboard" class="pellet-compare-grid"></div>
     </section>
-        <section class="card wide" aria-label="Monatsvergleich">
+        <section class="card wide" aria-label="Monatsvergleich" data-display-key="monthlyChart">
           <div class="dash-section-header"><div><p class="section-kicker">Entwicklung</p><h2>Monatsvergleich · Ø pro Tag</h2><small class="muted">Verbrauch zwischen zwei Ablesungen wird zeitanteilig auf die jeweiligen Monate verteilt.</small></div><div class="dash-chart-controls"><label for="dashboardChartMetric">Anzeigen</label><select id="dashboardChartMetric"><option value="cost">Kosten (€)</option><option value="strom">Strom (kWh)</option><option value="wasser">Wasser (m³)</option><option value="pellets">Pellets (kg)</option></select></div></div>
           <div id="dashboardMonthlyChart" class="dash-month-chart" aria-live="polite"></div>
           <div id="dashboardMonthlyChartLegend" class="dash-month-legend"></div>
         </section>
-        <section class="card wide">
+        <section class="card wide" data-display-key="monthlyOverview">
           <div class="card-head">
             <div>
               <p class="section-kicker">Monatsübersicht</p>
@@ -2240,6 +2259,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 <section id="offersView" class="view"><div class="grid" id="offersViewGrid"></div></section>
 <section id="purchasesView" class="view"><div class="grid" id="purchasesViewGrid"></div></section>
 <section id="carSettingsView" class="view"><div class="grid" id="carSettingsViewGrid"></div></section>
+<section id="displayView" class="view"><section class="card wide glass"><p class="section-kicker">PERSONALISIERUNG</p><h2>🎛️ Darstellung</h2><p class="muted">Wähle die Kacheln aus, die auf deiner Start- und Übersichtsseite sichtbar sein sollen. Änderungen werden auf diesem Gerät gespeichert.</p><div id="displayOptions" class="display-options"></div><button id="displayReset" class="btn ghost" type="button">Standardansicht wiederherstellen</button></section></section>
 <section id="firebaseView" class="view"><div class="grid" id="firebaseViewGrid"></div></section>
 <section id="notificationsView" class="view"><div class="grid" id="notificationsViewGrid"></div></section>
 <section id="pricesView" class="view"><div class="grid" id="pricesViewGrid"></div></section>
@@ -2313,6 +2333,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+  <script src="./forecast.js" defer></script>
   <script src="./weather.js" defer></script>
   <script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
@@ -2568,7 +2589,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       carsView: [['⛽ Tanken','carsView'],['🚙 Fahrzeugeinstellungen','carSettingsView']],
       spritpreiseView: [['⛽ Tankstellenpreise','spritpreiseView']],
       weatherView: [['📈 Diagramme','weatherView']],
-      firebaseView: [['☁️ Firebase','firebaseView'],['🔔 Benachrichtigungen','notificationsView'],['💰 Preise','pricesView'],['💾 Backup','backupView'],['🌡️ Wetterstationen','weatherSettingsView']]
+      firebaseView: [['☁️ Firebase','firebaseView'],['🔔 Benachrichtigungen','notificationsView'],['💰 Preise','pricesView'],['💾 Backup','backupView'],['🌡️ Wetterstationen','weatherSettingsView'],['🎛️ Darstellung','displayView']]
     };
     let currentNavGroupV94='dashboardView';
     function openNavGroupV94(group, target){
