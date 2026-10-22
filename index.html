@@ -1164,9 +1164,20 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
         </section>
 
         <section class="card wide" aria-label="Marktpreise in Drolshagen">
-          <div class="card-head"><div><p class="section-kicker">ENERGIEPREISE · 57489 DROLSHAGEN</p><h2>Aktuelle Marktpreise</h2><small class="muted">Nur zur Information. Für die Pellets-Kostenrechnung zählt ausschließlich der letzte gespeicherte Kauf.</small></div><button class="btn ghost" id="marketRefreshBtn" type="button">Preise aktualisieren</button></div>
+          <div class="card-head"><div><p class="section-kicker">ENERGIEPREISE · 57489 DROLSHAGEN</p><h2>Aktuelle Marktpreise</h2><small class="muted">Nur zur Information. Für die Pellets-Kostenrechnung zählt ausschließlich der letzte gespeicherte Kauf.</small></div><button class="btn ghost" id="marketRefreshBtn" type="button">Preise manuell eintragen</button></div>
           <p class="muted" style="margin:-5px 0 12px;font-size:.84rem">Kachel anklicken, um Preisverlauf und Zeitraum auszuwählen.</p>
-          <div class="market-fetch-status" id="marketFetchStatus" role="status" aria-live="polite"><span class="market-fetch-dot" aria-hidden="true"></span><span>Letzter Preisdatei-Stand wird geladen …</span></div>
+          <div class="market-fetch-status" id="marketFetchStatus" role="status" aria-live="polite"><span class="market-fetch-dot" aria-hidden="true"></span><span>Letzte manuelle Eingabe wird geladen …</span></div>
+          <form id="manualMarketForm" class="card" style="display:none;margin:12px 0;padding:16px" aria-label="Marktpreise manuell eintragen">
+            <h3>✍️ Energiepreise manuell erfassen</h3><p class="muted">Nur ausgefüllte Felder werden gespeichert. Unveränderte Preise bleiben erhalten. Preisverlauf und letzte Werte werden weiter angezeigt.</p>
+            <div class="price-grid">
+              <label>Pellets lose (€/1.000 kg)<input id="manualPelletsLoose" type="number" min="0.01" step="0.01" placeholder="z. B. 442,42"></label>
+              <label>Pellets Sackware (€/1.000 kg)<input id="manualPelletsBag" type="number" min="0.01" step="0.01" placeholder="z. B. 525,34"></label>
+              <label>Heizöl (€/100 Liter)<input id="manualHeatingOil" type="number" min="0.01" step="0.01" placeholder="z. B. 177,30"></label>
+              <label>Datum der Preisangabe<input id="manualMarketDate" type="date" required></label>
+            </div>
+            <p class="muted">Preise nachsehen: <a href="https://www.holzpellets.net/pelletspreise/" target="_blank" rel="noopener noreferrer">Pelletspreise ↗</a> · <a href="https://www.holzpellets24.de/" target="_blank" rel="noopener noreferrer">Pellets Sackware ↗</a> · <a href="https://www.tecson.de/de/heizoelpreise.html" target="_blank" rel="noopener noreferrer">TECSON Heizöl ↗</a> · <a href="https://www.heizoel24.de/heizoelpreise" target="_blank" rel="noopener noreferrer">HeizOel24 ↗</a></p>
+            <div class="form-actions"><button class="btn primary" type="submit">Preise speichern</button><button class="btn ghost" id="manualMarketCancel" type="button">Schließen</button></div>
+          </form>
           <div class="energy-market-grid" id="energyMarketPrices" aria-live="polite"><p class="muted">Preisübersicht wird geladen …</p></div>
           <p class="muted" id="energyMarketUpdated" style="margin:12px 0 0;font-size:.8rem"></p>
           <div class="fuel-nation-head fuel-nation-clean"><h3>Aktuelle Spritpreise</h3></div>
@@ -1831,7 +1842,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="push-rules-grid-v89">
         <label class="push-rule-v89">
-          <span class="push-rule-top"><span class="push-rule-icon">🔥</span><span class="push-rule-content"><strong>Energiepreise zum Wunschzeitpunkt</strong><small>Lose Pellets, Sackware und Heizöl zu deinen eingestellten Uhrzeiten.</small></span></span>
+          <span class="push-rule-top"><span class="push-rule-icon">🔥</span><span class="push-rule-content"><strong>Erinnerung zur manuellen Preiseingabe</strong><small>Erinnert dich an die manuelle Erfassung von Heizöl- und Pelletspreisen.</small></span></span>
           <span class="push-rule-bottom"><span class="push-rule-state"><span class="push-rule-state-on">Aktiviert</span><span class="push-rule-state-off">Deaktiviert</span></span><input class="push-switch" id="rulePrices" type="checkbox" checked aria-label="Tägliche Energiepreise aktivieren"></span>
         </label>
         <label class="push-rule-v89">
@@ -1848,10 +1859,10 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
         </label>
       </div>
       <div class="push-rules-controls price-schedule-box" id="pricePushSchedulePanel">
-        <div class="push-rules-control-head"><div><strong>🕒 Energiepreis-Push: Uhrzeiten</strong><small>Gilt für alle angemeldeten Geräte. Uhrzeiten nach Europe/Berlin. Füge eine oder mehrere tägliche Benachrichtigungen hinzu.</small></div><span class="push-rules-chip" id="priceTimeCounter">2 Zeiten</span></div>
-        <div id="pricePushTimeList" class="price-times-list" aria-live="polite"></div>
-        <div class="price-times-bottom"><button class="btn secondary" type="button" id="addPricePushTime">＋ Uhrzeit hinzufügen</button><span class="muted">Die Preisprüfung läuft unabhängig davon alle 2 Stunden von 06:00 bis 18:00 Uhr.</span></div>
-        <p class="muted" style="margin:12px 0 0;font-size:.82rem">Auch ohne Preisänderung wird zur gewählten Uhrzeit der zuletzt bestätigte Preis mit seinem Datenstand gemeldet. Bei fehlgeschlagenem Abruf wird das ausdrücklich gekennzeichnet.</p>
+        <div class="push-rules-control-head"><div><strong>🕒 Erinnerung zur Preiseingabe: Uhrzeit</strong><small>Gilt für alle angemeldeten Geräte. Uhrzeiten nach Europe/Berlin. Wähle eine Erinnerungszeit und ein Intervall in Tagen.</small></div><span class="push-rules-chip" id="priceTimeCounter">1 Uhrzeit</span></div>
+        <div id="pricePushTimeList" class="price-times-list" aria-live="polite"></div><label style="display:block;margin-top:12px">Erinnerungsintervall (Tage) <input id="priceReminderInterval" type="number" min="1" max="365" step="1" value="1" style="max-width:130px"></label>
+        <div class="price-times-bottom"><button class="btn secondary" type="button" id="addPricePushTime">＋ Uhrzeit hinzufügen</button><span class="muted">Es erfolgen keine automatischen Preisabfragen.</span></div>
+        <p class="muted" style="margin:12px 0 0;font-size:.82rem">Die Nachricht erinnert nur an die Eingabe. Es werden keine Marktpreise automatisch abgerufen.</p>
       </div>
       <div class="push-rules-controls">
         <div class="push-rules-control-head"><div><strong>⚙️ Empfindlichkeit der Verbrauchswarnung</strong><small>Warnung bei einer Abweichung vom historischen Vergleichswert. Mindestens 7 Tage aktuelles Ableseintervall und 90 Tage Historie.</small></div></div>
@@ -2563,7 +2574,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
     }
     function activatePriceTimes(times){
       const list=document.getElementById('pricePushTimeList');if(!list)return;
-      const valid=Array.isArray(times)?times.filter(t=>/^([01]\d|2[0-3]):[0-5]\d$/.test(t)).slice(0,12):[];
+      const valid=Array.isArray(times)?times.filter(t=>/^([01]\d|2[0-3]):[0-5]\d$/.test(t)).slice(0,1):[];
       list.replaceChildren();
       for(const time of valid){
         const row=document.createElement('div');row.className='price-time-row';
@@ -2583,9 +2594,9 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       return times.sort();
     }
     function registerPriceTimeControls(){
-      activatePriceTimes(['10:00','17:15']);
+      activatePriceTimes(['18:00']);
       document.getElementById('addPricePushTime')?.addEventListener('click',()=>{
-        if(document.querySelectorAll('#pricePushTimeList .price-push-time').length>=12){setRulesStatus('Maximal 12 Uhrzeiten möglich.',true);return;}
+        if(document.querySelectorAll('#pricePushTimeList .price-push-time').length>=1){setRulesStatus('Eine Erinnerungszeit genügt.',true);return;}
         const now=new Date();const t=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
         const times=[...document.querySelectorAll('#pricePushTimeList .price-push-time')].map(e=>e.value);
         // Neue Uhrzeit sofort editierbar, für schnelle Live-Tests.
@@ -2739,7 +2750,11 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       document.addEventListener('keydown', e => {
         if(e.key === 'Escape' && !document.getElementById('marketHistoryModal')?.hidden) closeMarketHistory();
       });
-      document.getElementById('marketRefreshBtn')?.addEventListener('click', () => loadMarketPrices(true));
+      document.getElementById('marketRefreshBtn')?.addEventListener('click', () => {const f=document.getElementById('manualMarketForm');f.style.display=f.style.display==='none'?'block':'none';});
+      document.getElementById('manualMarketCancel')?.addEventListener('click',()=>document.getElementById('manualMarketForm').style.display='none');
+      document.getElementById('manualMarketDate').value=new Date().toLocaleDateString('en-CA');
+      document.getElementById('manualMarketForm')?.addEventListener('submit',saveManualMarketPrices);
+      manualMarketRecords=localMarketRecords();
       void loadMarketPrices();
       void loadNationalFuelPrices();
       document.getElementById('fuelNationalMarket')?.addEventListener('click',e=>{const tile=e.target.closest('[data-national-fuel]');if(tile)void openNationalFuelHistory(tile.dataset.nationalFuel);});
@@ -2771,20 +2786,47 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 // Marktpreis-Historie: nur bestätigte Preise mit exakt dem Vortag vergleichen.
 // Keine stillschweigende Ersetzung durch ältere verfügbare Werte.
 let marketHistoryCache = null;
-let marketHistoryPromise = null;
-async function getMarketHistory(force = false) {
-  if (!force && marketHistoryCache) return marketHistoryCache;
-  if (!force && marketHistoryPromise) return marketHistoryPromise;
-  marketHistoryPromise = (async () => {
-    const res = await fetch('./market-price-history.json?v='+Date.now(), {cache:'no-store'});
-    if (!res.ok) throw new Error('Preisverlauf HTTP '+res.status);
-    const data = await res.json();
-    if (!Array.isArray(data.records)) throw new Error('Unbekanntes Historienformat');
-    marketHistoryCache = data.records;
-    return marketHistoryCache;
-  })();
-  try { return await marketHistoryPromise; }
-  finally { marketHistoryPromise = null; }
+let manualMarketRecords = [];
+const MANUAL_MARKET_KEY='verbrauch-manual-market-v1';
+const MANUAL_PRICE_FIELDS={pellets_loose:'manualPelletsLoose',pellets_bag:'manualPelletsBag',heating_oil:'manualHeatingOil'};
+function localMarketRecords(){try{return JSON.parse(localStorage.getItem(MANUAL_MARKET_KEY)||'[]')}catch{return []}}
+function combinedMarketRecords(legacy){
+  const byDay=new Map();
+  for(const row of [...legacy,...manualMarketRecords]){
+    const day=String(row.date||'').slice(0,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(day))continue;
+    const prior=byDay.get(day)||{date:day,prices:{}};
+    byDay.set(day,{date:day,checked_at:row.checked_at||prior.checked_at,prices:{...prior.prices,...row.prices}});
+  }
+  return [...byDay.values()].sort((a,b)=>a.date.localeCompare(b.date));
+}
+async function getMarketHistory(force=false){
+  let legacy=[];
+  try{const r=await fetch('./market-price-history.json',{cache:'no-store'});if(r.ok){const j=await r.json();legacy=Array.isArray(j.records)?j.records:[];}}catch(e){console.warn('Historische Ausgangsdaten fehlen:',e)}
+  marketHistoryCache=combinedMarketRecords(legacy);return marketHistoryCache;
+}
+async function saveManualMarketPrices(event){
+  event.preventDefault();
+  const date=document.getElementById('manualMarketDate').value;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||date>new Date().toLocaleDateString('en-CA'))return showToast('Bitte gültiges Datum bis heute wählen.','error');
+  const prices={};
+  for(const [key,id] of Object.entries(MANUAL_PRICE_FIELDS)){
+    const raw=document.getElementById(id).value.trim();if(!raw)continue;
+    const n=Number(raw);if(!Number.isFinite(n)||n<=0||n>10000)return showToast('Bitte gültige Preise eingeben.','error');
+    prices[key]=Math.round(n*100)/100;
+  }
+  if(!Object.keys(prices).length)return showToast('Mindestens einen Preis eingeben.','error');
+  const row={date,checked_at:new Date().toISOString(),prices,manual:true};
+  try{
+    if(state.firebaseEnabled&&state.db){
+      await setDoc(doc(state.db,`${householdBasePath()}/marketQuotes/${date}`),{date,checked_at:row.checked_at,prices},{merge:true});
+    }else{
+      const rows=localMarketRecords();const i=rows.findIndex(r=>r.date===date);
+      if(i>=0)rows[i]={...rows[i],checked_at:row.checked_at,prices:{...rows[i].prices,...prices}};else rows.push(row);
+      localStorage.setItem(MANUAL_MARKET_KEY,JSON.stringify(rows));manualMarketRecords=rows;
+    }
+    await loadMarketPrices(true);document.getElementById('manualMarketForm').reset();document.getElementById('manualMarketDate').value=new Date().toLocaleDateString('en-CA');
+    document.getElementById('manualMarketForm').style.display='none';showToast('Preise und Historie gespeichert.','success');
+  }catch(e){showToast('Speichern fehlgeschlagen: '+String(e.message||e),'error')}
 }
 function berlinMarketDay(timestamp) {
   const d=new Date(timestamp);
@@ -2847,7 +2889,7 @@ async function loadMarketPrices(force = false) {
     const fileTime=marketCheckedDisplay(data.generated_at);
     if(status) {
       status.classList.toggle('unknown',!fileTime);
-      status.innerHTML=`<span class="market-fetch-dot" aria-hidden="true"></span><span>${fileTime ? 'Letzte veröffentlichte Preisdatei: <strong>'+escapeHtml(fileTime)+'</strong>' : 'Zeitpunkt der letzten Preisdatei nicht bekannt'}</span>`;
+      status.innerHTML=`<span class="market-fetch-dot" aria-hidden="true"></span><span>Marktpreise: manuelle Eingabe · zuletzt gespeicherter Stand</span>`;
     }
     let history=[];
     try { history=await getMarketHistory(force); }
@@ -2859,18 +2901,19 @@ async function loadMarketPrices(force = false) {
     ];
     const now = Date.now();
     area.innerHTML = definitions.map(([key,label,symbol,color,unit]) => {
-      const item = data?.prices?.[key] || {};
+      const latestManual=[...manualMarketRecords].sort((a,b)=>String(b.date).localeCompare(String(a.date))).find(r=>validMarketNumber(r.prices?.[key])!==null);
+      const item = latestManual ? {price:latestManual.prices[key],checked_at:latestManual.date+'T12:00:00Z',scope:'manual',source_url:''} : (data?.prices?.[key] || {});
       const n = validMarketNumber(item.price);
       const valid = n!==null;
       const age = item.checked_at ? now - new Date(item.checked_at).getTime() : Infinity;
       const fresh = valid && age >= 0 && age <= 48*3600*1000;
       const source = item.source_url && /^https:\/\//.test(item.source_url) ? item.source_url : '';
-      const scope = item.scope === 'national' ? 'Deutschland-Durchschnitt · nicht regional' : '57489 Drolshagen';
+      const scope = item.scope === 'manual' ? 'Manuell erfasst' : item.scope === 'national' ? 'Deutschland-Durchschnitt · nicht regional' : '57489 Drolshagen';
       const priceDay= item.checked_at ? berlinMarketDay(item.checked_at) : null;
       const change = valid && priceDay ? marketDayChange(history,key,priceDay,n) : null;
-      return `<article class="energy-market-tile" style="--market-accent:${color}" data-market-key="${key}" role="button" tabindex="0" aria-label="Preisverlauf ${label} öffnen"><h3>${symbol} ${label}</h3><div class="market-value">${valid ? formatCurrency(n) : 'Nicht verfügbar'}</div><p>${unit} · ${escapeHtml(scope)}</p>${valid ? marketDeltaMarkup(change) : ''}<p>${valid ? (fresh ? 'Aktuelle Preisprüfung' : 'Älterer Preis, bitte Datum beachten') : 'Noch kein verifizierter Preis abrufbar'}${item.checked_at ? ' · '+escapeHtml(marketCheckedDisplay(item.checked_at) || 'Zeitpunkt unbekannt') : ''}</p>${source ? `<p><a href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Quelle öffnen ↗</a></p>` : ''}<div class="market-tile-hint">📈 Preisverlauf anzeigen ↗</div></article>`;
+      return `<article class="energy-market-tile" style="--market-accent:${color}" data-market-key="${key}" role="button" tabindex="0" aria-label="Preisverlauf ${label} öffnen"><h3>${symbol} ${label}</h3><div class="market-value">${valid ? formatCurrency(n) : 'Nicht verfügbar'}</div><p>${unit} · ${escapeHtml(scope)}</p>${valid ? marketDeltaMarkup(change) : ''}<p>${valid ? (item.scope==='manual' ? 'Letzte manuelle Eingabe' : 'Historischer Ausgangswert') : 'Noch kein Preis eingetragen'}${item.checked_at ? ' · '+escapeHtml(marketCheckedDisplay(item.checked_at) || 'Zeitpunkt unbekannt') : ''}</p>${source ? `<p><a href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Quelle öffnen ↗</a></p>` : ''}<div class="market-tile-hint">📈 Preisverlauf anzeigen ↗</div></article>`;
     }).join('');
-    footer.textContent = 'Marktpreise nur zur Orientierung. Preisbasis und Bestellmenge unterscheiden sich je nach Anbieter. Keine Verwendung für Verbrauchs- oder Kostenberechnungen.';
+    footer.textContent = 'Manuell gepflegte Marktpreise. Der letzte Wert bleibt bis zur nächsten Eingabe sichtbar. Keine Verwendung für Verbrauchs- oder Kostenberechnungen.';
   } catch(err) {
     area.innerHTML = '<div class="empty-state" style="grid-column:1/-1">Marktpreise derzeit nicht verfügbar. Die übrigen Funktionen der App sind davon nicht betroffen.</div>';
     footer.textContent = String(err.message || err);
@@ -2907,7 +2950,7 @@ async function loadMarketPrices(force = false) {
         renderMarketHistoryChart();
       } catch (e) {
         marketHistoryRows=[];
-        document.getElementById('marketHistoryChart').innerHTML='<div class="empty-state">Noch keine Preis-Historie verfügbar. Der nächste erfolgreiche GitHub-Actions-Durchlauf legt die Historie automatisch an.</div>';
+        document.getElementById('marketHistoryChart').innerHTML='<div class="empty-state">Noch keine Preis-Historie verfügbar. Trage einen Preis ein, um die Historie fortzuschreiben.</div>';
       }
     }
 
@@ -2938,7 +2981,7 @@ async function loadMarketPrices(force = false) {
       });
       const points=[...byDay.values()].sort((a,b)=>a.day.localeCompare(b.day));
       if (!points.length) {
-        container.innerHTML='<div class="empty-state">Für diesen Zeitraum sind noch keine historischen Preise gespeichert. Bitte einen längeren Zeitraum wählen oder weitere automatische Abrufe abwarten.</div>';
+        container.innerHTML='<div class="empty-state">Für diesen Zeitraum sind noch keine historischen Preise gespeichert. Bitte einen längeren Zeitraum wählen oder weitere Preise manuell erfassen.</div>';
         details.innerHTML='';
         return;
       }
@@ -3584,14 +3627,14 @@ function formatStationShort(station) {
       }catch(error){pushStatus('❌ '+error.message,true);}
     }
     // v86: Push-Regeln liegen zentral beim authentifizierten Cloudflare Worker.
-    const PUSH_RULE_DEFAULTS={prices:true,reminder:true,warnings:true,fuel:true,threshold:30,priceTimes:['10:00','17:15']};
+    const PUSH_RULE_DEFAULTS={prices:true,reminder:true,warnings:true,fuel:true,threshold:30,priceTimes:['18:00'],priceIntervalDays:1};
     function setRulesStatus(message,bad=false){const el=document.getElementById('pushRulesStatus');if(el){const success=!bad&&(/geladen|gespeichert/i).test(message);el.dataset.state=bad?'error':success?'success':'info';const txt=el.querySelector('.push-rules-message-text');const ico=el.querySelector('.push-rules-message-icon');if(txt)txt.textContent=message;if(ico)ico.textContent=bad?'❌':success?'✅':'ℹ️';}}
     function syncRulesView(){const ids=['rulePrices','ruleReminder','ruleWarnings','ruleFuel'];const n=ids.filter(id=>document.getElementById(id)?.checked).length;const count=document.getElementById('pushRulesActiveCount');if(count)count.textContent=n+' von 4 aktiv';const field=document.getElementById('ruleThreshold');const slider=document.getElementById('ruleThresholdSlider');if(field&&slider&&document.activeElement!==slider){const v=Number(field.value);if(Number.isFinite(v)&&v>=10&&v<=200)slider.value=String(v);}}
     function readRulesInputs(){return {prices:document.getElementById('rulePrices').checked,reminder:document.getElementById('ruleReminder').checked,
-      warnings:document.getElementById('ruleWarnings').checked,fuel:document.getElementById('ruleFuel').checked,threshold:Number(document.getElementById('ruleThreshold').value),priceTimes:readPriceTimes()};}
+      warnings:document.getElementById('ruleWarnings').checked,fuel:document.getElementById('ruleFuel').checked,threshold:Number(document.getElementById('ruleThreshold').value),priceTimes:readPriceTimes().slice(0,1),priceIntervalDays:Number(document.getElementById('priceReminderInterval').value)};}
     function applyRulesInputs(rules){const r={...PUSH_RULE_DEFAULTS,...rules};
       for(const [key,id] of [['prices','rulePrices'],['reminder','ruleReminder'],['warnings','ruleWarnings'],['fuel','ruleFuel']])document.getElementById(id).checked=!!r[key];
-      document.getElementById('ruleThreshold').value=r.threshold;activatePriceTimes(r.priceTimes);syncRulesView();}
+      document.getElementById('ruleThreshold').value=r.threshold;activatePriceTimes(r.priceTimes);document.getElementById('priceReminderInterval').value=r.priceIntervalDays||1;syncRulesView();}
     function registerPushRules(){
       for(const id of ['rulePrices','ruleReminder','ruleWarnings','ruleFuel'])document.getElementById(id)?.addEventListener('change',syncRulesView);
       document.getElementById('ruleThresholdSlider')?.addEventListener('input',e=>{document.getElementById('ruleThreshold').value=e.target.value;});
@@ -3602,9 +3645,9 @@ function formatStationShort(station) {
         catch(e){setRulesStatus('❌ '+e.message,true);}
       });
       document.getElementById('pushRulesSave')?.addEventListener('click',async()=>{
-        try{const rules=readRulesInputs();if(!Number.isFinite(rules.threshold)||rules.threshold<10||rules.threshold>200)throw new Error('Grenzwert zwischen 10 und 200 % wählen.');
+        try{const rules=readRulesInputs();if(!Number.isInteger(rules.priceIntervalDays)||rules.priceIntervalDays<1||rules.priceIntervalDays>365)throw new Error('Erinnerungsintervall: 1 bis 365 Tage wählen.');if(!Number.isFinite(rules.threshold)||rules.threshold<10||rules.threshold>200)throw new Error('Grenzwert zwischen 10 und 200 % wählen.');
           setRulesStatus('Speichere für den gesamten Haushalt …');const response=await pushRequest('/settings/set',{rules});applyRulesInputs(response.rules);
-          setRulesStatus('✅ Regeln zentral gespeichert. Sie gelten für Cron und tägliche GitHub-Pushs.');}
+          setRulesStatus('✅ Regeln zentral gespeichert. Sie gelten für den Cloudflare-Erinnerungsdienst.');}
         catch(e){setRulesStatus('❌ '+e.message,true);}
       });
     }
@@ -6061,6 +6104,11 @@ renderFuelMap();
       const fuelEntriesQuery = query(collection(state.db, `${basePath}/fuelEntries`), orderBy("date", "desc"));
       const chargeEntriesQuery = query(collection(state.db, `${basePath}/chargeEntries`), orderBy("date", "desc"));
       const stationsCollection = collection(state.db, `${basePath}/stations`);
+      state.unsubscribers.push(onSnapshot(collection(state.db,`${basePath}/marketQuotes`),snapshot=>{
+        manualMarketRecords=snapshot.docs.map(d=>d.data()).filter(r=>r&&r.prices);
+        marketHistoryCache=null;void loadMarketPrices(true);
+      },e=>console.warn('Manuelle Marktpreise:',e)));
+
         
       const listenerError = (area, error) => {
         console.error(`Firestore ${area}:`, error);
