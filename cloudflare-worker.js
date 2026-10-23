@@ -105,7 +105,7 @@ if(new URL(req.url).pathname==='/fuel-prices'){
     const bearer=keys.length?await accessToken(env):null;
     let sent=0,failed=0;
     for(const key of keys){
-      const info=await env.PUSH_DEVICES.get(key.name,'json');if(!info?.token)continue;
+      const info=await env.PUSH_DEVICES.get(key.name,'json');if(!info?.token){console.warn('Push-Gerät ohne FCM-Token:',key.name);continue;}
       try{
         const res=await fetch('https://fcm.googleapis.com/v1/projects/'+encodeURIComponent(env.FCM_PROJECT_ID)+'/messages:send',{
           method:'POST',headers:{Authorization:'Bearer '+bearer,'Content-Type':'application/json'},
@@ -179,7 +179,7 @@ async function broadcastInternal(env,household,title,body){
   let sent=0,failed=0;
   for(const key of keys){
     const info=await env.PUSH_DEVICES.get(key.name,'json');
-    if(!info?.token)continue;
+    if(!info?.token){console.warn('Push-Gerät ohne FCM-Token:',key.name);continue;}
     const res=await fetch('https://fcm.googleapis.com/v1/projects/'+encodeURIComponent(env.FCM_PROJECT_ID)+'/messages:send',{
       method:'POST',headers:{Authorization:'Bearer '+bearer,'Content-Type':'application/json'},
       body:JSON.stringify({message:{token:info.token,data:{title:safeString(title,80),body:safeString(body,180)},webpush:{headers:{TTL:'3600',Urgency:'high'}}}})
@@ -194,13 +194,14 @@ async function broadcastInternal(env,household,title,body){
   return {sent,failed};
 }
 async function sendEventOnce(env,household,key,title,body){
-  if(await env.PUSH_DEVICES.get(WATCH_PREFIX+'event:'+household+':'+key))return false;
+  if(await env.PUSH_DEVICES.get(WATCH_PREFIX+'event:'+household+':'+key)){console.log('Push übersprungen: bereits versendet',key);return {status:'already-sent',sent:0};}
   const result=await broadcastInternal(env,household,title,body);
+  if(result.sent===0){console.warn('Push nicht als gesendet markiert: keine erfolgreiche FCM-Zustellung',key);return {status:'no-devices',sent:0};}
   //  Erst nach erfolgreichem Übergeben an FCM als gesendet markieren.*
   //  Ohne registrierte Geräte nicht nachträglich alte Ereignisse zustellen.*
   await env.PUSH_DEVICES.put(WATCH_PREFIX+'event:'+household+':'+key,new Date().toISOString(),{expirationTtl:7776000});
   console.log('Push-Ereignis',key,'gesendet',result.sent);
-  return true;
+  return {status:'sent',sent:result.sent};
 }
 function readingAlert(latest,all,type,threshold=30){
   const series=all.filter(row=>row.type===type&&Number.isFinite(deNumber(row.value))&&Date.parse(row.date))
@@ -526,8 +527,9 @@ async function weatherSendReport(env,h,st){
    const nightBegin=dayNightMode==='solar'?solarInstant(yesterday,lat,lon,false):berlinInstant(yesterday,st.nightStart||'18:00');
    const nightEnd=dayNightMode==='solar'?todaySunrise:berlinInstant(local.day,st.dayStart||'06:00');
    // Cheap due check: never list or read historical measurements before sunrise.
-   if(due!==null&&dayBegin!==null&&nightBegin!==null&&nightEnd!==null&&
-      now>=due&&now>=nightEnd&&dayBegin<nightBegin&&nightBegin<nightEnd){
+   const eligible=due!==null&&dayBegin!==null&&nightBegin!==null&&nightEnd!==null&&now>=due&&now>=nightEnd&&dayBegin<nightBegin&&nightBegin<nightEnd;
+   console.log('Wetterbericht Prüfung',JSON.stringify({station:st.id,day:local.day,mode,dayNightMode,now,due,dayBegin,nightBegin,nightEnd,eligible,revision:st.reportRevision||0}));
+   if(eligible){
      const eventId='morning:'+st.id+':'+local.day+':r'+(Number.isSafeInteger(st.reportRevision)?st.reportRevision:0);
      // Already sent? Avoid scanning historical KV keys on subsequent five-minute ticks.
      if(!(await env.PUSH_DEVICES.get(WATCH_PREFIX+'event:'+h+':'+eventId))){
@@ -547,13 +549,13 @@ async function weatherSendReport(env,h,st){
        }while(cursor&&loops<15);
        const range=vals=>vals.length?'Min '+Math.min(...vals).toFixed(1)+' °C · Max '+Math.max(...vals).toFixed(1)+' °C':'Keine Daten';
        const clock=ms=>berlinParts(new Date(ms)).time;
-       await sendEventOnce(env,h,eventId,
+       const result=await sendEventOnce(env,h,eventId,
          (st.emoji||'🌡️')+' '+st.name+' · Wetterbericht',
          '☀️ Tag ('+clock(dayBegin)+'–'+clock(nightBegin)+'): '+range(dayVals)+
          '\\n🌙 Nacht ('+clock(nightBegin)+'–'+clock(nightEnd)+'): '+range(nightVals)+
          (cursor?'\\n⚠️ Datenabfrage unvollständig':''));
-     }
-   }
+     }else console.log('Wetterbericht bereits gesendet',eventId);
+   }else console.warn('Wetterbericht nicht fällig oder Zeitraum ungültig',st.id,local.day);
 
  }
 }
@@ -606,8 +608,9 @@ export class WeatherReportAlarm {
     const lon=Number.isFinite(Number(st.longitude))?Number(st.longitude):WEATHER_DEFAULT_LON;
     const due=st.reportMode==='fixed'?berlinInstant(local.day,st.reportTime||'07:00'):solarInstant(local.day,lat,lon,true);
     const end=st.dayNightMode==='solar'?solarInstant(local.day,lat,lon,true):berlinInstant(local.day,st.dayStart||'06:00');
+    console.log('Wetteralarm Stationsprüfung',JSON.stringify({station:st.id,now,due,end,reportMode:st.reportMode,dayNightMode:st.dayNightMode,revision:st.reportRevision||0}));
     if(due!==null&&end!==null&&now>=Math.max(due,end)&&now-Math.max(due,end)<15*60000){
-     try{await weatherSendReport(this.env,h,st);console.log('Wetteralarm verarbeitet:',st.id,local.day,st.reportTime);}
+     try{console.log('Wetteralarm fällig:',st.id,local.day,st.reportTime);await weatherSendReport(this.env,h,st);console.log('Wetteralarm Prüfung abgeschlossen:',st.id,local.day,st.reportTime);}
      catch(error){console.error('Wetteralarm Versandfehler:',st.id,String(error));throw error;}
     }
    }
