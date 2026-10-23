@@ -32,14 +32,33 @@ async function compareSecret(actual, expected){if(!expected)return false;const a
 async function deviceList(env, household){let cursor,devices=[];do{const res=await env.PUSH_DEVICES.list({prefix:'push:'+household+':',cursor,limit:1000});devices.push(...res.keys);cursor=res.list_complete?undefined:res.cursor;}while(cursor&&devices.length<2000);return devices;}
 export default {
  async scheduled(event,env,ctx){
-  ctx.waitUntil(Promise.allSettled([
-    checkEvents(env).catch(error=>console.error('Firestore Push Watch:',String(error))),
-    checkPriceSchedules(env).catch(error=>console.error('Preis-Erinnerung:',String(error))),
-      weatherCron(env).catch(error=>console.error('Wetter-Cron:',String(error))),
-    syncWeatherAlarm(env,safePart(env.PUSH_HOUSEHOLD_ID)).catch(error=>console.error('Wetteralarm-Sync:',String(error))),
-    forecastCron(env).catch(error=>console.error('Vorhersage-Cron:',String(error))),
-    fuelAverageDispatchCron(env).catch(error=>console.error('Spritpreis-Dispatch:',String(error)))
-  ]));
+  const started=Date.now();
+  console.log('Cron gestartet',JSON.stringify({cron:event.cron||'unbekannt',at:new Date(started).toISOString()}));
+  const jobs=[
+    ['Firestore Push Watch',()=>checkEvents(env)],
+    ['Preis-Erinnerungen',()=>checkPriceSchedules(env)],
+    ['Wetter-Grenzwerte und Offline',()=>weatherCron(env)],
+    ['Wetteralarm-Synchronisierung',()=>syncWeatherAlarm(env,safePart(env.PUSH_HOUSEHOLD_ID))],
+    ['Wettervorhersage',()=>forecastCron(env)],
+    ['Spritpreis-Dispatch',()=>fuelAverageDispatchCron(env)]
+  ];
+  ctx.waitUntil(Promise.allSettled(jobs.map(async ([name,run])=>{
+    const begin=Date.now();
+    try{
+      await run();
+      console.log('Cron Aufgabe OK',JSON.stringify({task:name,ms:Date.now()-begin}));
+      return true;
+    }catch(error){
+      console.error('Cron Aufgabe FEHLER',JSON.stringify({task:name,ms:Date.now()-begin,error:String(error)}));
+      return false;
+    }
+  })).then(results=>{
+    console.log('Cron abgeschlossen',JSON.stringify({
+      cron:event.cron||'unbekannt',ms:Date.now()-started,
+      tasks:results.length,successful:results.filter(r=>r.status==='fulfilled'&&r.value===true).length,
+      failed:results.filter(r=>r.status!=='fulfilled'||r.value!==true).length
+    }));
+  }));
  },
  async fetch(req,env){
   const origin=req.headers.get('Origin')||'';
@@ -280,11 +299,16 @@ async function checkEvents(env){
   const rules=await getRules(env,household);
   const cursorKey='push96:cursor:'+household;
   const quotaKey='push96:quotaPause:'+household;
-  if(Date.now()<Number(await env.PUSH_DEVICES.get(quotaKey)||0))return;
+  const pausedUntil=Number(await env.PUSH_DEVICES.get(quotaKey)||0);
+  if(Date.now()<pausedUntil){
+    console.warn('Firestore Push Watch pausiert',JSON.stringify({until:new Date(pausedUntil).toISOString()}));
+    return;
+  }
   try{
     const token=await accessToken(env);
     const latest=await readPushControl(env,token,household);
     const cursor=Number(await env.PUSH_DEVICES.get(cursorKey)||0);
+    console.log('Firestore Push Watch Status',JSON.stringify({latest,cursor,pending:Math.max(0,latest-cursor),fuelEnabled:rules.fuel,warningsEnabled:rules.warnings}));
     if(latest<=cursor)return;
     //  max. 100 Ereignisse pro Zyklus; Rest bleibt fuer den naechsten Lauf.*
     let current=cursor, processed=0;
@@ -295,6 +319,7 @@ async function checkEvents(env){
         const seq=Number(e.seq);
         if(!Number.isSafeInteger(seq)||seq!==current+1)
           throw new Error('Unvollstaendige Push-Sequenz: '+current+' -> '+seq);
+        console.log('Firestore Push Watch Ereignis',JSON.stringify({seq,kind:e.kind,enabled:e.kind==='fuel'?rules.fuel:e.kind==='reading'?rules.warnings:null}));
         await handleQueuedEvent(env,household,e,rules);
         current=seq;processed++;
         //  Cursor nur nach erfolgreich bearbeitetem Ereignis weiterschieben.*
@@ -302,7 +327,7 @@ async function checkEvents(env){
       }
       if(events.length<25)break;
     }
-    if(processed)console.log('Push v96: '+processed+' Ereignisse verarbeitet; Sequenz '+current+'/'+latest);
+    console.log('Firestore Push Watch abgeschlossen',JSON.stringify({processed,cursor:current,latest,remaining:Math.max(0,latest-current)}));
   }catch(error){
     if(String(error).includes('HTTP 429')){
       //  Spark-Kontingent wird um Mitternacht America/Los_Angeles erneuert.*
