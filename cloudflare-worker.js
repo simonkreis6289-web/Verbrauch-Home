@@ -77,7 +77,34 @@ export default {
         }
         return respond(forecast,200,{...headers,'Cache-Control':'public, max-age=120'});
       }
-      if(new URL(req.url).pathname.startsWith('/weather/')){
+      // v146: Sofortige Bearbeitung eines BEREITS in Firestore gespeicherten Ereignisses.
+  // Kein Push-Geheimnis im Browser. Der Client liefert nur die Sequenznummer,
+  // Titel/Text und Ereignistyp kommen ausschliesslich aus Firestore.
+  if(new URL(req.url).pathname==='/events/notify'){
+    if(req.method!=='POST')return respond({error:'Nur POST erlaubt'},405,headers);
+    if(!origin||!headers['Access-Control-Allow-Origin'])return respond({error:'Origin nicht erlaubt'},403,headers);
+    if(!env.PUSH_DEVICES||!env.FCM_CLIENT_EMAIL||!env.FCM_PRIVATE_KEY||!env.FCM_PROJECT_ID)
+      return respond({error:'Push-Server nicht konfiguriert'},503,headers);
+    let input;try{input=await req.json();}catch(_){return respond({error:'Ungueltiges JSON'},400,headers);}
+    const household=safePart(input?.household);
+    const seq=Number(input?.seq);
+    if(!household||household!==safePart(env.PUSH_HOUSEHOLD_ID)||!Number.isSafeInteger(seq)||seq<1)
+      return respond({error:'Ungueltiges Ereignis'},400,headers);
+    try{
+      const token=await accessToken(env);
+      const latest=await readPushControl(env,token,household);
+      if(seq>latest)return respond({error:'Ereignis noch nicht vorhanden'},409,headers);
+      // Maximal ein konkretes, bereits gespeichertes Ereignis laden.
+      const events=await readPendingPushEvents(env,token,household,seq-1,1);
+      const event=events.find(e=>Number(e.seq)===seq);
+      if(!event)return respond({error:'Ereignis nicht gefunden'},404,headers);
+      const rules=await getRules(env,household);
+      await handleQueuedEvent(env,household,event,rules);
+      console.log('Sofort-Push verarbeitet',JSON.stringify({seq,kind:event.kind}));
+      return respond({ok:true,seq},200,headers);
+    }catch(error){console.error('Sofort-Push fehlgeschlagen',String(error));return respond({error:'Versand wird beim naechsten Cron erneut geprueft'},503,headers);}
+  }
+  if(new URL(req.url).pathname.startsWith('/weather/')){
       if(req.method!=='POST')return respond({error:'Nur POST erlaubt'},405,headers);
       if(origin&&!headers['Access-Control-Allow-Origin'])return respond({error:'Origin nicht erlaubt'},403,headers);
       return weatherRoute(req,env,new URL(req.url).pathname,headers);
