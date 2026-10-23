@@ -29,8 +29,10 @@ function renderStationSettings(){
  el.innerHTML=stations.map(s=>`<details class="weather-station-card" data-station="${esc(s.id)}" ${openIds.has(s.id)?"open":""}><summary><span class="weather-station-emoji">${esc(s.emoji||'🌡️')}</span><span><strong>${esc(s.name)}</strong><small>${esc(s.id)} · ${s.enabled?'Aktiv':'Inaktiv'} · Letzte Messung: ${esc(date(s.latest?.at))}</small></span><span class="weather-station-chevron">⌄</span></summary><div class="weather-station-body">
  <div class="weather-config"><label>Stationsname<input data-field="name" data-id="${esc(s.id)}" value="${esc(s.name)}"></label>${toggle(s,'Station aktiv','enabled')}<label>Standort<select data-field="location"><option value="inside" ${(s.location||'inside')==='inside'?'selected':''}>🏠 Innenstation</option><option value="outside" ${s.location==='outside'?'selected':''}>🌳 Außenstation</option></select></label></div>
  <h4>🎨 Symbol der Station</h4><div class="weather-emoji-picker">${WEATHER_EMOJIS.map(e=>`<label title="${e}"><input type="radio" name="emoji-${esc(s.id)}" data-emoji="${esc(s.id)}" value="${e}" ${(s.emoji||'🌡️')===e?'checked':''}><span>${e}</span></label>`).join('')}</div>
- <h4>🔔 Wetterbericht</h4><div class="weather-config"><label>Bericht auslösen<select data-field="reportMode"><option value="sunrise" ${(s.reportMode||'sunrise')==='sunrise'?'selected':''}>🌅 Bei Sonnenaufgang (automatisch)</option><option value="fixed" ${s.reportMode==='fixed'?'selected':''}>🕒 Feste Uhrzeit</option></select></label>${toggle(s,'Morgendlichen Bericht senden','morning')}${field({...s,reportTime:s.reportTime||'07:00'},'Push-Uhrzeit (nur bei fester Zeit)','reportTime','time')}${field({...s,dayStart:s.dayStart||'06:00'},'Tag beginnt','dayStart','time')}${field({...s,nightStart:s.nightStart||'18:00'},'Nacht beginnt','nightStart','time')}</div>
- <div class="weather-row weather-solar-actions"><button type="button" class="btn secondary" data-apply-solar disabled>🌅 Sonnenaufgang / Sonnenuntergang als Tageszeiten übernehmen</button><span class="weather-muted" data-apply-solar-status aria-live="polite">Sonnenzeiten werden ermittelt …</span></div>
+ <h4>🔔 Wetterbericht</h4><div class="weather-config"><label>Bericht auslösen<select data-field="reportMode"><option value="sunrise" ${(s.reportMode||'sunrise')==='sunrise'?'selected':''}>🌅 Bei Sonnenaufgang (automatisch)</option><option value="fixed" ${s.reportMode==='fixed'?'selected':''}>🕒 Feste Uhrzeit</option></select></label>${toggle(s,'Morgendlichen Bericht senden','morning')}${field({...s,reportTime:s.reportTime||'07:00'},'Push-Uhrzeit (nur bei fester Zeit)','reportTime','time')}</div>
+ <div class="weather-solar-choice"><label><input type="checkbox" data-field="dayNightSolar" ${(s.dayNightMode||(s.reportMode==='fixed'?'fixed':'solar'))==='solar'?'checked':''}> 🌅 Tag/Nacht dynamisch nach Sonnenaufgang und Sonnenuntergang</label><p class="weather-muted">Ohne Häkchen gelten die eigenen Uhrzeiten. Mit Häkchen werden die Sonnenzeiten täglich anhand des Stationsstandorts berechnet.</p></div>
+ <div class="weather-config weather-day-times">${field({...s,dayStart:s.dayStart||'06:00'},'Tag beginnt','dayStart','time')}${field({...s,nightStart:s.nightStart||'18:00'},'Nacht beginnt','nightStart','time')}</div>
+
  <div class="weather-day-preview" data-day-preview><div class="weather-day-heading">🌗 Tagesverlauf · <span data-day-date></span></div><div class="weather-day-bar" data-day-bar></div><div class="weather-day-ticks"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div><p class="weather-muted" data-day-description></p><p class="weather-muted" data-solar-description>☀️ Sonnenzeiten: Standort eintragen</p></div>
  <div class="weather-config"><label>Breitengrad (optional, z. B. 51.1)<input type="number" data-field="latitude" min="-90" max="90" step="0.0001" placeholder="Breitengrad" value="${esc(s.latitude??WEATHER_DEFAULT_LAT)}"></label><label>Längengrad (optional, z. B. 8.1)<input type="number" data-field="longitude" min="-180" max="180" step="0.0001" placeholder="Längengrad" value="${esc(s.longitude??WEATHER_DEFAULT_LON)}"></label></div><div class="weather-row"><button type="button" class="btn secondary" data-gps>📍 GPS-Position übernehmen</button><span class="weather-muted" data-gps-status aria-live="polite">Standort wird erst nach deiner Zustimmung abgefragt.</span></div>
  <h4>⚠️ Grenzwerte und Ausfall</h4><div class="weather-config">${toggle(s,'Grenzwertwarnungen','alerts')}${slider(s,'Temperatur unter','tempMin',-30,50,0.5,'°C')}${slider(s,'Temperatur über','tempMax',-30,50,0.5,'°C')}${slider(s,'Luftfeuchte unter','humidityMin',0,100,1,'%')}${slider(s,'Luftfeuchte über','humidityMax',0,100,1,'%')}${slider(s,'Helligkeit unter','lightMin',0,100,1,'%')}${slider(s,'Helligkeit über','lightMax',0,100,1,'%')}${slider(s,'Ausfallwarnung nach','offlineMinutes',10,240,5,'Min.')}</div>
@@ -42,7 +44,7 @@ function renderStationSettings(){
      number.addEventListener('input',()=>{if(number.value!==''&&Number.isFinite(number.valueAsNumber))range.value=number.value;});
    });
    const updateTimeline=()=>{
-     const day=card.querySelector('[data-field="dayStart"]').value||'06:00',night=card.querySelector('[data-field="nightStart"]').value||'18:00';
+     const day=(card.querySelector('[data-field="dayNightSolar"]')?.checked?card._solarTimes?.sunrise:null)||card.querySelector('[data-field="dayStart"]').value||'06:00',night=(card.querySelector('[data-field="dayNightSolar"]')?.checked?card._solarTimes?.sunset:null)||card.querySelector('[data-field="nightStart"]').value||'18:00';
      const mins=t=>{const [h,m]=t.split(':').map(Number);return h*60+m;};
      const d=mins(day),n=mins(night),bar=card.querySelector('[data-day-bar]');
      bar.innerHTML=d<n?`<div class="weather-night" style="width:${d/1440*100}%"></div><div class="weather-day" style="width:${(n-d)/1440*100}%"></div><div class="weather-night" style="width:${(1440-n)/1440*100}%"></div>`:'<div class="weather-night" style="width:100%"></div>';
@@ -52,31 +54,28 @@ function renderStationSettings(){
    updateTimeline();
    const today=new Date();card.querySelector('[data-day-date]').textContent=today.toLocaleDateString('de-DE',{day:'2-digit',month:'long',year:'numeric',timeZone:'Europe/Berlin'});
    const solar=card.querySelector('[data-solar-description]');
-   const solarButton=card.querySelector('[data-apply-solar]');
-   const solarStatus=card.querySelector('[data-apply-solar-status]');
+   const solarCheck=card.querySelector('[data-field="dayNightSolar"]');
    let solarTimes=null;
-   solarButton.addEventListener('click',()=>{
-     if(!solarTimes){solarStatus.textContent='Sonnenzeiten noch nicht verfügbar.';return;}
-     card.querySelector('[data-field="dayStart"]').value=solarTimes.sunrise;
-     card.querySelector('[data-field="nightStart"]').value=solarTimes.sunset;
-     card.dataset.unsaved='true';
+   const syncDayNight=()=>{
+     const automatic=solarCheck.checked;
+     card.querySelectorAll('[data-field="dayStart"],[data-field="nightStart"]').forEach(el=>el.disabled=automatic);
+     card.querySelector('.weather-day-times').classList.toggle('weather-times-inactive',automatic);
      updateTimeline();
-     solarStatus.textContent='✓ Übernommen für heute. Bitte speichern. Für andere Uhrzeiten einfach die Felder bearbeiten.';
-   });
+   };
+   solarCheck.addEventListener('change',syncDayNight);
+   syncDayNight();
    const latitude=card.querySelector('[data-field="latitude"]'),longitude=card.querySelector('[data-field="longitude"]');
    const moon=()=>{const jd=today.getTime()/86400000+2440587.5,age=((jd-2451550.1)/29.530588853%1+1)%1;const phases=['🌑 Neumond','🌒 Zunehmende Sichel','🌓 Erstes Viertel','🌔 Zunehmender Mond','🌕 Vollmond','🌖 Abnehmender Mond','🌗 Letztes Viertel','🌘 Abnehmende Sichel'];return phases[Math.round(age*8)%8]+' (Näherung)';};
    const showSolar=async()=>{
-     solarTimes=null;solarButton.disabled=true;
-     solarStatus.textContent='Sonnenzeiten werden ermittelt …';
-     const lat=Number(latitude.value),lon=Number(longitude.value);if(latitude.value===''||longitude.value===''||!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180){solar.textContent='☀️ Sonnenzeiten: Standort eintragen · '+moon();solarStatus.textContent='Bitte gültige Koordinaten eingeben.';return;}
+     solarTimes=null;card._solarTimes=null;
+     const lat=Number(latitude.value),lon=Number(longitude.value);if(latitude.value===''||longitude.value===''||!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180){solar.textContent='☀️ Sonnenzeiten: Standort eintragen · '+moon();updateTimeline();return;}
      solar.textContent='☀️ Sonnenzeiten werden geladen … · '+moon();
      try{const ymd=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(today);const url=`https://api.sunrise-sunset.org/json?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lon)}&date=${ymd}&formatted=0`;const response=await fetch(url);if(!response.ok)throw Error('HTTP '+response.status);const json=await response.json();if(json.status!=='OK')throw Error('Keine Sonnenzeiten');const fmtTime=v=>new Date(v).toLocaleTimeString('de-DE',{timeZone:'Europe/Berlin',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
        const sunrise=fmtTime(json.results.sunrise),sunset=fmtTime(json.results.sunset);
        if(!/^\d{2}:\d{2}$/.test(sunrise)||!/^\d{2}:\d{2}$/.test(sunset)||sunrise>=sunset)throw Error('Ungültige Sonnenzeiten');
-       solarTimes={sunrise,sunset};solarButton.disabled=false;
-       solarStatus.textContent='Bereit: '+sunrise+' / '+sunset+' Uhr';
+       solarTimes={sunrise,sunset};card._solarTimes=solarTimes;updateTimeline();
        solar.textContent=`🌅 Sonnenaufgang ${sunrise} · 🌇 Sonnenuntergang ${sunset} · ${moon()}`;
-     }catch(_){solar.textContent='Sonnenzeiten derzeit nicht verfügbar · '+moon();solarStatus.textContent='Sonnenzeiten konnten nicht geladen werden.';}
+     }catch(_){solar.textContent='Sonnenzeiten derzeit nicht verfügbar · '+moon();updateTimeline();}
    };
    latitude.addEventListener('change',showSolar);longitude.addEventListener('change',showSolar);void showSolar();
    const gpsButton=card.querySelector('[data-gps]'),gpsStatus=card.querySelector('[data-gps-status]');
@@ -98,12 +97,13 @@ function renderStationSettings(){
  el.querySelectorAll('.weather-station-card').forEach(card=>{const mark=()=>{card.dataset.unsaved='true';};card.addEventListener('input',mark);card.addEventListener('change',mark);});
  el.querySelectorAll('[data-save]').forEach(b=>b.onclick=async()=>{
    const id=b.dataset.save,card=b.closest('details'),config={};
-   card.querySelectorAll('[data-field]').forEach(x=>{const k=x.dataset.field;config[k]=['enabled','alerts','morning'].includes(k)?x.value==='true':['name','reportTime','dayStart','nightStart','location','reportMode'].includes(k)?x.value:Number(x.value);});
+   card.querySelectorAll('[data-field]').forEach(x=>{const k=x.dataset.field;config[k]=k==='dayNightSolar'?(x.checked?'solar':'fixed'):['enabled','alerts','morning'].includes(k)?x.value==='true':['name','reportTime','dayStart','nightStart','location','reportMode'].includes(k)?x.value:Number(x.value);});
    for(const k of ['latitude','longitude']){const el=card.querySelector(`[data-field="${k}"]`);config[k]=el.value===''?(k==='latitude'?WEATHER_DEFAULT_LAT:WEATHER_DEFAULT_LON):Number(el.value);}
+   config.dayNightMode=config.dayNightSolar;delete config.dayNightSolar;
    config.emoji=card.querySelector('[data-emoji]:checked')?.value||'🌡️';
    if(['tempMin','humidityMin','lightMin'].some(k=>config[k]>=config[({tempMin:'tempMax',humidityMin:'humidityMax',lightMin:'lightMax'})[k]])){showError('Unterer Grenzwert muss kleiner als oberer Grenzwert sein.');return;}
    if(config.dayStart>=config.nightStart){showError('Der Tagesbeginn muss vor dem Nachtbeginn liegen.');return;}
-   try{b.disabled=true;const response=await request('/weather/admin',{action:'update',id,config});const saved=(response.stations||[]).find(st=>st.id===id);if(!saved||saved.reportMode!==config.reportMode||saved.reportTime!==config.reportTime)throw Error('Server hat Berichtsmodus/Uhrzeit nicht wie gewünscht übernommen.');card.dataset.unsaved='false';await refresh();showError('✓ Gespeichert: '+(saved.reportMode==='fixed'?'Feste Uhrzeit '+saved.reportTime:'Bei Sonnenaufgang')+'.');}catch(e){showError('Speichern fehlgeschlagen: '+e.message);}finally{b.disabled=false;}
+   try{b.disabled=true;const response=await request('/weather/admin',{action:'update',id,config});const saved=(response.stations||[]).find(st=>st.id===id);if(!saved||saved.reportMode!==config.reportMode||saved.reportTime!==config.reportTime||saved.dayNightMode!==config.dayNightMode)throw Error('Server hat Berichtsmodus/Uhrzeit nicht wie gewünscht übernommen.');card.dataset.unsaved='false';await refresh();showError('✓ Gespeichert: '+(saved.reportMode==='fixed'?'Feste Uhrzeit '+saved.reportTime:'Bei Sonnenaufgang')+'.');}catch(e){showError('Speichern fehlgeschlagen: '+e.message);}finally{b.disabled=false;}
  });
  el.querySelectorAll('[data-remove]').forEach(b=>b.onclick=async()=>{if(!confirm('Station '+b.dataset.remove+' wirklich entfernen? Die Historie bleibt zunächst erhalten.'))return;try{await request('/weather/admin',{action:'remove',id:b.dataset.remove});await refresh();}catch(e){showError(e.message);}});
 }
