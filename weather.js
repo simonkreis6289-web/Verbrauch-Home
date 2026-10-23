@@ -75,7 +75,7 @@ function renderStationSettings(){
      },{enableHighAccuracy:true,timeout:15000,maximumAge:60000});
    });
  });
- el.querySelectorAll('.weather-station-card').forEach(card=>card.addEventListener('input',()=>{card.dataset.unsaved='true';}));
+ el.querySelectorAll('.weather-station-card').forEach(card=>{const mark=()=>{card.dataset.unsaved='true';};card.addEventListener('input',mark);card.addEventListener('change',mark);});
  el.querySelectorAll('[data-save]').forEach(b=>b.onclick=async()=>{
    const id=b.dataset.save,card=b.closest('details'),config={};
    card.querySelectorAll('[data-field]').forEach(x=>{const k=x.dataset.field;config[k]=['enabled','alerts','morning'].includes(k)?x.value==='true':['name','reportTime','dayStart','nightStart','location','reportMode'].includes(k)?x.value:Number(x.value);});
@@ -83,7 +83,7 @@ function renderStationSettings(){
    config.emoji=card.querySelector('[data-emoji]:checked')?.value||'🌡️';
    if(['tempMin','humidityMin','lightMin'].some(k=>config[k]>=config[({tempMin:'tempMax',humidityMin:'humidityMax',lightMin:'lightMax'})[k]])){showError('Unterer Grenzwert muss kleiner als oberer Grenzwert sein.');return;}
    if(config.dayStart>=config.nightStart){showError('Der Tagesbeginn muss vor dem Nachtbeginn liegen.');return;}
-   try{await request('/weather/admin',{action:'update',id,config});card.dataset.unsaved='false';await refresh();showError('Station gespeichert.');}catch(e){showError(e.message);}
+   try{b.disabled=true;const response=await request('/weather/admin',{action:'update',id,config});const saved=(response.stations||[]).find(st=>st.id===id);if(!saved||saved.reportMode!==config.reportMode||saved.reportTime!==config.reportTime)throw Error('Server hat Berichtsmodus/Uhrzeit nicht wie gewünscht übernommen.');card.dataset.unsaved='false';await refresh();showError('✓ Gespeichert: '+(saved.reportMode==='fixed'?'Feste Uhrzeit '+saved.reportTime:'Bei Sonnenaufgang')+'.');}catch(e){showError('Speichern fehlgeschlagen: '+e.message);}finally{b.disabled=false;}
  });
  el.querySelectorAll('[data-remove]').forEach(b=>b.onclick=async()=>{if(!confirm('Station '+b.dataset.remove+' wirklich entfernen? Die Historie bleibt zunächst erhalten.'))return;try{await request('/weather/admin',{action:'remove',id:b.dataset.remove});await refresh();}catch(e){showError(e.message);}});
 }
