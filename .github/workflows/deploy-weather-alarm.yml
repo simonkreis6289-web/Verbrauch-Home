@@ -1,0 +1,35 @@
+name: Cloudflare Wetteralarm einrichten
+
+# Ausschließlich manuell ausführen, niemals automatisch bei GitHub-Upload.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-verbrauch-push-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository laden
+        uses: actions/checkout@v4
+      - name: Node.js vorbereiten (nur GitHub-Server)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Konfiguration und Worker prüfen
+        run: |
+          test -f wrangler.toml
+          grep -q '754345e217f2433ea2d8c81dd4b92ee6' wrangler.toml
+          node --check cloudflare-worker.js
+      - name: Cloudflare Worker mit Durable Object bereitstellen
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: '4'
+          command: deploy --keep-vars
