@@ -184,7 +184,7 @@ async function broadcastInternal(env,household,title,body){
       method:'POST',headers:{Authorization:'Bearer '+bearer,'Content-Type':'application/json'},
       body:JSON.stringify({message:{token:info.token,data:{title:safeString(title,80),body:safeString(body,180)},webpush:{headers:{TTL:'3600',Urgency:'high'}}}})
     });
-    if(res.ok){sent++;continue;}
+    if(res.ok){sent++;console.log('FCM Versand angenommen',JSON.stringify({household,device:key.name.slice(-12),status:res.status,title:safeString(title,80)}));continue;}
     failed++;
     const output=await res.text();
     if(res.status===404||res.status===410||output.includes('UNREGISTERED'))await env.PUSH_DEVICES.delete(key.name);
@@ -195,7 +195,9 @@ async function broadcastInternal(env,household,title,body){
 }
 async function sendEventOnce(env,household,key,title,body){
   if(await env.PUSH_DEVICES.get(WATCH_PREFIX+'event:'+household+':'+key)){console.log('Push übersprungen: bereits versendet',key);return {status:'already-sent',sent:0};}
+  console.log('Push Versand gestartet',JSON.stringify({event:key,title,household}));
   const result=await broadcastInternal(env,household,title,body);
+  console.log('Push Versand abgeschlossen',JSON.stringify({event:key,...result}));
   if(result.sent===0){console.warn('Push nicht als gesendet markiert: keine erfolgreiche FCM-Zustellung',key);return {status:'no-devices',sent:0};}
   //  Erst nach erfolgreichem Übergeben an FCM als gesendet markieren.*
   //  Ohne registrierte Geräte nicht nachträglich alte Ereignisse zustellen.*
@@ -527,7 +529,9 @@ async function weatherSendReport(env,h,st){
    const nightBegin=dayNightMode==='solar'?solarInstant(yesterday,lat,lon,false):berlinInstant(yesterday,st.nightStart||'18:00');
    const nightEnd=dayNightMode==='solar'?todaySunrise:berlinInstant(local.day,st.dayStart||'06:00');
    // Cheap due check: never list or read historical measurements before sunrise.
-   const eligible=due!==null&&dayBegin!==null&&nightBegin!==null&&nightEnd!==null&&now>=due&&now>=nightEnd&&dayBegin<nightBegin&&nightBegin<nightEnd;
+   const eligible=due!==null&&dayBegin!==null&&nightBegin!==null&&nightEnd!==null&&now>=due&&dayBegin<nightBegin&&nightBegin<nightEnd;
+   // A fixed report time is authoritative. If the configured night is not yet over,
+   // report the available samples instead of silently postponing or dropping the push.
    console.log('Wetterbericht Prüfung',JSON.stringify({station:st.id,day:local.day,mode,dayNightMode,now,due,dayBegin,nightBegin,nightEnd,eligible,revision:st.reportRevision||0}));
    if(eligible){
      const eventId='morning:'+st.id+':'+local.day+':r'+(Number.isSafeInteger(st.reportRevision)?st.reportRevision:0);
@@ -539,7 +543,7 @@ async function weatherSendReport(env,h,st){
          const page=await env.PUSH_DEVICES.list({prefix,cursor,limit:1000});
          for(const k of page.keys){
            const at=Date.parse(k.name.slice(prefix.length));
-           if(at>=dayBegin&&at<nightEnd){
+           if(at>=dayBegin&&at<Math.min(nightEnd,now)){
              const p=await env.PUSH_DEVICES.get(k.name,'json');
              const value=Number(p?.temperatureC);
              if(p&&Number.isFinite(value))(at<nightBegin?dayVals:nightVals).push(value);
@@ -549,11 +553,14 @@ async function weatherSendReport(env,h,st){
        }while(cursor&&loops<15);
        const range=vals=>vals.length?'Min '+Math.min(...vals).toFixed(1)+' °C · Max '+Math.max(...vals).toFixed(1)+' °C':'Keine Daten';
        const clock=ms=>berlinParts(new Date(ms)).time;
+       console.log('Wetterbericht Versandversuch',JSON.stringify({station:st.id,eventId,daySamples:dayVals.length,nightSamples:nightVals.length,partialNight:now<nightEnd}));
        const result=await sendEventOnce(env,h,eventId,
          (st.emoji||'🌡️')+' '+st.name+' · Wetterbericht',
          '☀️ Tag ('+clock(dayBegin)+'–'+clock(nightBegin)+'): '+range(dayVals)+
          '\\n🌙 Nacht ('+clock(nightBegin)+'–'+clock(nightEnd)+'): '+range(nightVals)+
-         (cursor?'\\n⚠️ Datenabfrage unvollständig':''));
+         (cursor?'\\n⚠️ Datenabfrage unvollständig':'')+
+         (now<nightEnd?'\\n⏳ Nachtzeitraum läuft noch':''));
+       console.log('Wetterbericht Versandresultat',JSON.stringify({station:st.id,eventId,...result}));
      }else console.log('Wetterbericht bereits gesendet',eventId);
    }else console.warn('Wetterbericht nicht fällig oder Zeitraum ungültig',st.id,local.day);
 
@@ -568,7 +575,7 @@ function nextWeatherReportTime(st,from=Date.now()){
   const due=st.reportMode==='fixed'?berlinInstant(day,st.reportTime||'07:00'):solarInstant(day,lat,lon,true);
   const prev=dayBefore(day),mode=st.dayNightMode||(st.reportMode==='fixed'?'fixed':'solar');
   const end=mode==='solar'?solarInstant(day,lat,lon,true):berlinInstant(day,st.dayStart||'06:00');
-  const at=due===null||end===null?null:Math.max(due,end);
+  const at=due; // Exact requested report time, independent of the day/night boundary.
   if(at!==null&&at>from+250)return at;
   day=new Date(Date.parse(day+'T12:00:00Z')+86400000).toISOString().slice(0,10);
  }
@@ -609,7 +616,7 @@ export class WeatherReportAlarm {
     const due=st.reportMode==='fixed'?berlinInstant(local.day,st.reportTime||'07:00'):solarInstant(local.day,lat,lon,true);
     const end=st.dayNightMode==='solar'?solarInstant(local.day,lat,lon,true):berlinInstant(local.day,st.dayStart||'06:00');
     console.log('Wetteralarm Stationsprüfung',JSON.stringify({station:st.id,now,due,end,reportMode:st.reportMode,dayNightMode:st.dayNightMode,revision:st.reportRevision||0}));
-    if(due!==null&&end!==null&&now>=Math.max(due,end)&&now-Math.max(due,end)<15*60000){
+    if(due!==null&&now>=due&&now-due<15*60000){
      try{console.log('Wetteralarm fällig:',st.id,local.day,st.reportTime);await weatherSendReport(this.env,h,st);console.log('Wetteralarm Prüfung abgeschlossen:',st.id,local.day,st.reportTime);}
      catch(error){console.error('Wetteralarm Versandfehler:',st.id,String(error));throw error;}
     }
