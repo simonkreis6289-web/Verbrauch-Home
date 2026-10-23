@@ -1,0 +1,21 @@
+name = "verbrauch-push"
+main = "cloudflare-worker.js"
+compatibility_date = "2026-10-23"
+
+# Bestehenden 5-Minuten-Cron beibehalten.
+[triggers]
+crons = ["*/5 * * * *"]
+
+# Bestehender Cloudflare KV Namespace: verbrauch-push-devices.
+[[kv_namespaces]]
+binding = "PUSH_DEVICES"
+id = "754345e217f2433ea2d8c81dd4b92ee6"
+
+[[durable_objects.bindings]]
+name = "WEATHER_REPORT_ALARM"
+class_name = "WeatherReportAlarm"
+
+# Erstmalige Erstellung einer SQLite-basierten Durable-Object-Klasse.
+[[migrations]]
+tag = "weather_alarm_v1"
+new_sqlite_classes = ["WeatherReportAlarm"]
