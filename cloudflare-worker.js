@@ -423,7 +423,10 @@ function solarInstant(day,lat,lon,sunrise){
  if(cosH>1||cosH< -1)return null;
  const H=(sunrise?360-Math.acos(cosH)/rad:Math.acos(cosH)/rad)/15;
  const T=H+RA-(0.06571*t)-6.622;
- const UT=T-lngHour;
+ // NOAA's hour angle may yield a negative UTC hour for sunset. That is
+ // a clock-time wrap, not the previous calendar day (e.g. -7.62 => 16:22 UTC).
+ // Normalize to the UTC day requested before comparing day/night boundaries.
+ const UT=((T-lngHour)%24+24)%24;
  return base+UT*3600000;
 }
 function berlinInstant(day,time){
@@ -528,10 +531,9 @@ async function weatherSendReport(env,h,st){
    const dayBegin=dayNightMode==='solar'?solarInstant(yesterday,lat,lon,true):berlinInstant(yesterday,st.dayStart||'06:00');
    const nightBegin=dayNightMode==='solar'?solarInstant(yesterday,lat,lon,false):berlinInstant(yesterday,st.nightStart||'18:00');
    const nightEnd=dayNightMode==='solar'?todaySunrise:berlinInstant(local.day,st.dayStart||'06:00');
-   // Cheap due check: never list or read historical measurements before sunrise.
+   // Validate chronologically ordered solar/fixed boundaries before loading history.
    const eligible=due!==null&&dayBegin!==null&&nightBegin!==null&&nightEnd!==null&&now>=due&&dayBegin<nightBegin&&nightBegin<nightEnd;
-   // A fixed report time is authoritative. If the configured night is not yet over,
-   // report the available samples instead of silently postponing or dropping the push.
+   // The report time is authoritative, even if the selected night window is still open.
    console.log('Wetterbericht Prüfung',JSON.stringify({station:st.id,day:local.day,mode,dayNightMode,now,due,dayBegin,nightBegin,nightEnd,eligible,revision:st.reportRevision||0}));
    if(eligible){
      const eventId='morning:'+st.id+':'+local.day+':r'+(Number.isSafeInteger(st.reportRevision)?st.reportRevision:0);
@@ -562,7 +564,7 @@ async function weatherSendReport(env,h,st){
          (now<nightEnd?'\\n⏳ Nachtzeitraum läuft noch':''));
        console.log('Wetterbericht Versandresultat',JSON.stringify({station:st.id,eventId,...result}));
      }else console.log('Wetterbericht bereits gesendet',eventId);
-   }else console.warn('Wetterbericht nicht fällig oder Zeitraum ungültig',st.id,local.day);
+   }else console.warn('Wetterbericht nicht fällig oder Zeitraum ungültig',JSON.stringify({station:st.id,day:local.day,dueReached:due!==null&&now>=due,dayBeforeNight:dayBegin!==null&&nightBegin!==null&&dayBegin<nightBegin,nightBeforeEnd:nightBegin!==null&&nightEnd!==null&&nightBegin<nightEnd}));
 
  }
 }
