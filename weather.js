@@ -109,10 +109,25 @@ function renderStationSettings(){
 }
 function graph(data){const vals=data.map(p=>Number(p[metric])).filter(Number.isFinite);if(!vals.length)return '<p class="muted">Für diesen Zeitraum liegen noch keine Messwerte vor.</p>';const lo=Math.min(...vals),hi=Math.max(...vals),span=Math.max(hi-lo,.5);const w=720,h=240;const path=data.map((p,i)=>{const n=Number(p[metric]);if(!Number.isFinite(n))return '';const x=38+i/Math.max(data.length-1,1)*665,y=205-(n-lo)/span*166;return `${i?'L':'M'}${x.toFixed(1)},${y.toFixed(1)}`;}).join(' ');return `<svg class="weather-plot" viewBox="0 0 ${w} ${h}" role="img" aria-label="Messwertverlauf"><path d="M38 20V205H703" stroke="currentColor" opacity=".35" fill="none"/><path d="${path}" fill="none" stroke="#0891b2" stroke-width="2.5"/><text x="5" y="23" font-size="13" fill="currentColor">${fmt(hi)}</text><text x="5" y="205" font-size="13" fill="currentColor">${fmt(lo)}</text><text x="38" y="230" font-size="12" fill="currentColor">${esc(new Date(data[0].at).toLocaleString('de-DE'))}</text><text x="703" y="230" font-size="12" text-anchor="end" fill="currentColor">${esc(new Date(data[data.length-1].at).toLocaleString('de-DE'))}</text></svg><p class="weather-muted">Min: ${fmt(lo)} · Max: ${fmt(hi)} · Ø ${fmt(vals.reduce((a,b)=>a+b,0)/vals.length)} · ${vals.length} Messungen</p>`;}
 async function renderHistory(){const el=$('weatherHistory');if(!el)return;if(!stations.length){el.innerHTML='<p class="muted">Noch keine Station eingerichtet. Unter Einstellungen → Wetterstationen hinzufügen.</p>';return;}const st=selectedStation();if(!st)return;selected=st.id;el.innerHTML=`<div class="weather-config"><label>Station<select id="weatherChartStation">${stations.map(x=>`<option value="${esc(x.id)}" ${x.id===selected?'selected':''}>${esc(x.emoji||'🌡️')} ${esc(x.name)}</option>`).join('')}</select></label><label>Messwert<select id="weatherChartMetric"><option value="temperatureC">Temperatur (°C)</option><option value="humidityPercent">Luftfeuchtigkeit (%)</option><option value="brightnessPercent">Helligkeit (%)</option></select></label><label>Zeitraum<select id="weatherChartPeriod"><option value="24">24 Stunden</option><option value="168">7 Tage</option><option value="720">30 Tage</option><option value="8760">1 Jahr</option></select></label></div><div id="weatherChart">Lade Messwerte …</div>`;$('weatherChartMetric').value=metric;$('weatherChartPeriod').value=period;$('weatherChartStation').onchange=e=>{selected=e.target.value;renderOverview();void renderHistory();};$('weatherChartMetric').onchange=e=>{metric=e.target.value;$('weatherChart').innerHTML=graph(history);};$('weatherChartPeriod').onchange=e=>{period=e.target.value;void renderHistory();};try{const j=await request('/weather/history',{id:st.id,hours:Number(period)});history=j.points||[];$('weatherChart').innerHTML=graph(history);}catch(e){$('weatherChart').textContent=e.message;}}
+let latestRefreshing=null;
+async function refreshReadings(){
+ if(latestRefreshing)return latestRefreshing;
+ latestRefreshing=(async()=>{try{
+  const data=await request('/weather/latest');
+  for(const row of data.readings||[]){const st=stations.find(s=>s.id===row.id);if(st)st.latest=row.latest;}
+  renderOverview();
+  document.querySelectorAll('.weather-station-card').forEach(card=>{
+   const st=stations.find(s=>s.id===card.dataset.station);
+   const small=card.querySelector('summary small');
+   if(st&&small)small.textContent=st.id+' · '+(st.enabled?'Aktiv':'Inaktiv')+' · Letzte Messung: '+date(st.latest?.at);
+  });
+ }catch(e){showError('Messwerte: '+e.message);}finally{latestRefreshing=null;}})();
+ return latestRefreshing;
+}
 async function refresh(){if(refreshing)return refreshing;refreshing=(async()=>{try{const j=await request('/weather/list');stations=j.stations||[];if(!stations.some(s=>s.id===selected))selected=stations[0]?.id||'';renderOverview();renderStationSettings();if($('weatherView')?.classList.contains('active'))await renderHistory();showError('Stand: '+date(new Date().toISOString()));}catch(e){showError(e.message);if(/Zugangscode|401|Unauthorized/i.test(e.message)){sessionStorage.removeItem('weatherAdminKey');localStorage.removeItem(STORED_KEY);}}finally{refreshing=null;}})();return refreshing;}
-window.weatherViewOpened=view=>{if(view==='weatherView')void renderHistory();if(view==='weatherSettingsView')renderSettings();};
+window.weatherViewOpened=view=>{if(view==='weatherView')void renderHistory();if(view==='weatherSettingsView'){renderSettings();if(key())void refresh();}};
 document.addEventListener('DOMContentLoaded',()=>{renderSettings();if(key())void refresh();
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&key()&&!document.querySelector('.weather-station-card[data-unsaved="true"]'))void refresh();});
 window.addEventListener('pageshow',()=>{if(key()&&!document.querySelector('.weather-station-card[data-unsaved="true"]'))void refresh();});
-rotateTimer=setInterval(rotate,8000);loadTimer=setInterval(()=>{if(key()&&!document.querySelector('.weather-station-card[data-unsaved="true"]'))void refresh();},60000);});
+rotateTimer=setInterval(rotate,8000);loadTimer=setInterval(()=>{if(key()&&!document.hidden)void refreshReadings();},300000);});
 })();
