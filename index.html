@@ -1175,7 +1175,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 .weather-remember{display:flex;align-items:center;gap:8px;min-width:230px;font-size:.82rem}.weather-remember input{width:17px;height:17px;flex-shrink:0}
 .weather-solar-actions{margin:8px 0 12px;align-items:center;flex-wrap:wrap}.weather-solar-actions [data-apply-solar-status]{font-size:.82rem}
 .weather-solar-choice{margin:12px 0 8px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(125,145,175,.06)}.weather-solar-choice label{display:flex;gap:9px;align-items:center;font-weight:700}.weather-solar-choice input{width:19px;height:19px;accent-color:#0284c7}.weather-solar-choice p{margin:7px 0 0}.weather-times-inactive{opacity:.55}
-/* v155: Pelletverbrauch über Abgleichgrenze vollständig buchen; v154: Änderungszeit und SVG-Höhe korrigiert; v153: FIFO-Rekursion behoben; v152: mobile-first Breite, Bestands-Hierarchie und Fahrzeugarchiv */
+/* v157: Zählerreferenz beim Bestandsabgleich; v156: Verbrauchsreferenz je Abgleich; v155: Pelletverbrauch über Abgleichgrenze vollständig buchen; v154: Änderungszeit und SVG-Höhe korrigiert; v153: FIFO-Rekursion behoben; v152: mobile-first Breite, Bestands-Hierarchie und Fahrzeugarchiv */
 #fuelEntryCard{grid-column:1/-1;width:100%;max-width:none;min-width:0}
 #fuelEntryCard .form-grid{grid-template-columns:repeat(12,minmax(0,1fr))}
 #fuelEntryCard .form-grid>label{grid-column:span 6;min-width:0}
@@ -1200,7 +1200,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v155</strong> · 1.3.1.185<br><small>Letzte Änderung: 26.10.2026, 17:00 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v157</strong> · 1.3.1.187<br><small>Letzte Änderung: 26.10.2026, 17:38 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -1521,15 +1521,22 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       <div id="pelletAdjustmentHistory" class="list-stack" style="margin-top:16px"></div>
       <hr style="margin:18px 0;border:0;border-top:1px solid var(--line)">
       <h3>🪣 Bunker und Sacklager abgleichen</h3>
-      <p class="muted">Neuer Ausgangspunkt: 231 Säcke à 12,5 kg im Sacklager und 967,5 kg im vollen Bunker. Bereits eingetragene Nachfüllungen werden nicht nochmals abgezogen. Spätere Nachfüllungen und Verbrauchsablesungen werden fortgeschrieben.</p>
+      <p class="muted">Jeder Abgleich ist ein neuer Startpunkt. Trage die gezählten Säcke, den Bunkerbestand und den aktuellen Verbrauchszählerstand deiner Heizung ein. Alte Verbrauchswerte werden nicht erneut abgezogen.</p>
       <form id="pelletSplitCheckpointForm" class="form-grid">
         <label>Säcke im Lager<input id="pelletCheckpointBags" type="number" min="0" step="1" value="231" required></label>
         <label>kg pro Sack<input id="pelletCheckpointBagKg" type="number" min="0.1" step="0.1" value="12.5" required></label>
         <label>Bunkerinhalt (kg)<input id="pelletCheckpointBunker" type="number" min="0" max="967.5" step="0.1" value="967.5" required></label>
         <label>Bunkerkapazität (kg)<input id="pelletCheckpointCapacity" type="number" min="1" step="0.1" value="967.5" required></label>
+        <label>Aktueller Verbrauchszählerstand der Heizung (kg)<input id="pelletCheckpointMeter" type="number" min="0" step="0.01" placeholder="Aktuellen Zählerstand eingeben" required></label>
         <div class="form-actions span-12"><button class="btn primary" type="submit">Bestände jetzt abgleichen</button></div>
       </form>
       <div id="pelletCheckpointInfo" class="pellet-forecast-notes"></div>
+      <form id="pelletConsumptionReferenceForm" class="form-grid" style="margin-top:16px" hidden>
+        <div class="span-12"><h3>Verbrauch seit dem letzten Abgleich korrigieren</h3>
+          <p class="muted">Wenn eine Zählerablesung über den Abgleichzeitpunkt reicht, kann die App alte Verbräuche nicht eindeutig zuordnen. Hier einmal den tatsächlich seit dem Abgleich angefallenen Verbrauch festlegen. Spätere neue Ablesungen werden zusätzlich berücksichtigt. Der Abgleich und das Sacklager bleiben unverändert.</p></div>
+        <label>Verbrauch seit dem letzten Abgleich (kg)<input id="pelletCheckpointUsedActual" type="number" min="0" step="0.01" placeholder="z. B. 35" required></label>
+        <div class="form-actions"><button class="btn secondary" type="submit">Verbrauchsreferenz übernehmen</button></div>
+      </form>
     </section>
   </div>
 </section>
@@ -3438,6 +3445,7 @@ async function loadMarketPrices(force = false) {
       document.getElementById('pelletBaselineForm')?.addEventListener('submit',handlePelletBaselineSave);
       document.getElementById('pelletAdjustmentForm')?.addEventListener('submit',handlePelletAdjustmentSave);
       document.getElementById('pelletSplitCheckpointForm')?.addEventListener('submit',handlePelletSplitCheckpointSave);
+      document.getElementById('pelletConsumptionReferenceForm')?.addEventListener('submit',handlePelletConsumptionReferenceSave);
       document.getElementById('pelletAdjustmentDate').value=toDatetimeLocal(new Date());
       document.getElementById("dashboardChartMetric")?.addEventListener("change", renderDashboardMonthlyChart);
       els.exportBackupBtn?.addEventListener("click", ()=>void exportBackup());
@@ -3845,8 +3853,8 @@ function formatStationShort(station) {
       let bags=Number(checkpoint.bags)*Number(checkpoint.kgPerBag), bunker=Number(checkpoint.bunkerKg);
       const events=[];
       // Ereignisse nach dem Abgleich: kein doppeltes Buchen historischer Nachfüllungen.
-      for(const r of state.refills){const t=Date.parse(r.createdAt||r.date);if(t>start&&t<=now)events.push({t,kind:'refill',kg:Number(r.totalKg)||0});}
-      for(const p of state.purchases){const t=Date.parse(p.createdAt||p.date);if(t>start&&t<=now)events.push({t,kind:'purchase',kg:Number(p.totalKg)||0});}
+      for(const r of state.refills){const t=Date.parse(r.date);if(t>start&&t<=now)events.push({t,kind:'refill',kg:Number(r.totalKg)||0});}
+      for(const p of state.purchases){const t=Date.parse(p.date);if(t>start&&t<=now)events.push({t,kind:'purchase',kg:Number(p.totalKg)||0});}
       // Zählerintervalle können den Abgleichzeitpunkt überlappen: Verbrauch zeitanteilig verteilen.
       for(const e of buildComputedReadings()){
         if(e.type!=='pellets'||!e.previousDate||!Number.isFinite(e.delta)||e.delta<0)continue;
@@ -3863,6 +3871,44 @@ function formatStationShort(station) {
         const kg=crossesCheckpoint?e.delta:e.delta*overlap/(b-a);
         if(kg>0)events.push({t:Math.min(b,now),kind:'consumption',kg});
       }
+      // Der beim Abgleich festgehaltene Zählerstand ist der einzige
+      // Verbrauchs-Startpunkt. Nur spätere Ablesungen zählen, auch wenn
+      // das vorherige historische Ableseintervall über den Abgleich reicht.
+      if(Number.isFinite(Number(checkpoint.meterValue))&&checkpoint.meterValue!==null&&checkpoint.meterValue!==undefined){
+        for(let i=events.length-1;i>=0;i--)if(events[i].kind==='consumption')events.splice(i,1);
+        const laterReadings=state.readings.filter(r=>r.type==='pellets'&&Date.parse(r.date)>start&&Date.parse(r.date)<=now&&Number.isFinite(Number(r.value)))
+          .slice().sort((a,b)=>Date.parse(a.date)-Date.parse(b.date));
+        const resets=state.resets.filter(r=>r.type==='pellets'&&Date.parse(r.date)>start&&Date.parse(r.date)<=now)
+          .slice().sort((a,b)=>Date.parse(a.date)-Date.parse(b.date));
+        let lastValue=Number(checkpoint.meterValue),lastTime=start;
+        for(const r of laterReadings){
+          const t=Date.parse(r.date),value=Number(r.value);
+          const intervening=resets.filter(x=>Date.parse(x.date)>lastTime&&Date.parse(x.date)<=t);
+          let delta=0;
+          if(intervening.length){
+            let prior=lastValue;
+            for(const reset of intervening){
+              delta+=Math.max(0,Number(reset.previousMeterValue)-prior);
+              prior=Number(reset.newMeterStartValue);
+            }
+            delta+=Math.max(0,value-prior);
+          }else delta=Math.max(0,value-lastValue);
+          if(delta>0)events.push({t,kind:'consumption',kg:delta});
+          lastValue=value;lastTime=t;
+        }
+      }else{
+      // Anker: eine bestätigte Verbrauchsreferenz ersetzt die unsichere
+      // Zuordnung von Ableseintervallen über die Abgleichgrenze.
+      // Spätere Zählerdifferenzen werden relativ zum gespeicherten Rohwert addiert.
+      const reference=checkpoint.consumptionReference;
+      const meterEvents=events.filter(e=>e.kind==='consumption');
+      const rawUsed=meterEvents.reduce((sum,e)=>sum+e.kg,0);
+      if(reference&&Number.isFinite(Number(reference.rawUsed))&&Number.isFinite(Number(reference.actualUsed))){
+        const correctedUsed=Math.max(0,Number(reference.actualUsed)+rawUsed-Number(reference.rawUsed));
+        for(let i=events.length-1;i>=0;i--)if(events[i].kind==='consumption')events.splice(i,1);
+        events.push({t:now,kind:'consumption',kg:correctedUsed});
+      }
+      } // Ende der Kompatibilitätsberechnung für ältere Abgleiche
       events.sort((a,b)=>a.t-b.t);
       let used=0,added=0,delivered=0;
       for(const e of events){
@@ -3871,6 +3917,22 @@ function formatStationShort(station) {
         else {bunker-=e.kg;used+=e.kg;}
       }
       return {bags,bunker,capacity,used,added,delivered,bagCount:bags/Number(checkpoint.kgPerBag)};
+    }
+    async function handlePelletConsumptionReferenceSave(event){
+      event.preventDefault();
+      const cp=state.settings.pelletBalance?.splitCheckpoint;
+      if(!cp)return showToast('Zuerst einen getrennten Bunker-/Sacklager-Abgleich speichern.','error');
+      const actual=Number(document.getElementById('pelletCheckpointUsedActual').value);
+      if(!Number.isFinite(actual)||actual<0)return showToast('Bitte einen gültigen Verbrauch eingeben.','error');
+      // Read the uncorrected consumption at this moment, preserving the
+      // checkpoint date and its independently confirmed inventory.
+      const oldReference=cp.consumptionReference;
+      delete cp.consumptionReference;
+      const rawUsed=pelletCheckpointStock(cp).used;
+      cp.consumptionReference=oldReference;
+      if(!confirm(`Seit dem letzten Abgleich ${formatNumber(actual)} kg Verbrauch als Referenz festlegen?\\nDer Bunker wird ab dem ursprünglichen Abgleich neu berechnet. Das Sacklager bleibt unverändert.`))return;
+      cp.consumptionReference={rawUsed,actualUsed:actual,savedAt:new Date().toISOString()};
+      await savePelletSettings();
     }
     function pelletStockSplit(balance){
       if(!balance.ready)return null;
@@ -3889,14 +3951,15 @@ function formatStationShort(station) {
       event.preventDefault();
       const bags=Number(document.getElementById('pelletCheckpointBags').value),kgPerBag=Number(document.getElementById('pelletCheckpointBagKg').value);
       const bunkerKg=Number(document.getElementById('pelletCheckpointBunker').value),capacityKg=Number(document.getElementById('pelletCheckpointCapacity').value);
-      if(![bags,kgPerBag,bunkerKg,capacityKg].every(Number.isFinite)||!Number.isInteger(bags)||bags<0||kgPerBag<=0||capacityKg<=0||bunkerKg<0||bunkerKg>capacityKg)return showToast('Bitte gültige Sackzahlen und Bunkerwerte eingeben.','error');
-      if(!confirm(`Neuen Bestandsabgleich speichern?\nSacklager: ${bags} × ${kgPerBag} kg\nBunker: ${bunkerKg} kg\nGesamt: ${round2(bags*kgPerBag+bunkerKg)} kg\n\nBereits erfasste Nachfüllungen werden nicht erneut gebucht.`))return;
+      const meterValue=Number(document.getElementById('pelletCheckpointMeter').value);
+      if(![bags,kgPerBag,bunkerKg,capacityKg,meterValue].every(Number.isFinite)||meterValue<0||!Number.isInteger(bags)||bags<0||kgPerBag<=0||capacityKg<=0||bunkerKg<0||bunkerKg>capacityKg)return showToast('Bitte gültige Sackzahlen und Bunkerwerte eingeben.','error');
+      if(!confirm(`Neuen Bestandsabgleich speichern?\nSacklager: ${bags} × ${kgPerBag} kg\nBunker: ${bunkerKg} kg\nGesamt: ${round2(bags*kgPerBag+bunkerKg)} kg\nHeizungszählerstand: ${meterValue} kg\n\nBereits erfasste Nachfüllungen werden nicht erneut gebucht.`))return;
       state.settings.pelletBalance=state.settings.pelletBalance||{initialRestKg:0,adjustments:[]};
       const config=state.settings.pelletBalance;
       config.splitHistory=Array.isArray(config.splitHistory)?config.splitHistory:[];
       if(config.splitCheckpoint)config.splitHistory.push(config.splitCheckpoint);
       config.splitHistory=config.splitHistory.slice(-100);
-      config.splitCheckpoint={date:new Date().toISOString(),bags,kgPerBag,bunkerKg,capacityKg};
+      config.splitCheckpoint={date:new Date().toISOString(),bags,kgPerBag,bunkerKg,capacityKg,meterValue};
       await savePelletSettings();
     }
     function pelletForecastModel(){
@@ -3947,6 +4010,10 @@ function formatStationShort(station) {
       const checkpointInfo=document.getElementById('pelletCheckpointInfo');
       if(f.checkpoint){const cp=f.checkpoint,split=f.split; for(const [id,value] of [['pelletCheckpointBags',Math.max(0,Math.round(split.bagCount))],['pelletCheckpointBagKg',cp.kgPerBag],['pelletCheckpointBunker',Math.max(0,Math.min(split.capacity,Math.round(split.bunker*10)/10))],['pelletCheckpointCapacity',cp.capacityKg]]){const input=document.getElementById(id);if(input&&document.activeElement!==input)input.value=value;}}
       if(checkpointInfo)checkpointInfo.textContent=f.checkpoint?'Letzter getrennter Bestandsabgleich: '+new Date(f.checkpoint.date).toLocaleString('de-DE')+'. Sacklager und Bunker werden seitdem getrennt fortgeschrieben. Vorherige Abgleiche: '+(state.settings.pelletBalance?.splitHistory?.length||0):'Noch kein getrennter Bestandsabgleich gespeichert.';
+      const legacyReferenceForm=document.getElementById('pelletConsumptionReferenceForm');
+      if(legacyReferenceForm)legacyReferenceForm.hidden=!!f.checkpoint?.meterValue || f.checkpoint?.meterValue===0;
+      const usedInput=document.getElementById('pelletCheckpointUsedActual');
+      if(usedInput&&document.activeElement!==usedInput&&f.checkpoint)usedInput.value=String(round2(f.consumption||0));
       const startInfo=document.getElementById('pelletStartInfo');
       if(startInfo)startInfo.innerHTML=f.ready?`<strong>Erster gespeicherter Kauf: ${escapeHtml(f.baseline.toLocaleDateString('de-DE'))}</strong><p>Alle früheren Zählerstände bleiben für diese Bestandsberechnung unberücksichtigt. Der Anfangsrest ist eine Schätzung, die du unten ändern kannst.</p>`:'<p>Bitte zuerst eine Lieferung erfassen.</p>';
       const initial=document.getElementById('pelletInitialRest');
