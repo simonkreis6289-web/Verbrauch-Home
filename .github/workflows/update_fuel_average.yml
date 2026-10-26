@@ -7,6 +7,9 @@ on:
     - cron: '15 2,6,10,14,18,22 * * *'
     # Dieselben Berliner Uhrzeiten (Winterzeit UTC+1)
     - cron: '15 3,7,11,15,19,23 * * *'
+    # Zweiter Versuch zur Minute 45, falls GitHub einen :15-Lauf auslässt.
+    # Zusätzlich täglich 11:45 Uhr Berliner Zeit.
+    - cron: '45 * * * *'
 
 permissions:
   contents: write
@@ -36,8 +39,14 @@ jobs:
           berlin = datetime.now(ZoneInfo('Europe/Berlin'))
           summer = berlin.utcoffset().total_seconds() == 7200
           expected = '15 2,6,10,14,18,22 * * *' if summer else '15 3,7,11,15,19,23 * * *'
-          run = os.environ['EVENT_NAME'] == 'workflow_dispatch' or os.environ['EVENT_SCHEDULE'] == expected
-          print(f'Berlin: {berlin:%Y-%m-%d %H:%M %Z}; schedule={os.environ["EVENT_SCHEDULE"]!r}; ausführen={run}')
+          event_schedule = os.environ.get('EVENT_SCHEDULE', '')
+          manual = os.environ['EVENT_NAME'] == 'workflow_dispatch'
+          # :45 dient als Nachholversuch und als zusätzlicher täglicher 11:45-Abruf.
+          # Ein 45er Lauf außerhalb dieser lokalen Stunden macht keine API-Anfrage.
+          retry = event_schedule == '45 * * * *' and (berlin.hour in (0,4,8,12,16,20,11))
+          regular = event_schedule == expected
+          run = manual or regular or retry
+          print(f'Berlin: {berlin:%Y-%m-%d %H:%M %Z}; schedule={event_schedule!r}; regulär={regular}; Nachhol-/Extra-Lauf={retry}; ausführen={run}')
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as f:
               f.write(f'run={str(run).lower()}\n')
           PY
