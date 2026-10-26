@@ -1187,7 +1187,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v149</strong> · 1.3.1.179<br><small>Letzte Änderung: 26.10.2026, 09:17 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v150</strong> · 1.3.1.180<br><small>Letzte Änderung: 26.10.2026, 09:30 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -2099,16 +2099,22 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       <p class="muted">Angebote verschiedener Lieferanten vergleichen. Die Verbrauchskosten werden weiterhin anhand der tatsächlichen Käufe berechnet.</p>
       <p><a href="https://www.heizpellets24.de/holzpellets-sackware/angebotsliste?zipCode=57489&amp;amount=1&amp;stations=1&amp;product=23&amp;options=229,248,-41,244,468&amp;ap=0&amp;pcert=4,2,6,1" target="_blank" rel="noopener noreferrer">Aktuelles Angebot bei HeizPellets24 öffnen ↗</a></p>
       <form id="pelletMarketForm" class="form-grid">
-        <label>Lieferant<select id="pelletOfferSupplier" required></select></label>
-        <label>Neuen Lieferanten anlegen<input id="pelletNewSupplier" placeholder="z. B. Holz Bald" maxlength="80" /></label>
-        <label>Lieferart<select id="pelletOfferType"><option value="bag">Sackware</option><option value="loose">Lose Ware</option></select></label>
-        <label>Gesamtpreis inklusive Lieferung (€)<input id="pelletMarketPrice" type="number" min="0.01" step="0.01" required placeholder="z. B. 559,61" /></label>
-        <label>Gelieferte Menge (kg)<input id="pelletMarketKg" type="number" min="0.01" step="0.01" required placeholder="z. B. 990" /></label>
         <label>Datum des Angebots<input id="pelletMarketDate" type="date" required /></label>
-        <div class="form-actions" style="align-items:end"><button type="submit" class="btn primary">Angebotspreis übernehmen</button></div>
+        <label>Vergleichsmenge (kg)<input id="pelletMarketKg" type="number" min="0.01" step="0.01" required placeholder="z. B. 4950" /></label>
+        <label>Lieferart<select id="pelletOfferType"><option value="bag">Sackware</option><option value="loose">Lose Ware</option></select></label>
+        <div class="span-12" style="border-top:1px solid var(--border,#d5dce7);padding-top:12px"><strong>⭐ Wunschlieferant</strong></div>
+        <label>Wunschlieferant<select id="pelletOfferSupplier" required></select></label>
+        <label>Neuen Wunschlieferanten anlegen<input id="pelletNewSupplier" placeholder="Lieferantenname" maxlength="80" /></label>
+        <label>Angebot Wunschlieferant, gesamt (€)<input id="pelletMarketPrice" type="number" min="0.01" step="0.01" required /></label>
+        <div class="span-12" style="border-top:1px solid var(--border,#d5dce7);padding-top:12px"><strong>💶 Günstigster Anbieter (optional)</strong></div>
+        <label>Günstigster Lieferant<select id="pelletCheapestSupplier"></select></label>
+        <label>Neuen günstigsten Lieferanten anlegen<input id="pelletNewCheapestSupplier" placeholder="Lieferantenname" maxlength="80" /></label>
+        <label>Günstigster Gesamtpreis (€)<input id="pelletCheapestPrice" type="number" min="0.01" step="0.01" /></label>
+        <div class="form-actions span-12"><button type="submit" class="btn primary">Angebotsvergleich speichern</button></div>
       </form>
-      <small class="muted">Ein direkter Live-Preisabruf aus der externen Webseite ist nicht verfügbar. Der hinterlegte Preis wird auf diesem Gerät gespeichert und bleibt als Angebot mit Datum gekennzeichnet.</small>
-      <div id="pelletOfferHistory" style="margin-top:14px"></div>
+      <small class="muted">Preise einschließlich Lieferung, jeweils für dieselbe Menge und Lieferart. Angebote werden in der Haushaltsdatenbank gespeichert, sofern Firebase aktiv ist.</small>
+      <div id="pelletOfferHistory" style="margin-top:18px"></div>
+      <div id="pelletOfferChart" style="margin-top:18px"></div>
       <div id="pelletComparisonSettings" class="pellet-compare-grid" style="margin-top:16px"></div>
     </section>
     <section id="basePricesCard" class="card glass">
@@ -6930,37 +6936,104 @@ async function updateRecord(kind, id, payload) {
         await setDoc(doc(state.db,householdBasePath()+'/pelletSuppliers/'+encodeURIComponent(name.trim())),{name:name.trim()},{merge:true});
       localStorage.setItem(marker,'yes');
     }
+    function pelletOfferChartPairs(){
+      return pelletOfferData().flatMap(r=>{
+        const base={date:String(r.date||''),kg:Number(r.kg),type:r.type||'bag'};
+        const out=[{...base,supplier:r.supplier,price:Number(r.price),kind:'Wunschlieferant'}];
+        if(r.cheapestSupplier&&Number(r.cheapestPrice)>0)out.push({...base,supplier:r.cheapestSupplier,price:Number(r.cheapestPrice),kind:'Günstigster Anbieter'});
+        return out.filter(x=>x.date&&x.supplier&&x.kg>0&&x.price>0);
+      });
+    }
     function renderPelletOffers(){
       const select=document.getElementById('pelletOfferSupplier');if(!select)return;
-      const prev=select.value;const suppliers=pelletSupplierData();select.innerHTML='<option value="">Lieferant wählen</option>'+suppliers.map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('');if(suppliers.includes(prev))select.value=prev;
-      const rows=pelletOfferData().slice().sort((a,b)=>b.date.localeCompare(a.date)||b.savedAt.localeCompare(a.savedAt));
-      const el=document.getElementById('pelletOfferHistory');if(!el)return;
-      el.innerHTML='<h3>📈 Angebotshistorie</h3>'+(rows.length?'<div style="overflow-x:auto"><table style="width:100%;text-align:left"><thead><tr><th>Datum</th><th>Lieferant</th><th>Art</th><th>Menge</th><th>Gesamt</th><th>€/t</th></tr></thead><tbody>'+rows.slice(0,40).map(r=>`<tr><td>${escapeHtml(r.date)}</td><td>${escapeHtml(r.supplier)}</td><td>${r.type==='loose'?'Lose Ware':'Sackware'}</td><td>${formatNumber(r.kg)} kg</td><td>${formatCurrency(r.price)}</td><td>${formatCurrency(r.price/r.kg*1000)}</td></tr>`).join('')+'</tbody></table></div>':'<p class="muted">Noch keine Angebote erfasst.</p>');
-    }
-    async function savePelletMarketQuote(event) {
-      event.preventDefault();
-      const price = Number(document.getElementById('pelletMarketPrice')?.value);
-      const kg = Number(document.getElementById('pelletMarketKg')?.value);
-      const date = document.getElementById('pelletMarketDate')?.value;
-      if (!(price > 0) || !(kg > 0) || !date || !Number.isFinite(Date.parse(date))) {
-        showToast('Bitte gültige Angebotsdaten eingeben.','error'); return;
+      const suppliers=pelletSupplierData();
+      for(const id of ['pelletOfferSupplier','pelletCheapestSupplier']){
+        const node=document.getElementById(id);if(!node)continue;
+        const prev=node.value;
+        node.innerHTML='<option value="">Lieferant wählen</option>'+suppliers.map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('');
+        if(suppliers.includes(prev))node.value=prev;
       }
-      const input=document.getElementById('pelletNewSupplier');const newSupplier=input.value.trim();const supplier=newSupplier||document.getElementById('pelletOfferSupplier').value;
-      if(!supplier){showToast('Bitte einen Lieferanten auswählen oder anlegen.','error');return;}
-      const type=document.getElementById('pelletOfferType').value;
-      const record={supplier,type,price,kg,date,savedAt:new Date().toISOString()};
+      const rows=pelletOfferData().slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||String(b.savedAt||'').localeCompare(String(a.savedAt||'')));
+      const el=document.getElementById('pelletOfferHistory');if(!el)return;
+      el.innerHTML='<h3>📋 Angebotshistorie</h3>'+(rows.length?'<div style="overflow-x:auto"><table style="width:100%;text-align:left"><thead><tr><th>Datum</th><th>Wunschlieferant</th><th>Günstigster Anbieter</th><th>Art / Menge</th><th>Preisunterschied</th><th>Aktion</th></tr></thead><tbody>'+rows.map(r=>{
+        const cheapest=r.cheapestSupplier&&Number(r.cheapestPrice)>0;
+        const difference=cheapest?Number(r.price)-Number(r.cheapestPrice):null;
+        const id=String(r.id||'');
+        const action=id?`<button type="button" class="btn ghost pellet-offer-delete" data-offer-id="${escapeHtml(id)}" aria-label="Angebot löschen">🗑️ Löschen</button>`:`<button type="button" class="btn ghost pellet-offer-delete" data-offer-index="${pelletOfferData().findIndex(x=>x.savedAt===r.savedAt&&x.date===r.date&&x.supplier===r.supplier)}">🗑️ Löschen</button>`;
+        return `<tr><td>${escapeHtml(r.date||'')}</td><td><strong>${escapeHtml(r.supplier||'')}</strong><br>${formatCurrency(Number(r.price))}<br><small>${formatCurrency(Number(r.price)/Number(r.kg)*1000)}/t</small></td><td>${cheapest?`${escapeHtml(r.cheapestSupplier)}<br>${formatCurrency(Number(r.cheapestPrice))}<br><small>${formatCurrency(Number(r.cheapestPrice)/Number(r.kg)*1000)}/t</small>`:'–'}</td><td>${r.type==='loose'?'Lose Ware':'Sackware'}<br>${formatNumber(Number(r.kg))} kg</td><td>${difference===null?'–':formatCurrency(difference)}</td><td>${action}</td></tr>`;
+      }).join('')+'</tbody></table></div>':'<p class="muted">Noch keine Angebote erfasst.</p>');
+      el.querySelectorAll('.pellet-offer-delete').forEach(btn=>btn.addEventListener('click',()=>deletePelletOffer(btn.dataset.offerId,btn.dataset.offerIndex)));
+      renderPelletOfferChart();
+    }
+    async function deletePelletOffer(id,index){
+      if(!confirm('Dieses Pelletangebot wirklich dauerhaft löschen?'))return;
       try{
         if(state.firebaseEnabled){
-          await setDoc(doc(state.db,householdBasePath()+'/pelletSuppliers/'+encodeURIComponent(supplier)),{name:supplier},{merge:true});
+          if(!id)throw Error('Angebots-ID fehlt. Bitte neu laden.');
+          await deleteDoc(doc(state.db,householdBasePath()+'/pelletOffers/'+id));
+        }else{
+          const rows=pelletOfferData();const i=id?rows.findIndex(x=>x.id===id):Number(index);
+          if(!Number.isInteger(i)||i<0||i>=rows.length)throw Error('Eintrag nicht gefunden.');
+          rows.splice(i,1);localStorage.setItem(PELLET_OFFERS_KEY,JSON.stringify(rows));
+        }
+        renderPelletOffers();renderPelletPriceComparisons();showToast('Angebot gelöscht.','success');
+      }catch(e){showToast('Löschen fehlgeschlagen: '+String(e.message||e),'error');}
+    }
+    function renderPelletOfferChart(){
+      const el=document.getElementById('pelletOfferChart');if(!el)return;
+      const entries=pelletOfferChartPairs();
+      const suppliers=[...new Set(entries.map(x=>x.supplier))].sort((a,b)=>a.localeCompare(b,'de'));
+      const previous=el.querySelector('#pelletChartSupplier')?.value||'all';
+      el.innerHTML='<h3>📈 Angebotspreise nach Lieferant</h3><p class="muted">Preis pro Tonne. Vergleich nur bei gleicher Lieferart und vergleichbarer Menge aussagekräftig.</p><label style="display:block;max-width:330px">Lieferant filtern<select id="pelletChartSupplier"><option value="all">Alle Lieferanten</option>'+suppliers.map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('')+'</select></label><div id="pelletChartCanvas" style="overflow-x:auto;margin-top:12px"></div>';
+      const filter=el.querySelector('#pelletChartSupplier');filter.value=suppliers.includes(previous)?previous:'all';
+      const draw=()=>{
+        const data=entries.filter(x=>filter.value==='all'||x.supplier===filter.value).sort((a,b)=>a.date.localeCompare(b.date));
+        const host=el.querySelector('#pelletChartCanvas');
+        if(!data.length){host.innerHTML='<p class="muted">Noch keine Preisdaten für diese Auswahl.</p>';return;}
+        const dates=[...new Set(data.map(x=>x.date))].sort();const vals=data.map(x=>x.price/x.kg*1000);
+        const lo=Math.max(0,Math.floor(Math.min(...vals)*.9/25)*25),hi=Math.ceil(Math.max(...vals)*1.1/25)*25||1;
+        const w=Math.max(580,dates.length*75+110),h=310,L=68,R=22,T=22,B=55;
+        const x=d=>L+(dates.length===1?(w-L-R)/2:dates.indexOf(d)*(w-L-R)/(dates.length-1));
+        const y=v=>T+(hi-v)/(hi-lo||1)*(h-T-B);
+        const colors=['#087db4','#db7b16','#15966e','#9a60c2','#bd4256','#5c7a2e'];
+        const groups=[...new Set(data.map(r=>r.supplier))];
+        const svg=[`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="Pellet-Angebotspreise in Euro pro Tonne nach Datum und Lieferant">`];
+        for(let i=0;i<=4;i++){const v=lo+(hi-lo)*i/4,py=y(v);svg.push(`<line x1="${L}" y1="${py}" x2="${w-R}" y2="${py}" stroke="#dce3ec"/><text x="${L-8}" y="${py+4}" text-anchor="end" font-size="12" fill="#64748b">${Math.round(v)} €</text>`);}
+        dates.forEach((d,i)=>{if(dates.length>12&&i%Math.ceil(dates.length/12))return;svg.push(`<text x="${x(d)}" y="${h-23}" text-anchor="middle" font-size="11" fill="#64748b">${escapeHtml(d.slice(8,10)+'.'+d.slice(5,7)+'.'+d.slice(2,4))}</text>`);});
+        groups.forEach((name,i)=>{const color=colors[i%colors.length],points=data.filter(r=>r.supplier===name).map(r=>({x:x(r.date),y:y(r.price/r.kg*1000),v:r.price/r.kg*1000,date:r.date}));
+          if(points.length>1)svg.push(`<polyline fill="none" stroke="${color}" stroke-width="2.5" points="${points.map(p=>p.x+','+p.y).join(' ')}"/>`);
+          points.forEach(p=>svg.push(`<circle cx="${p.x}" cy="${p.y}" r="5" fill="${color}"><title>${escapeHtml(name)}: ${p.date}, ${p.v.toFixed(2)} €/t</title></circle>`));
+        });svg.push('</svg>');
+        host.innerHTML=svg.join('')+'<div style="display:flex;gap:14px;flex-wrap:wrap;margin:6px 0 0">'+groups.map((name,i)=>`<span style="font-size:13px"><span style="color:${colors[i%colors.length]}">●</span> ${escapeHtml(name)}</span>`).join('')+'</div>';
+      };
+      filter.addEventListener('change',draw);draw();
+    }
+    async function savePelletMarketQuote(event){
+      event.preventDefault();
+      const price=Number(document.getElementById('pelletMarketPrice').value),kg=Number(document.getElementById('pelletMarketKg').value),date=document.getElementById('pelletMarketDate').value;
+      const newSupplier=document.getElementById('pelletNewSupplier').value.trim();
+      const supplier=newSupplier||document.getElementById('pelletOfferSupplier').value;
+      const newCheapest=document.getElementById('pelletNewCheapestSupplier').value.trim();
+      const cheapestSupplier=newCheapest||document.getElementById('pelletCheapestSupplier').value;
+      const cheapestPriceRaw=document.getElementById('pelletCheapestPrice').value.trim();
+      const cheapestPrice=cheapestPriceRaw?Number(cheapestPriceRaw):null;
+      if(!(price>0)||!(kg>0)||!/^\d{4}-\d{2}-\d{2}$/.test(date)||!supplier){showToast('Bitte Wunschlieferant, Datum, Menge und Preis eingeben.','error');return;}
+      if((cheapestSupplier&&!cheapestPrice)||(cheapestPrice&&!cheapestSupplier)|| (cheapestPrice!==null&&(!(cheapestPrice>0)||cheapestPrice>price))){showToast('Bitte den günstigsten Lieferanten samt gültigem Preis (höchstens Wunschpreis) angeben.','error');return;}
+      const type=document.getElementById('pelletOfferType').value;
+      const record={supplier,type,price,kg,date,cheapestSupplier:cheapestSupplier||'',cheapestPrice:cheapestPrice||null,savedAt:new Date().toISOString()};
+      try{
+        if(state.firebaseEnabled){
+          for(const name of [...new Set([supplier,cheapestSupplier].filter(Boolean))])await setDoc(doc(state.db,householdBasePath()+'/pelletSuppliers/'+encodeURIComponent(name)),{name},{merge:true});
           await addDoc(collection(state.db,householdBasePath()+'/pelletOffers'),record);
         }else{
-          const suppliers=pelletSupplierData();if(!suppliers.includes(supplier)){suppliers.push(supplier);localStorage.setItem(PELLET_SUPPLIERS_KEY,JSON.stringify(suppliers));}
-          const rows=pelletOfferData();rows.push(record);localStorage.setItem(PELLET_OFFERS_KEY,JSON.stringify(rows));
+          const suppliers=pelletSupplierData();for(const name of [supplier,cheapestSupplier])if(name&&!suppliers.includes(name))suppliers.push(name);
+          localStorage.setItem(PELLET_SUPPLIERS_KEY,JSON.stringify(suppliers));
+          const rows=pelletOfferData();rows.push({...record,id:crypto.randomUUID()});localStorage.setItem(PELLET_OFFERS_KEY,JSON.stringify(rows));
         }
         localStorage.setItem(PELLET_MARKET_KEY,JSON.stringify({price,kg,date,source:supplier,type}));
-        input.value='';renderPelletOffers();document.getElementById('pelletOfferSupplier').value=supplier;
-        renderPelletPriceComparisons();
-        showToast(state.firebaseEnabled?'Angebot in Firebase gespeichert.':'Angebot lokal gespeichert.','success');
+        document.getElementById('pelletNewSupplier').value='';document.getElementById('pelletNewCheapestSupplier').value='';
+        renderPelletOffers();document.getElementById('pelletOfferSupplier').value=supplier;document.getElementById('pelletCheapestSupplier').value=cheapestSupplier;
+        renderPelletPriceComparisons();showToast('Angebotsvergleich gespeichert.','success');
       }catch(error){showToast('Speichern fehlgeschlagen: '+String(error.message||error),'error');}
     }
     function pelletYearConsumptionEstimate() {
