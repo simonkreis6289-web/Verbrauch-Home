@@ -1187,7 +1187,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v148</strong> · 1.3.1.178<br><small>Letzte Änderung: 24.10.2026, 11:02 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v149</strong> · 1.3.1.179<br><small>Letzte Änderung: 26.10.2026, 09:17 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -6745,6 +6745,17 @@ async function updateRecord(kind, id, payload) {
           valueHtml: `${formatNumber(entry.totalKg)} kg · ${formatCurrency(entry.totalPrice)}<br><small class="muted">${formatNumber(entry.bags)} Sack/Säcke × ${formatNumber(entry.kgPerBag)} kg · ${formatCurrency(entry.pricePerKg)}/kg</small>`,
           note: `Preis pro Sack: ${formatCurrency(entry.totalPrice / entry.bags)}`
         }));
+        const article = els.purchaseList.lastElementChild;
+        if (article) {
+          const editBtn = document.createElement("button");
+          editBtn.type = "button";
+          editBtn.className = "btn ghost";
+          editBtn.textContent = "✏️ Bearbeiten";
+          editBtn.setAttribute("aria-label", "Pelletskauf bearbeiten");
+          editBtn.addEventListener("click", event => { event.stopPropagation(); openEntryEditor("purchases", entry.id); });
+          article.querySelector(".entry-actions")?.prepend(editBtn);
+          if (!article.querySelector(".entry-actions")) article.appendChild(editBtn);
+        }
       });
     }
 
@@ -7515,11 +7526,94 @@ async function updateRecord(kind, id, payload) {
       return node;
     }
 
+    // Bestehenden Pelletskauf bearbeiten, ohne eine zweite Lieferung anzulegen.
+    function openPelletPurchaseEditor(entry) {
+      const overlay = document.createElement('div');
+      overlay.className = 'fuel-edit-backdrop';
+      overlay.innerHTML = `
+        <section class="fuel-edit-panel" role="dialog" aria-modal="true" aria-labelledby="purchaseEditTitle">
+          <header class="fuel-edit-header">
+            <div><p class="section-kicker">PELLETS · EINKAUFSHISTORIE</p><h2 id="purchaseEditTitle">📦 Pelletskauf bearbeiten</h2></div>
+            <button type="button" class="fuel-edit-close" data-close aria-label="Schließen">✕</button>
+          </header>
+          <form class="fuel-edit-form">
+            <div class="fuel-edit-fields">
+              <label>Datum und Uhrzeit<input name="date" type="datetime-local" value="${escapeHtml(toDatetimeLocal(entry.date))}" required></label>
+              <label>Anzahl Säcke<input name="bags" type="number" min="1" step="1" value="${escapeHtml(String(entry.bags ?? ''))}" required></label>
+              <label>Kilogramm pro Sack<input name="kgPerBag" type="number" min="0.01" step="0.01" value="${escapeHtml(String(entry.kgPerBag ?? ''))}" required></label>
+              <label>Gesamtpreis (€)<input name="totalPrice" type="number" min="0" step="0.01" value="${escapeHtml(String(entry.totalPrice ?? ''))}" required></label>
+            </div>
+            <div class="fuel-edit-live-summary" aria-live="polite"><div><small>Gesamtgewicht</small><strong data-weight>–</strong></div><div><small>Preis pro kg</small><strong data-unit>–</strong></div></div>
+            <p class="muted">Der vorhandene Kauf wird aktualisiert, nicht erneut hinzugefügt. Bereits erfasste Nachfüllungen bleiben unverändert.</p>
+            <p class="fuel-edit-error" role="alert" hidden></p>
+            <footer class="fuel-edit-footer"><span>Änderungen beeinflussen die Einkaufshistorie und Preisberechnungen.</span><div class="fuel-edit-buttons"><button type="button" class="btn ghost" data-close>Abbrechen</button><button type="submit" class="btn primary" data-save>Änderungen speichern</button></div></footer>
+          </form>
+        </section>`;
+      document.body.appendChild(overlay);
+      const previousOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      const form = overlay.querySelector('form');
+      const field = name => form.elements.namedItem(name);
+      const errorLabel = overlay.querySelector('.fuel-edit-error');
+      const saveBtn = overlay.querySelector('[data-save]');
+      let saving = false;
+      const close = () => {
+        if (saving) return;
+        document.removeEventListener('keydown', onKeydown);
+        overlay.remove();
+        document.body.style.overflow = previousOverflow;
+      };
+      const onKeydown = event => { if (event.key === 'Escape') close(); };
+      document.addEventListener('keydown', onKeydown);
+      overlay.querySelectorAll('[data-close]').forEach(btn => btn.addEventListener('click', close));
+      overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
+      const recalculate = () => {
+        const bags = Number(field('bags').value), kg = Number(field('kgPerBag').value), price = Number(field('totalPrice').value);
+        const weight = bags * kg;
+        overlay.querySelector('[data-weight]').textContent = bags > 0 && kg > 0 ? `${formatNumber(round2(weight))} kg` : '–';
+        overlay.querySelector('[data-unit]').textContent = weight > 0 && price >= 0 ? `${formatCurrency(round4(price / weight))}/kg` : '–';
+      };
+      ['bags','kgPerBag','totalPrice'].forEach(name => field(name).addEventListener('input', recalculate));
+      recalculate();
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+        if (saving) return;
+        errorLabel.hidden = true;
+        const dt = new Date(field('date').value);
+        const bags = Number(field('bags').value), kgPerBag = Number(field('kgPerBag').value), totalPrice = Number(field('totalPrice').value);
+        const error = message => { errorLabel.textContent = message; errorLabel.hidden = false; };
+        if (Number.isNaN(dt.getTime())) return error('Bitte ein gültiges Kaufdatum eingeben.');
+        if (!Number.isSafeInteger(bags) || bags < 1) return error('Die Sackanzahl muss eine positive ganze Zahl sein.');
+        if (!Number.isFinite(kgPerBag) || kgPerBag <= 0) return error('Bitte ein gültiges Sackgewicht eingeben.');
+        if (!Number.isFinite(totalPrice) || totalPrice < 0) return error('Bitte einen gültigen Gesamtpreis eingeben.');
+        const totalKg = round2(bags * kgPerBag);
+        if (!Number.isFinite(totalKg) || totalKg <= 0) return error('Das Gesamtgewicht ist ungültig.');
+        saving = true; saveBtn.disabled = true; saveBtn.textContent = 'Speichere …';
+        try {
+          await updateRecord('purchases', entry.id, {
+            date: dt.toISOString(), bags, kgPerBag, totalKg,
+            totalPrice: round2(totalPrice), pricePerKg: round4(totalPrice / totalKg)
+          });
+          rememberBagSize(kgPerBag);
+          closeAfterSave();
+          showToast('Pelletskauf aktualisiert.', 'success');
+        } catch (err) {
+          console.error('Pelletskauf bearbeiten:', err);
+          error('Speichern fehlgeschlagen: ' + (err?.message || String(err)));
+        } finally { saving = false; saveBtn.disabled = false; saveBtn.textContent = 'Änderungen speichern'; }
+      });
+      function closeAfterSave() {
+        document.removeEventListener('keydown', onKeydown);
+        overlay.remove(); document.body.style.overflow = previousOverflow;
+      }
+    }
+
       function openEntryEditor(kind, id) {
   const entry = state[kind]?.find((item) => item.id === id);
   if (!entry) return;
+  if (kind === 'purchases') { openPelletPurchaseEditor(entry); return; }
   if (kind !== 'fuelEntries') {
-    showToast('Bearbeiten ist derzeit für Tankvorgänge verfügbar.', 'error');
+    showToast('Bearbeiten ist derzeit für Tankvorgänge und Pelletskäufe verfügbar.', 'error');
     return;
   }
   const car = state.cars.find(c => c.id === entry.carId);
