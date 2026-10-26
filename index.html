@@ -1175,6 +1175,19 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 .weather-remember{display:flex;align-items:center;gap:8px;min-width:230px;font-size:.82rem}.weather-remember input{width:17px;height:17px;flex-shrink:0}
 .weather-solar-actions{margin:8px 0 12px;align-items:center;flex-wrap:wrap}.weather-solar-actions [data-apply-solar-status]{font-size:.82rem}
 .weather-solar-choice{margin:12px 0 8px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(125,145,175,.06)}.weather-solar-choice label{display:flex;gap:9px;align-items:center;font-weight:700}.weather-solar-choice input{width:19px;height:19px;accent-color:#0284c7}.weather-solar-choice p{margin:7px 0 0}.weather-times-inactive{opacity:.55}
+/* v152: mobile-first Breite, Bestands-Hierarchie und Fahrzeugarchiv */
+#fuelEntryCard{grid-column:1/-1;width:100%;max-width:none;min-width:0}
+#fuelEntryCard .form-grid{grid-template-columns:repeat(12,minmax(0,1fr))}
+#fuelEntryCard .form-grid>label{grid-column:span 6;min-width:0}
+#fuelEntryCard .form-grid>.span-12,#fuelEntryCard .form-grid>.form-actions{grid-column:1/-1}
+#pelletOfferChart{width:100%;min-width:0}#pelletChartCanvas{width:100%;overflow-x:hidden!important}
+#pelletInventoryStats{display:block}.pellet-inventory-hero{padding:24px;border-radius:18px;background:var(--app-inner,rgba(16,32,48,.08));border:1px solid var(--line);margin-bottom:14px}
+.pellet-hero-caption{color:var(--muted);font-weight:700}.pellet-hero-value{font-size:clamp(2.2rem,5vw,4rem);font-weight:850;letter-spacing:-.04em;margin:7px 0 17px}.pellet-hero-value small{font-size:.45em}
+.pellet-stock-track{height:16px;border-radius:20px;background:rgba(148,163,184,.25);overflow:hidden}.pellet-stock-track span{display:block;height:100%;background:linear-gradient(90deg,#0cba75,#f1a32d);border-radius:20px}
+.pellet-stock-details{display:flex;gap:12px 30px;flex-wrap:wrap;margin:12px 0}.pellet-inventory-minor{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.car-archived{opacity:.76}.entry-actions .btn{padding:8px 11px;font-size:.82rem}
+@media(min-width:1000px){#dashboardView .split-grid>.chart-card{grid-column:span 12}.split-grid>.chart-card{grid-column:span 12}}
+@media(max-width:700px){#fuelEntryCard .form-grid>label{grid-column:1/-1}.pellet-inventory-minor{grid-template-columns:1fr}.pellet-inventory-hero{padding:17px}.entry-actions{flex-wrap:wrap}}
 </style>
 </head>
 <body>
@@ -1187,7 +1200,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v150</strong> · 1.3.1.180<br><small>Letzte Änderung: 26.10.2026, 09:30 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v152</strong> · 1.3.1.182<br><small>Letzte Änderung: 26.10.2026, 10:40 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -1560,7 +1573,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
           </form>
         </section>
       
-    <section class="card glass" id="fuelEntryCard">
+    <section class="card glass wide" id="fuelEntryCard">
       <div class="card-head">
         <div>
           <p class="section-kicker">Tanken</p>
@@ -1967,11 +1980,12 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       <div class="card-head">
         <div>
           <p class="section-kicker">Autos</p>
-          <h2>Fahrzeuge anlegen</h2>
+          <h2>Fahrzeuge verwalten</h2>
         </div>
       </div>
 
       <form id="carForm" class="form-grid">
+        <input type="hidden" id="carEditId" />
         <label>
           Auto-Name
           <input id="carName" type="text" maxlength="80" placeholder="z. B. Skoda Octavia" required />
@@ -2016,8 +2030,9 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
           <input id="carNote" type="text" maxlength="120" placeholder="optional" />
         </label>
 
+        <label class="span-12"><span>Fahrzeugstatus</span><select id="carActive"><option value="active">Aktiv, für neue Tankungen/Ladungen auswählbar</option><option value="inactive">Archiviert, nur für historische Auswertungen</option></select></label>
         <div class="form-actions span-12">
-          <button type="submit" class="btn primary">Auto speichern</button>
+          <button type="submit" class="btn primary" id="carSaveBtn">Auto speichern</button>
           <button type="reset" class="btn ghost">Leeren</button>
         </div>
       </form>
@@ -2038,8 +2053,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
           <select id="pricePeriodType" required>
             <option value="strom">Strom</option>
             <option value="wasser">Wasser</option>
-            <option value="pellets">Pellets</option>
-          </select>
+            </select>
         </label>
 
         <label>
@@ -2145,15 +2159,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
           <input id="priceWasserUnit" type="number" step="0.0001" min="0" />
         </label>
 
-        <label>
-          Pellets Grundpreis
-          <input id="pricePelletsBase" type="number" step="0.01" min="0" />
-        </label>
-
-        <label>
-          Pellets Preis pro kg
-          <input id="pricePelletsUnit" type="number" step="0.0001" min="0" />
-        </label>
+        <p class="muted span-12">Pelletkosten werden ausschließlich aus den erfassten Einkäufen berechnet. Für Pellets gibt es keinen Grundpreis oder manuellen Basispreis.</p>
 
         <div class="form-actions span-12">
           <button type="submit" class="btn primary">Basispreise speichern</button>
@@ -3418,7 +3424,7 @@ async function loadMarketPrices(force = false) {
         ...state.settings,
         strom: { basePrice: toNumber(els.priceStromBase.value) || 0, unitPrice: toNumber(els.priceStromUnit.value) || 0 },
         wasser: { basePrice: toNumber(els.priceWasserBase.value) || 0, unitPrice: toNumber(els.priceWasserUnit.value) || 0 },
-        pellets: { basePrice: toNumber(els.pricePelletsBase.value) || 0, unitPrice: toNumber(els.pricePelletsUnit.value) || 0 }
+        pellets: { basePrice: 0, unitPrice: 0 }
       });
       persistLocalSnapshot();
       renderAll();
@@ -4618,51 +4624,51 @@ async function fetchNearbyFuelStations(latitude, longitude) {
       }
     }
 
-    function renderCars() {
-      if (!els.carList) return;
-
-      renderCarOptions();
-      renderAnalyticsCarOptions();
-        renderChargeCarOptions();
-    
-      if (!state.cars.length) {
-        els.carList.innerHTML = '<div class="empty-state">Noch keine Autos angelegt.</div>';
-        return;
+    function isCarActive(car){ return car.active !== false; } // Bestehende Autos bleiben aktiv.
+    function resetCarEditor(){
+      els.carForm?.reset();
+      document.getElementById('carEditId').value='';
+      document.getElementById('carSaveBtn').textContent='Auto speichern';
+    }
+    function editCar(id){
+      const car=state.cars.find(c=>c.id===id);if(!car)return;
+      document.getElementById('carEditId').value=car.id;
+      for(const [id,value] of Object.entries({carName:car.name,carPlate:car.plate,carFuelType:car.fuelType,carOwnership:car.ownership||'private',carCompanyName:car.companyName,carNote:car.note,carActive:isCarActive(car)?'active':'inactive'})){
+        const field=document.getElementById(id);if(field)field.value=value||'';
       }
+      document.getElementById('carSaveBtn').textContent='Änderungen speichern';
+      els.carForm.scrollIntoView({behavior:'smooth',block:'start'});
+    }
+    async function toggleCarActive(id){
+      const car=state.cars.find(c=>c.id===id);if(!car)return;
+      const active=!isCarActive(car);
+      if(!confirm(active?'Fahrzeug wieder aktivieren?':'Fahrzeug archivieren? Tankungen und Ladungen bleiben erhalten.'))return;
+      try{
+        if(state.firebaseEnabled)await updateDoc(doc(state.db,householdBasePath()+'/cars/'+id),{active});
+        else{car.active=active;persistLocalSnapshot();renderAll();}
+        showToast(active?'Fahrzeug aktiviert.':'Fahrzeug archiviert.','success');
+      }catch(e){showToast('Status konnte nicht gespeichert werden.','error');console.error(e);}
+    }
+    function renderCars() {
+      if(!els.carList)return;
+      renderCarOptions();renderAnalyticsCarOptions();renderChargeCarOptions();
+      if(!state.cars.length){els.carList.innerHTML='<div class="empty-state">Noch keine Autos angelegt.</div>';return;}
+      const ordered=[...state.cars].sort((a,b)=>Number(isCarActive(b))-Number(isCarActive(a)));
+      els.carList.innerHTML=ordered.map(car=>`<div class="entry-item ${isCarActive(car)?'':'car-archived'}">
+        <div class="entry-main"><div class="entry-topline"><span class="entry-type">${escapeHtml(car.name)}</span><span class="entry-datetime">${isCarActive(car)?'🟢 Aktiv':'📁 Archiviert'} · ${escapeHtml(car.fuelType||'')}</span></div>
+        <div class="entry-value">${car.plate?escapeHtml(car.plate):'Kein Kennzeichen'}</div><div class="entry-note">${car.note?escapeHtml(car.note):'Keine Notiz'}</div></div>
+        <div class="entry-actions"><button type="button" class="btn ghost" data-car-edit="${car.id}">✎ Bearbeiten</button><button type="button" class="btn ghost" data-car-toggle="${car.id}">${isCarActive(car)?'Archivieren':'Aktivieren'}</button><button class="icon-btn" type="button" data-car-delete="${car.id}" title="Löschen">🗑️</button></div>
+      </div>`).join('');
+      els.carList.querySelectorAll('[data-car-edit]').forEach(b=>b.addEventListener('click',()=>editCar(b.dataset.carEdit)));
+      els.carList.querySelectorAll('[data-car-toggle]').forEach(b=>b.addEventListener('click',()=>toggleCarActive(b.dataset.carToggle)));
+      els.carList.querySelectorAll('[data-car-delete]').forEach(btn=>btn.addEventListener('click',async()=>{
+        const id=btn.dataset.carDelete;
+        if(state.fuelEntries.some(e=>e.carId===id)||state.chargeEntries.some(e=>e.carId===id))return showToast('Fahrzeug mit Historie bitte archivieren statt löschen.','error');
+        if(!confirm('Fahrzeug endgültig löschen?'))return;
+        await deleteRecord('cars',id);showToast('Auto gelöscht.','success');
+      }));
+    }
 
-      els.carList.innerHTML = state.cars.map((car) => `
-        <div class="entry-item">
-          <div class="entry-main">
-            <div class="entry-topline">
-              <span class="entry-type">${escapeHtml(car.name)}</span>
-              <span class="entry-datetime">${escapeHtml(car.fuelType || "")}</span>
-            </div>
-            <div class="entry-value">${car.plate ? escapeHtml(car.plate) : "Kein Kennzeichen"}</div>
-            <div class="entry-note">${car.note ? escapeHtml(car.note) : "Keine Notiz"}</div>
-          </div>
-          <div class="entry-actions">
-            <button class="icon-btn" type="button" data-car-delete="${car.id}" title="Löschen">🗑️</button>
-          </div>
-        </div>
-      `).join("");
-
-        els.carList.querySelectorAll("[data-car-delete]").forEach((btn) => {
-          btn.addEventListener("click", async () => {
-            const id = btn.dataset.carDelete;
-        const fuelExists = state.fuelEntries.some((e) => e.carId === id);
-        const chargeExists = state.chargeEntries.some((e) => e.carId === id);
-
-        if (fuelExists || chargeExists) {
-          showToast("Auto kann nicht gelöscht werden, solange Tank- oder Ladeeinträge dafür existieren.", "error");
-          return;
-        }
-
-            await deleteRecord("cars", id);
-            showToast("Auto gelöscht.", "success");
-          });
-        });
-            }
-            
     function calculateElectricityCostForKwh(startIso, endIso, kwh) {
       if (!Number.isFinite(kwh) || kwh <= 0) return 0;
 
@@ -4973,13 +4979,13 @@ function renderAnalyticsCarOptions() {
   }
 
   if (!state.selectedAnalyticsCarId || !state.cars.some(car => car.id === state.selectedAnalyticsCarId)) {
-    state.selectedAnalyticsCarId = state.cars[0].id;
+    state.selectedAnalyticsCarId = (state.cars.find(isCarActive)||state.cars[0]).id;
   }
 
   els.analyticsCarSelect.innerHTML = state.cars
     .map((car) => `
       <option value="${car.id}" ${car.id === state.selectedAnalyticsCarId ? "selected" : ""}>
-        ${escapeHtml(car.name)}${car.plate ? ` · ${escapeHtml(car.plate)}` : ""}
+        ${escapeHtml(car.name)}${car.plate ? ` · ${escapeHtml(car.plate)}` : ""}${isCarActive(car)?"":" · Archiviert"}
       </option>
     `)
     .join("");
@@ -5434,7 +5440,7 @@ function openCarChartOverlay(mode) {
       if (!els.fuelCarId) return;
 
       const fuelCars = state.cars.filter((car) =>
-        !["electric"].includes(car.fuelType)
+        isCarActive(car) && !["electric"].includes(car.fuelType)
       );
 
       if (!fuelCars.length) {
@@ -5860,48 +5866,18 @@ function renderFuelStats() {
 
     async function handleCarSubmit(event) {
       event.preventDefault();
-
-      const name = els.carName?.value?.trim() || "";
-      const plate = els.carPlate?.value?.trim() || "";
-      const fuelType = els.carFuelType?.value || "sonstiges";
-      const note = els.carNote?.value?.trim() || "";
-        const ownership = els.carOwnership?.value || "private";
-        const companyName = els.carCompanyName?.value?.trim() || "";
-
-      if (!name) {
-        showToast("Bitte einen Auto-Namen eingeben.", "error");
-        return;
-      }
-
-      const exists = state.cars.some((car) =>
-        (car.name || "").trim().toLowerCase() === name.toLowerCase() &&
-        ((car.plate || "").trim().toLowerCase() === plate.toLowerCase())
-      );
-
-      if (exists) {
-        showToast("Dieses Auto ist bereits vorhanden.", "error");
-        return;
-      }
-
-      const payload = {
-        name,
-        plate,
-        fuelType,
-        ownership,
-        companyName,
-        note,
-        createdAt: new Date().toISOString(),
-        date: new Date().toISOString()
-      };
-
-      try {
-        await saveRecord("cars", payload);
-        els.carForm?.reset();
-        showToast("Auto gespeichert.", "success");
-      } catch (error) {
-        console.error("Fehler beim Speichern des Autos:", error);
-        showToast("Auto konnte nicht gespeichert werden.", "error");
-      }
+      const editId=document.getElementById('carEditId').value;
+      const name=els.carName?.value?.trim()||'',plate=els.carPlate?.value?.trim()||'';
+      if(!name)return showToast('Bitte einen Auto-Namen eingeben.','error');
+      if(state.cars.some(c=>c.id!==editId&&(c.name||'').trim().toLowerCase()===name.toLowerCase()&&(c.plate||'').trim().toLowerCase()===plate.toLowerCase()))return showToast('Dieses Auto ist bereits vorhanden.','error');
+      const payload={name,plate,fuelType:els.carFuelType.value,ownership:els.carOwnership.value,companyName:els.carCompanyName.value.trim(),note:els.carNote.value.trim(),active:document.getElementById('carActive').value==='active'};
+      try{
+        if(editId){
+          if(state.firebaseEnabled)await updateDoc(doc(state.db,householdBasePath()+'/cars/'+editId),payload);
+          else{const car=state.cars.find(c=>c.id===editId);if(!car)throw Error('Fahrzeug nicht gefunden');Object.assign(car,payload);persistLocalSnapshot();renderAll();}
+        }else await saveRecord('cars',{...payload,createdAt:new Date().toISOString(),date:new Date().toISOString()});
+        resetCarEditor();showToast(editId?'Fahrzeug aktualisiert.':'Auto gespeichert.','success');
+      }catch(error){console.error(error);showToast('Fahrzeug konnte nicht gespeichert werden.','error');}
     }
 
     async function handleFuelSubmit(event) {
@@ -6571,8 +6547,7 @@ async function updateRecord(kind, id, payload) {
       els.priceStromUnit.value = state.settings.strom.unitPrice ?? 0;
       els.priceWasserBase.value = state.settings.wasser.basePrice ?? 0;
       els.priceWasserUnit.value = state.settings.wasser.unitPrice ?? 0;
-      els.pricePelletsBase.value = state.settings.pellets.basePrice ?? 0;
-      els.pricePelletsUnit.value = state.settings.pellets.unitPrice ?? 0;
+
       fillGithubTokenDates();
     }
 
@@ -6790,7 +6765,7 @@ async function updateRecord(kind, id, payload) {
       if (!els.chargeCarId) return;
 
       const electricCars = state.cars.filter((car) =>
-        isElectricCar(car)
+        isCarActive(car) && isElectricCar(car)
       );
 
       if (!electricCars.length) {
@@ -6992,12 +6967,12 @@ async function updateRecord(kind, id, payload) {
         if(!data.length){host.innerHTML='<p class="muted">Noch keine Preisdaten für diese Auswahl.</p>';return;}
         const dates=[...new Set(data.map(x=>x.date))].sort();const vals=data.map(x=>x.price/x.kg*1000);
         const lo=Math.max(0,Math.floor(Math.min(...vals)*.9/25)*25),hi=Math.ceil(Math.max(...vals)*1.1/25)*25||1;
-        const w=Math.max(580,dates.length*75+110),h=310,L=68,R=22,T=22,B=55;
+        const w=Math.max(760,dates.length*75+110),h=370,L=68,R=22,T=22,B=55;
         const x=d=>L+(dates.length===1?(w-L-R)/2:dates.indexOf(d)*(w-L-R)/(dates.length-1));
         const y=v=>T+(hi-v)/(hi-lo||1)*(h-T-B);
         const colors=['#087db4','#db7b16','#15966e','#9a60c2','#bd4256','#5c7a2e'];
         const groups=[...new Set(data.map(r=>r.supplier))];
-        const svg=[`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="Pellet-Angebotspreise in Euro pro Tonne nach Datum und Lieferant">`];
+        const svg=[`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="100%" height="auto" style="display:block;max-width:100%" role="img" aria-label="Pellet-Angebotspreise in Euro pro Tonne nach Datum und Lieferant">`];
         for(let i=0;i<=4;i++){const v=lo+(hi-lo)*i/4,py=y(v);svg.push(`<line x1="${L}" y1="${py}" x2="${w-R}" y2="${py}" stroke="#dce3ec"/><text x="${L-8}" y="${py+4}" text-anchor="end" font-size="12" fill="#64748b">${Math.round(v)} €</text>`);}
         dates.forEach((d,i)=>{if(dates.length>12&&i%Math.ceil(dates.length/12))return;svg.push(`<text x="${x(d)}" y="${h-23}" text-anchor="middle" font-size="11" fill="#64748b">${escapeHtml(d.slice(8,10)+'.'+d.slice(5,7)+'.'+d.slice(2,4))}</text>`);});
         groups.forEach((name,i)=>{const color=colors[i%colors.length],points=data.filter(r=>r.supplier===name).map(r=>({x:x(r.date),y:y(r.price/r.kg*1000),v:r.price/r.kg*1000,date:r.date}));
@@ -7223,12 +7198,21 @@ async function updateRecord(kind, id, payload) {
     }
 
     function renderPelletInventoryStats() {
-      const stats = [
-        { label: "Nachgefüllt gesamt", value: `${formatNumber(totalRefillKg())} kg` },
-        { label: "Verbrauch gesamt", value: `${formatNumber(totalConsumptionOfType("pellets"))} kg` },
-        { label: "Geschätzter Bestand", value: `${formatNumber(getPelletInventoryKg())} kg` }
-      ];
-      els.pelletInventoryStats.innerHTML = stats.map((stat) => `<div class="stat-box"><div class="stat-label">${stat.label}</div><div class="stat-value">${stat.value}</div></div>`).join("");
+      const inventory=getPelletInventoryKg(),refilled=totalRefillKg(),used=totalConsumptionOfType('pellets');
+      const diff=round2(refilled-used);
+      const balance=pelletBalanceModel(),split=pelletStockSplit(balance);
+      const bags=split?Math.max(0,Number(split.bags)||0):0,bunker=split?Math.max(0,Number(split.bunker)||0):0;
+      const share=inventory>0?Math.max(0,Math.min(100,bunker/inventory*100)):0;
+      els.pelletInventoryStats.innerHTML=`<div class="pellet-inventory-hero">
+        <div class="pellet-hero-caption">Geschätzter Gesamtbestand</div><div class="pellet-hero-value">${formatNumber(inventory)} <small>kg</small></div>
+        <div class="pellet-stock-track"><span style="width:${share}%"></span></div>
+        <div class="pellet-stock-details"><span>🏠 Bunker: <strong>${formatNumber(bunker)} kg</strong></span><span>📦 Sacklager: <strong>${formatNumber(bags)} kg</strong></span></div>
+        <small class="muted">Bestandswerte aus dem letzten Abgleich und den seitherigen Buchungen.</small>
+      </div><div class="pellet-inventory-minor">
+        <div class="stat-box"><div class="stat-label">Nachgefüllt gesamt</div><div class="stat-value">${formatNumber(refilled)} kg</div></div>
+        <div class="stat-box"><div class="stat-label">Heizungsverbrauch gesamt</div><div class="stat-value">${formatNumber(used)} kg</div></div>
+        <div class="stat-box"><div class="stat-label">Differenz (Nachfüllung − Verbrauch)</div><div class="stat-value">${diff>=0?'+':''}${formatNumber(diff)} kg</div><small class="muted">Nicht automatisch Verlust oder Messfehler: Anfangsbestand und Abgleiche beeinflussen die Bilanz.</small></div>
+      </div>`;
     }
 
     function renderSettingsSummary() {
@@ -7241,7 +7225,7 @@ async function updateRecord(kind, id, payload) {
       const rows = [
         { label: "Strom", value: active.strom ? `${formatCurrency(active.strom.basePrice)} Zeitraum · ${formatCurrency(active.strom.unitPrice)}/kWh` : `${formatCurrency(state.settings.strom.basePrice)} Basis · ${formatCurrency(state.settings.strom.unitPrice)}/kWh` },
         { label: "Wasser", value: active.wasser ? `${formatCurrency(active.wasser.basePrice)} Zeitraum · ${formatCurrency(active.wasser.unitPrice)}/m³` : `${formatCurrency(state.settings.wasser.basePrice)} Basis · ${formatCurrency(state.settings.wasser.unitPrice)}/m³` },
-        { label: "Pellets", value: active.pellets ? `${formatCurrency(active.pellets.basePrice)} Zeitraum · ${formatCurrency(active.pellets.unitPrice)}/kg` : `${formatCurrency(state.settings.pellets.basePrice)} Basis · ${formatCurrency(state.settings.pellets.unitPrice)}/kg` }
+        { label: "Pellets", value: latestPelletPurchasePricePerKg() == null ? "Noch kein Einkauf" : `${formatCurrency(latestPelletPurchasePricePerKg())}/kg · letzter Einkauf (keine Grundgebühr)` }
       ];
       els.settingsSummary.innerHTML = rows.map((row) => `<div class="stat-box"><div class="stat-label">${row.label}</div><div class="stat-value">${row.value}</div></div>`).join("");
     }
@@ -7399,17 +7383,42 @@ async function updateRecord(kind, id, payload) {
       return recent ? Number(recent.totalPrice) / Number(recent.totalKg) : null;
     }
 
+    function pelletFifoCostForInterval(startIso,endIso,quantity){
+      // FIFO nur für durch Einkaufshistorie belegte Mengen; ältere unbekannte Bestände
+      // werden nicht fälschlich als kostenlos bewertet.
+      const purchases=[...state.purchases].filter(p=>Number(p.totalKg)>0&&Number.isFinite(Number(p.totalPrice)))
+        .sort((a,b)=>Date.parse(a.date)-Date.parse(b.date));
+      if(!purchases.length)return null;
+      const start=Date.parse(startIso),end=Date.parse(endIso);
+      const first=Date.parse(purchases[0].date);
+      if(!Number.isFinite(start)||!Number.isFinite(end)||end<=first)return null;
+      const lots=purchases.map(p=>({time:Date.parse(p.date),remaining:Number(p.totalKg),rate:Number(p.totalPrice)/Number(p.totalKg)}));
+      const readings=buildComputedReadings().filter(r=>r.type==='pellets'&&r.previousValue!==null&&Number(r.delta)>0&&Number.isFinite(Date.parse(r.date)))
+        .map(r=>({time:Date.parse(r.date),qty:Number(r.delta)})).filter(r=>r.time>first&&r.time<=start).sort((a,b)=>a.time-b.time);
+      function consume(q,time){
+        let cost=0,covered=0;
+        for(const lot of lots){if(lot.time>time||q<=0)continue;const used=Math.min(lot.remaining,q);if(used<=0)continue;lot.remaining-=used;q-=used;covered+=used;cost+=used*lot.rate;}
+        return {cost,covered,missing:q};
+      }
+      for(const r of readings)consume(r.qty,r.time);
+      // Wenn eine Preisperiode einen Kaufzeitpunkt überlappt, nicht rückwirkend zuordnen.
+      const result=consume(quantity,end);
+      if(result.missing>0.001)return null;
+      return round2(result.cost);
+    }
+
     function calculateCostForInterval(type, startIso, endIso, totalDelta, daysBetween) {
       if (!Number.isFinite(totalDelta) || totalDelta <= 0 || !Number.isFinite(daysBetween) || daysBetween <= 0) {
         return { cost: 0, source: null };
       }
-      // Pellets: ausschließlich der letzte tatsächlich erfasste Einkauf zählt.
-      // Internet-Marktpreise und frühere Basispreise dürfen diese Kalkulation nicht beeinflussen.
+      // Pellets: Einkaufshistorie statt Grundpreis/Marktpreis. FIFO soweit
+      // historische Käufe die verbrauchte Menge tatsächlich abdecken.
       if (type === 'pellets') {
-        const purchaseRate = latestPelletPurchasePricePerKg();
-        return purchaseRate === null
-          ? { cost: null, source: 'Kein Pelletskauf verfügbar' }
-          : { cost: round2(totalDelta * purchaseRate), source: 'Letzter Pelletskauf' };
+        const fifo=pelletFifoCostForInterval(startIso,endIso,totalDelta);
+        if(fifo!==null)return {cost:fifo,source:'FIFO aus Pelletkäufen'};
+        const purchaseRate=latestPelletPurchasePricePerKg();
+        return purchaseRate===null?{cost:null,source:'Keine Einkaufspreise vorhanden'}:
+          {cost:round2(totalDelta*purchaseRate),source:'Schätzung: letzter Einkauf (FIFO-Historie unvollständig)'};
       }
 
       const matchingPeriods = findMatchingPricePeriods(type, startIso, endIso);
