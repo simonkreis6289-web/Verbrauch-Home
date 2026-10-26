@@ -177,6 +177,9 @@ const DEFAULT_RULES={prices:true,reminder:true,warnings:true,fuel:true,threshold
 function normalizeRules(raw){const obj=raw&&typeof raw==='object'?raw:{};const result={};
   for(const key of ['prices','reminder','warnings','fuel'])result[key]=typeof obj[key]==='boolean'?obj[key]:DEFAULT_RULES[key];
   const threshold=Number(obj.threshold);result.threshold=Number.isFinite(threshold)&&threshold>=10&&threshold<=200?threshold:30;
+  // v151: Erinnerungsintervall aus den Haushaltseinstellungen übernehmen und persistent zurückgeben.
+  const interval=Number(obj.priceIntervalDays);
+  result.priceIntervalDays=Number.isInteger(interval)&&interval>=1&&interval<=365?interval:DEFAULT_RULES.priceIntervalDays;
   const inputTimes=Array.isArray(obj.priceTimes)?obj.priceTimes:undefined;
   result.priceTimes=(inputTimes===undefined?[]:inputTimes)
     .filter(x=>typeof x==='string'&&/^([01]\d|2[0-3]):[0-5]\d$/.test(x))
