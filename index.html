@@ -1187,7 +1187,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v146</strong> · 1.3.1.176<br><small>Letzte Änderung: 23.10.2026, 11:46 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v147</strong> · 1.3.1.177<br><small>Letzte Änderung: 23.10.2026, 21:25 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -2969,16 +2969,16 @@ async function loadMarketPrices(force = false) {
     const now = Date.now();
     area.innerHTML = definitions.map(([key,label,symbol,color,unit]) => {
       const latestManual=[...manualMarketRecords].sort((a,b)=>String(b.date).localeCompare(String(a.date))).find(r=>validMarketNumber(r.prices?.[key])!==null);
-      const item = latestManual ? {price:latestManual.prices[key],checked_at:latestManual.date+'T12:00:00Z',scope:'manual',source_url:''} : (data?.prices?.[key] || {});
+      const item = latestManual ? {price:latestManual.prices[key],checked_at:latestManual.checked_at||null,manual_date:latestManual.date,scope:'manual',source_url:''} : (data?.prices?.[key] || {});
       const n = validMarketNumber(item.price);
       const valid = n!==null;
       const age = item.checked_at ? now - new Date(item.checked_at).getTime() : Infinity;
       const fresh = valid && age >= 0 && age <= 48*3600*1000;
       const source = item.source_url && /^https:\/\//.test(item.source_url) ? item.source_url : '';
       const scope = item.scope === 'manual' ? 'Manuell erfasst' : item.scope === 'national' ? 'Deutschland-Durchschnitt · nicht regional' : '57489 Drolshagen';
-      const priceDay= item.checked_at ? berlinMarketDay(item.checked_at) : null;
+      const priceDay= item.scope==='manual' ? item.manual_date : (item.checked_at ? berlinMarketDay(item.checked_at) : null);
       const change = valid && priceDay ? marketDayChange(history,key,priceDay,n) : null;
-      return `<article class="energy-market-tile" style="--market-accent:${color}" data-market-key="${key}" role="button" tabindex="0" aria-label="Preisverlauf ${label} öffnen"><h3>${symbol} ${label}</h3><div class="market-value">${valid ? formatCurrency(n) : 'Nicht verfügbar'}</div><p>${unit} · ${escapeHtml(scope)}</p>${valid ? marketDeltaMarkup(change) : ''}<p>${valid ? (item.scope==='manual' ? 'Letzte manuelle Eingabe' : 'Historischer Ausgangswert') : 'Noch kein Preis eingetragen'}${item.checked_at ? ' · '+escapeHtml(marketCheckedDisplay(item.checked_at) || 'Zeitpunkt unbekannt') : ''}</p>${source ? `<p><a href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Quelle öffnen ↗</a></p>` : ''}<div class="market-tile-hint">📈 Preisverlauf anzeigen ↗</div></article>`;
+      return `<article class="energy-market-tile" style="--market-accent:${color}" data-market-key="${key}" role="button" tabindex="0" aria-label="Preisverlauf ${label} öffnen"><h3>${symbol} ${label}</h3><div class="market-value">${valid ? formatCurrency(n) : 'Nicht verfügbar'}</div><p>${unit} · ${escapeHtml(scope)}</p>${valid ? marketDeltaMarkup(change) : ''}<p>${valid ? (item.scope==='manual' ? 'Letzte manuelle Eingabe' : 'Historischer Ausgangswert') : 'Noch kein Preis eingetragen'}${item.checked_at ? ' · '+escapeHtml(marketCheckedDisplay(item.checked_at) || 'Zeitpunkt unbekannt') : (item.scope==='manual'&&item.manual_date ? ' · '+escapeHtml(item.manual_date.split('-').reverse().join('.'))+' (Uhrzeit nicht gespeichert)' : '')}</p>${source ? `<p><a href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Quelle öffnen ↗</a></p>` : ''}<div class="market-tile-hint">📈 Preisverlauf anzeigen ↗</div></article>`;
     }).join('');
     footer.textContent = ''; 
   } catch(err) {
