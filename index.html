@@ -1175,7 +1175,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 .weather-remember{display:flex;align-items:center;gap:8px;min-width:230px;font-size:.82rem}.weather-remember input{width:17px;height:17px;flex-shrink:0}
 .weather-solar-actions{margin:8px 0 12px;align-items:center;flex-wrap:wrap}.weather-solar-actions [data-apply-solar-status]{font-size:.82rem}
 .weather-solar-choice{margin:12px 0 8px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(125,145,175,.06)}.weather-solar-choice label{display:flex;gap:9px;align-items:center;font-weight:700}.weather-solar-choice input{width:19px;height:19px;accent-color:#0284c7}.weather-solar-choice p{margin:7px 0 0}.weather-times-inactive{opacity:.55}
-/* v152: mobile-first Breite, Bestands-Hierarchie und Fahrzeugarchiv */
+/* v153: FIFO-Rekursion behoben; v152: mobile-first Breite, Bestands-Hierarchie und Fahrzeugarchiv */
 #fuelEntryCard{grid-column:1/-1;width:100%;max-width:none;min-width:0}
 #fuelEntryCard .form-grid{grid-template-columns:repeat(12,minmax(0,1fr))}
 #fuelEntryCard .form-grid>label{grid-column:span 6;min-width:0}
@@ -1200,7 +1200,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v152</strong> · 1.3.1.182<br><small>Letzte Änderung: 26.10.2026, 10:40 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v153</strong> · 1.3.1.183<br><small>Letzte Änderung: 26.10.2026, FIFO-Reparatur</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -7393,8 +7393,24 @@ async function updateRecord(kind, id, payload) {
       const first=Date.parse(purchases[0].date);
       if(!Number.isFinite(start)||!Number.isFinite(end)||end<=first)return null;
       const lots=purchases.map(p=>({time:Date.parse(p.date),remaining:Number(p.totalKg),rate:Number(p.totalPrice)/Number(p.totalKg)}));
-      const readings=buildComputedReadings().filter(r=>r.type==='pellets'&&r.previousValue!==null&&Number(r.delta)>0&&Number.isFinite(Date.parse(r.date)))
-        .map(r=>({time:Date.parse(r.date),qty:Number(r.delta)})).filter(r=>r.time>first&&r.time<=start).sort((a,b)=>a.time-b.time);
+      // IMPORTANT: never call buildComputedReadings() from FIFO pricing.
+      // buildComputedReadings -> calculateCostForInterval -> FIFO would recurse endlessly.
+      // Derive historical pellet usage directly from raw meter readings and resets.
+      const pelletReadings=sortAsc(state.readings.filter(r=>r.type==='pellets'));
+      const pelletResets=sortAsc(state.resets.filter(r=>r.type==='pellets'));
+      const readings=[];
+      for(let i=1;i<pelletReadings.length;i++){
+        const previous=pelletReadings[i-1],current=pelletReadings[i];
+        const previousTime=Date.parse(previous.date),currentTime=Date.parse(current.date);
+        if(!Number.isFinite(previousTime)||!Number.isFinite(currentTime)||currentTime<=previousTime)continue;
+        const reset=pelletResets.find(r=>{const t=Date.parse(r.date);return t>previousTime&&t<=currentTime;});
+        const delta=reset
+          ? (Number(reset.previousMeterValue)-Number(previous.value))+(Number(current.value)-Number(reset.newMeterStartValue))
+          : Number(current.value)-Number(previous.value);
+        if(Number.isFinite(delta)&&delta>0&&currentTime>first&&currentTime<=start){
+          readings.push({time:currentTime,qty:delta});
+        }
+      }
       function consume(q,time){
         let cost=0,covered=0;
         for(const lot of lots){if(lot.time>time||q<=0)continue;const used=Math.min(lot.remaining,q);if(used<=0)continue;lot.remaining-=used;q-=used;covered+=used;cost+=used*lot.rate;}
