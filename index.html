@@ -1175,7 +1175,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 .weather-remember{display:flex;align-items:center;gap:8px;min-width:230px;font-size:.82rem}.weather-remember input{width:17px;height:17px;flex-shrink:0}
 .weather-solar-actions{margin:8px 0 12px;align-items:center;flex-wrap:wrap}.weather-solar-actions [data-apply-solar-status]{font-size:.82rem}
 .weather-solar-choice{margin:12px 0 8px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(125,145,175,.06)}.weather-solar-choice label{display:flex;gap:9px;align-items:center;font-weight:700}.weather-solar-choice input{width:19px;height:19px;accent-color:#0284c7}.weather-solar-choice p{margin:7px 0 0}.weather-times-inactive{opacity:.55}
-/* v154: Änderungszeit und SVG-Höhe korrigiert; v153: FIFO-Rekursion behoben; v152: mobile-first Breite, Bestands-Hierarchie und Fahrzeugarchiv */
+/* v155: Pelletverbrauch über Abgleichgrenze vollständig buchen; v154: Änderungszeit und SVG-Höhe korrigiert; v153: FIFO-Rekursion behoben; v152: mobile-first Breite, Bestands-Hierarchie und Fahrzeugarchiv */
 #fuelEntryCard{grid-column:1/-1;width:100%;max-width:none;min-width:0}
 #fuelEntryCard .form-grid{grid-template-columns:repeat(12,minmax(0,1fr))}
 #fuelEntryCard .form-grid>label{grid-column:span 6;min-width:0}
@@ -1200,7 +1200,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v154</strong> · 1.3.1.184<br><small>Letzte Änderung: 26.10.2026, 10:45 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v155</strong> · 1.3.1.185<br><small>Letzte Änderung: 26.10.2026, 17:00 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -3853,7 +3853,15 @@ function formatStationShort(station) {
         const a=Date.parse(e.previousDate),b=Date.parse(e.date);
         if(!(b>a&&b>start&&a<now))continue;
         const overlap=Math.max(0,Math.min(b,now)-Math.max(a,start));
-        if(overlap)events.push({t:Math.min(b,now),kind:'consumption',kg:e.delta*overlap/(b-a)});
+        if(!overlap)continue;
+        // A meter reading recorded after a stock checkpoint represents the newly
+        // entered consumption. Do not prorate it down to a few grams just because
+        // its preceding reading is dated before the checkpoint. In particular,
+        // a meter reset to zero can span the checkpoint boundary.
+        // Intervals fully before the checkpoint were excluded above.
+        const crossesCheckpoint=a<start&&b>start;
+        const kg=crossesCheckpoint?e.delta:e.delta*overlap/(b-a);
+        if(kg>0)events.push({t:Math.min(b,now),kind:'consumption',kg});
       }
       events.sort((a,b)=>a.t-b.t);
       let used=0,added=0,delivered=0;
