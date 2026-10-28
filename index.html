@@ -1200,7 +1200,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v160</strong> · 1.3.1.190<br><small>Letzte Änderung: 28.10.2026, 13:12 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v161</strong> · 1.3.1.191<br><small>Letzte Änderung: 28.10.2026, 13:45 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -4130,69 +4130,40 @@ function formatStationShort(station) {
       });
     }
     
-    // Gemeinsame Tankstellensuche für Erfassung und Bearbeitung (v160).
-    // Erst Ort geokodieren, danach echte OSM-Kraftstofftankstellen im Umkreis abfragen.
-    // Jeder externe Aufruf hat eine Zeitbegrenzung, damit kein Suchbutton hängen bleibt.
-    async function fuelSearchFetch(url, timeoutMs = 9000) {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        const response = await fetch(url, { signal: controller.signal, headers: { Accept: 'application/json' } });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return await response.json();
-      } finally {
-        clearTimeout(timer);
-      }
-    }
-
+    // v161: Gemeinsame Suche fuer Erfassung/Bearbeitung ueber Cloudflare.
+    // Direkte Browserzugriffe auf Nominatim/Overpass sind unzuverlaessig (CORS/Timeout).
     function fuelStationSearchTerms(searchText) {
       const text = String(searchText || '').trim().replace(/\s+/g, ' ');
-      const brands = ['Aral', 'Shell', 'TotalEnergies', 'Total', 'Esso', 'JET', 'HEM', 'AVIA', 'Star', 'Raiffeisen', 'Westfalen', 'Orlen'];
-      const matchingBrand = brands.find(brand => text.toLocaleLowerCase('de').startsWith(brand.toLocaleLowerCase('de') + ' '));
-      const location = matchingBrand ? text.slice(matchingBrand.length).trim() : text;
+      const brands = ['TotalEnergies', 'Raiffeisen', 'Westfalen', 'Orlen', 'Aral', 'Shell', 'Total', 'Esso', 'JET', 'HEM', 'AVIA', 'Star'];
+      const matchingBrand = brands.find(brand => {
+        const lower = text.toLocaleLowerCase('de');
+        const prefix = brand.toLocaleLowerCase('de');
+        return lower.startsWith(prefix + ' ') || lower.startsWith(prefix + ',');
+      });
+      const location = matchingBrand ? text.slice(matchingBrand.length).replace(/^\s*,?\s*/, '').trim() : text;
       return { location, brand: matchingBrand || '' };
     }
 
-    async function fuelSearchGeocode(location) {
-      const queries = [location];
-      // Bei Stadtteil-/Straßennamen erst die vollständige Angabe, danach die Stadt probieren.
-      const parts = location.split(/[,\s]+/).filter(Boolean);
-      if (parts.length > 1) queries.push(parts.slice(0, -1).join(' '));
-      if (parts.length > 1) queries.push(parts.slice(-1)[0]);
-      let lastError = null;
-      for (const query of [...new Set(queries)].slice(0, 3)) {
-        try {
-          const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=de&limit=4&addressdetails=1&q=${encodeURIComponent(query)}`;
-          const results = await fuelSearchFetch(url, 7000);
-          const place = (Array.isArray(results) ? results : []).find(item =>
-            Number.isFinite(Number(item.lat)) && Number.isFinite(Number(item.lon)) &&
-            !['charging_station', 'fuel'].includes(String(item.type || '').toLowerCase())
-          );
-          if (place) return { latitude: Number(place.lat), longitude: Number(place.lon), label: place.display_name };
-        } catch (error) { lastError = error; }
-      }
-      if (lastError) throw new Error('Die Ortssuche ist derzeit nicht erreichbar. Bitte erneut versuchen.');
-      throw new Error('Ort nicht gefunden. Bitte Stadt oder Postleitzahl genauer angeben.');
-    }
-
-    async function fuelOverpassAround(latitude, longitude, radiusMeters = 6000) {
-      const query = `[out:json][timeout:12];(node["amenity"="fuel"](around:${radiusMeters},${latitude},${longitude});way["amenity"="fuel"](around:${radiusMeters},${latitude},${longitude});relation["amenity"="fuel"](around:${radiusMeters},${latitude},${longitude}););out center tags;`;
-      const endpoints = [
-        'https://overpass-api.de/api/interpreter',
-        'https://overpass.kumi.systems/api/interpreter'
-      ];
-      let lastError = null;
-      for (const endpoint of endpoints) {
-        try {
-          const data = await fuelSearchFetch(`${endpoint}?data=${encodeURIComponent(query)}`, 11000);
-          if (!Array.isArray(data.elements)) throw new Error('Ungültige Antwort der Tankstellensuche');
-          return data.elements.map(mapOverpassFuelStation)
-            .filter(Boolean)
-            .map(station => ({ ...station, distanceKm: calculateDistanceKm(latitude, longitude, station.latitude, station.longitude) }))
-            .sort((left, right) => left.distanceKm - right.distanceKm);
-        } catch (error) { lastError = error; console.warn('Tankstellenanbieter nicht erreichbar:', endpoint, error); }
-      }
-      throw new Error('Die Tankstellendaten sind momentan nicht erreichbar. Bitte später erneut suchen.');
+    async function fuelStationWorkerSearch(payload) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 25000);
+      try {
+        const response = await fetch(LIVE_FUEL_WORKER + '/fuel-stations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+          cache: 'no-store'
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || `Tankstellensuche: HTTP ${response.status}`);
+        if (!Array.isArray(data.elements)) throw new Error('Ungueltige Antwort der Tankstellensuche.');
+        return data;
+      } catch (error) {
+        if (error?.name === 'AbortError') throw new Error('Die Tankstellensuche hat zu lange gedauert. Bitte erneut versuchen.');
+        if (error instanceof TypeError) throw new Error('Verbindung zum Tankstellenserver fehlgeschlagen. Ist der neue Cloudflare-Worker bereitgestellt?');
+        throw error;
+      } finally { clearTimeout(timeout); }
     }
 
     function fuelSearchUnique(stations) {
@@ -4204,20 +4175,25 @@ function formatStationShort(station) {
       return [...unique.values()];
     }
 
+    function fuelStationsFromWorker(data) {
+      const lat = Number(data.latitude), lon = Number(data.longitude);
+      return fuelSearchUnique(data.elements.map(mapOverpassFuelStation).filter(Boolean)
+        .map(station => ({ ...station, distanceKm: calculateDistanceKm(lat, lon, station.latitude, station.longitude) })))
+        .sort((a, b) => a.distanceKm - b.distanceKm);
+    }
+
     async function fetchFuelStationsByText(searchText) {
       const { location, brand } = fuelStationSearchTerms(searchText);
       if (!location) throw new Error('Bitte einen Ort oder eine Postleitzahl eingeben.');
-      const place = await fuelSearchGeocode(location);
-      const stations = fuelSearchUnique(await fuelOverpassAround(place.latitude, place.longitude));
+      const stations = fuelStationsFromWorker(await fuelStationWorkerSearch({ query: location }));
       if (!brand) return stations.slice(0, 30);
       const term = brand.toLocaleLowerCase('de');
       const matching = stations.filter(station => `${station.name} ${station.brand}`.toLocaleLowerCase('de').includes(term));
-      // Falls die Marke vor Ort nicht vorkommt, andere Tankstellen weiterhin anbieten.
       return [...matching, ...stations.filter(station => !matching.includes(station))].slice(0, 30);
     }
 
     async function fetchNearbyFuelStations(latitude, longitude) {
-      return fuelSearchUnique(await fuelOverpassAround(latitude, longitude, 5000)).slice(0, 20);
+      return fuelStationsFromWorker(await fuelStationWorkerSearch({ latitude, longitude, radius: 5000 })).slice(0, 20);
     }
 
     function fuelSearchSetBusy(button, busy, label) {

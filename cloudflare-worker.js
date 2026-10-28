@@ -117,6 +117,13 @@ if(new URL(req.url).pathname==='/fuel-national/latest'||new URL(req.url).pathnam
     const data=await env.PUSH_DEVICES.get(history?FUEL_NATIONAL_HISTORY:FUEL_NATIONAL_LATEST,'json');
     return data?respond(data,200,{...headers,'Cache-Control':'no-store'}):respond({error:'Noch kein Cloudflare-Abruf gespeichert'},404,{...headers,'Cache-Control':'no-store'});
   }
+  // v161: Serverseitige OSM-Tankstellensuche. Kein GitHub-Workflow und kein Tankerkoenig-API-Aufruf.
+  if(new URL(req.url).pathname==='/fuel-stations'){
+    if(req.method!=='POST')return respond({error:'Nur POST erlaubt'},405,headers);
+    if(!origin||!headers['Access-Control-Allow-Origin'])return respond({error:'Origin nicht erlaubt'},403,headers);
+    try{return respond(await fuelStationLookup(req,env),200,{...headers,'Cache-Control':'no-store'});}
+    catch(error){console.error('Tankstellensuche fehlgeschlagen:',String(error));return respond({error:error.message||'Tankstellensuche nicht verfuegbar'},503,{...headers,'Cache-Control':'no-store'});}
+  }
 if(new URL(req.url).pathname==='/fuel-prices'){
     if(req.method!=='POST')return respond({error:'Nur POST erlaubt'},405,headers);
     if(!origin||!headers['Access-Control-Allow-Origin'])return respond({error:'Origin nicht erlaubt'},403,headers);
@@ -470,6 +477,58 @@ async function fetchLiveFuel(req,env){
   })();
   try{return await liveFuelPromise;}finally{liveFuelPromise=null;}
 }
+
+// v161: Proxy fuer Geocoding und Overpass, damit Browser nicht direkt fremde APIs aufrufen.
+// Standort und Suchtext werden nicht in Worker-Logs ausgegeben.
+async function fuelStationLookup(req,env){
+  if(!env.PUSH_DEVICES)throw new Error('Tankstellen-Cache nicht konfiguriert.');
+  let input;
+  try{input=await req.json();}catch(_){throw new Error('Ungueltige Suchanfrage.');}
+  const query=typeof input?.query==='string'?input.query.trim():'';
+  if(query.length>90)throw new Error('Suchbegriff ist zu lang.');
+  let lat=Number(input?.latitude),lon=Number(input?.longitude);
+  if(query){
+    const geoKey='fuel-station-geo:v1:'+query.toLocaleLowerCase('de').replace(/[^a-z0-9äöüß ,.-]/gi,'').slice(0,90);
+    let place=await env.PUSH_DEVICES.get(geoKey,'json');
+    if(!place){
+      const url=new URL('https://nominatim.openstreetmap.org/search');
+      url.searchParams.set('format','jsonv2');url.searchParams.set('countrycodes','de');url.searchParams.set('limit','3');url.searchParams.set('q',query);
+      let data;
+      try{
+        const response=await fetch(url.toString(),{headers:{Accept:'application/json','User-Agent':'VerbrauchZuhause/1.0 (tankstellensuche)'},signal:AbortSignal.timeout(6500)});
+        if(!response.ok)throw new Error('HTTP '+response.status);
+        data=await response.json();
+      }catch(error){throw new Error('Die Ortssuche ist derzeit nicht erreichbar. Bitte erneut versuchen.');}
+      const found=(Array.isArray(data)?data:[]).find(item=>Number.isFinite(Number(item.lat))&&Number.isFinite(Number(item.lon))&&item.type!=='fuel'&&item.type!=='charging_station');
+      if(!found)throw new Error('Ort nicht gefunden. Bitte Stadt oder Postleitzahl eingeben.');
+      place={latitude:Number(found.lat),longitude:Number(found.lon)};
+      await env.PUSH_DEVICES.put(geoKey,JSON.stringify(place),{expirationTtl:86400});
+    }
+    lat=place.latitude;lon=place.longitude;
+  }
+  if(!Number.isFinite(lat)||!Number.isFinite(lon)||lat<47||lat>55.5||lon<5||lon>16)throw new Error('Bitte einen Standort in Deutschland angeben.');
+  const radius=query?6500:5000;
+  const cacheKey='fuel-stations-osm:v1:'+lat.toFixed(3)+':'+lon.toFixed(3)+':'+radius;
+  const cached=await env.PUSH_DEVICES.get(cacheKey,'json');
+  if(cached?.savedAt&&Date.now()-cached.savedAt<15*60000)return {latitude:lat,longitude:lon,elements:cached.elements,cached:true};
+  const overpassQuery=`[out:json][timeout:12];(node["amenity"="fuel"](around:${radius},${lat},${lon});way["amenity"="fuel"](around:${radius},${lat},${lon});relation["amenity"="fuel"](around:${radius},${lat},${lon}););out center tags;`;
+  const endpoints=['https://overpass.kumi.systems/api/interpreter','https://overpass-api.de/api/interpreter','https://overpass.private.coffee/api/interpreter'];
+  for(const endpoint of endpoints){
+    try{
+      const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded','Accept':'application/json'},body:new URLSearchParams({data:overpassQuery}),signal:AbortSignal.timeout(6500)});
+      if(!response.ok)throw new Error('HTTP '+response.status);
+      const data=await response.json();
+      if(!Array.isArray(data.elements))throw new Error('Ungueltiges Antwortformat');
+      const elements=data.elements.filter(item=>item?.tags?.amenity==='fuel'&&item?.tags?.disused!=='yes'&&item?.tags?.abandoned!=='yes').slice(0,250);
+      await env.PUSH_DEVICES.put(cacheKey,JSON.stringify({savedAt:Date.now(),elements}),{expirationTtl:3600});
+      console.log('Tankstellensuche erfolgreich',JSON.stringify({count:elements.length,provider:new URL(endpoint).hostname}));
+      return {latitude:lat,longitude:lon,elements,cached:false};
+    }catch(error){console.warn('Tankstellenanbieter fehlgeschlagen',JSON.stringify({provider:new URL(endpoint).hostname,error:String(error)}));}
+  }
+  if(cached?.elements){console.warn('Tankstellensuche: letzter Cache verwendet');return {latitude:lat,longitude:lon,elements:cached.elements,cached:true};}
+  throw new Error('Die Tankstellenanbieter antworten derzeit nicht. Bitte spaeter erneut suchen.');
+}
+
 // Wetterstationen v124: KV storage, device ingestion, thresholds and daily summary.*
 const WEATHER_PREFIX='weather124:';
 const WEATHER_DEFAULT_LAT=51.042840,WEATHER_DEFAULT_LON=7.819017;
