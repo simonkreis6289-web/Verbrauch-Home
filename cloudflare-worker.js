@@ -728,9 +728,27 @@ async function fetchAndCacheForecast(env,slot){
 const FUEL_NATIONAL_SOURCE='https://www.benzinpreis-aktuell.de/api.v2.php?data=nationwide';
 const FUEL_NATIONAL_LATEST='fuel-national:v1:latest';
 const FUEL_NATIONAL_HISTORY='fuel-national:v1:history';
-const FUEL_NATIONAL_ATTEMPT='fuel-national:v1:attempt';
-const FUEL_NATIONAL_PERIOD=4*3600*1000;
-const FUEL_NATIONAL_RETRY=20*60*1000;
+// Feste lokale Abrufzeiten (Europe/Berlin), unabhängig vom letzten Abruf.
+// Der bestehende */5-Cron startet die Abfrage beim ersten Lauf nach dem Termin.
+const FUEL_NATIONAL_SLOTS=['00:00','04:00','08:00','11:45','12:15','16:00','20:00'];
+const FUEL_NATIONAL_SLOT_SUCCESS='fuel-national:v2:completed:';
+const FUEL_NATIONAL_GRACE_MINUTES=12;
+function fuelBerlinSlot(now){
+  const parts=new Intl.DateTimeFormat('en-GB',{
+    timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit',
+    hour:'2-digit',minute:'2-digit',hourCycle:'h23'
+  }).formatToParts(new Date(now));
+  const value=type=>parts.find(p=>p.type===type)?.value;
+  const localDate=`${value('year')}-${value('month')}-${value('day')}`;
+  const minutes=Number(value('hour'))*60+Number(value('minute'));
+  // Kurzes Toleranzfenster für die Cloudflare-Cron-Ausführung.
+  const slot=FUEL_NATIONAL_SLOTS.find(time=>{
+    const [hour,minute]=time.split(':').map(Number);
+    const delta=minutes-(hour*60+minute);
+    return delta>=0&&delta<FUEL_NATIONAL_GRACE_MINUTES;
+  });
+  return slot?{slot,localDate,key:FUEL_NATIONAL_SLOT_SUCCESS+localDate+':'+slot}:null;
+}
 function nationalDateBerlin(value){
   if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(value))throw Error('Quellenzeit ungültig');
   // Europe/Berlin: determine the applicable UTC offset, including DST.
@@ -745,13 +763,10 @@ function nationalDateBerlin(value){
 async function fuelAverageCloudflareCron(env){
   if(!env.PUSH_DEVICES)throw Error('PUSH_DEVICES KV fehlt');
   const now=Date.now();
-  const last=await env.PUSH_DEVICES.get(FUEL_NATIONAL_LATEST,'json');
-  const previousAttempt=await env.PUSH_DEVICES.get(FUEL_NATIONAL_ATTEMPT);
-  const lastSuccess=Date.parse(last?.fetched_at||'')||0;
-  if(now-lastSuccess<FUEL_NATIONAL_PERIOD)return;
-  if(previousAttempt&&now-Date.parse(previousAttempt)<FUEL_NATIONAL_RETRY)return;
-  // Begrenzte Retry-Frequenz auch bei fehlerhafter oder veralteter Quelle.
-  await env.PUSH_DEVICES.put(FUEL_NATIONAL_ATTEMPT,new Date(now).toISOString());
+  const due=fuelBerlinSlot(now);
+  if(!due)return;
+  if(await env.PUSH_DEVICES.get(due.key))return;
+  console.log('Bundesweite Spritpreise: planmäßiger Abruf',JSON.stringify({datum:due.localDate,uhrzeit:due.slot,zeitzone:'Europe/Berlin'}));
   const response=await fetch(FUEL_NATIONAL_SOURCE,{headers:{'Accept':'application/json','User-Agent':'Verbrauch-Zuhause-Cloudflare/1.0'},signal:AbortSignal.timeout(20000)});
   if(!response.ok)throw Error('Benzinpreis-Aktuell HTTP '+response.status);
   const payload=await response.json();
@@ -772,6 +787,9 @@ async function fuelAverageCloudflareCron(env){
   const history={source:FUEL_NATIONAL_SOURCE,retention_years:3,records:records.slice(-6600)};
   await env.PUSH_DEVICES.put(FUEL_NATIONAL_HISTORY,JSON.stringify(history));
   await env.PUSH_DEVICES.put(FUEL_NATIONAL_LATEST,JSON.stringify(latest));
-  console.log('Bundesweite Spritpreise aktualisiert',JSON.stringify({sourceDate,fetchedAt,records:history.records.length,prices}));
+  // Erst nach erfolgreichem Speichern abschließen. Bei Fehlern kann der nächste
+  // 5-Minuten-Cron innerhalb des Zeitfensters erneut versuchen.
+  await env.PUSH_DEVICES.put(due.key,fetchedAt,{expirationTtl:3*86400});
+  console.log('Bundesweite Spritpreise aktualisiert',JSON.stringify({slot:due.slot,localDate:due.localDate,sourceDate,fetchedAt,records:history.records.length,prices}));
 }
 
