@@ -1200,7 +1200,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v157</strong> · 1.3.1.187<br><small>Letzte Änderung: 26.10.2026, 17:38 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v158</strong> · 1.3.1.188<br><small>Letzte Änderung: 27.10.2026, 20:26 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -2711,7 +2711,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
     async function loadNationalFuelPrices(){
       const grid=document.getElementById('fuelNationalMarket'),footer=document.getElementById('fuelNationalUpdated');
       try{
-        const res=await fetch('./fuel-prices.json?t='+Date.now(),{cache:'no-store'});
+        const res=await fetch(LIVE_FUEL_WORKER+'/fuel-national/latest?t='+Date.now(),{cache:'no-store'});
         if(!res.ok)throw new Error('Preisdaten noch nicht vorhanden');
         const data=await res.json();
         grid.innerHTML=Object.entries(NATIONAL_FUEL_TYPES).map(([key,[title,emoji,color]])=>{
@@ -2719,7 +2719,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
           return `<article class="energy-market-tile national-fuel-tile" style="--market-accent:${color}" data-national-fuel="${key}" role="button" tabindex="0" aria-label="${title}: ${ok?fmtFuel(val):'kein Preis'}; Preisverlauf öffnen"><h3>${emoji} ${title}</h3><div class="fuel-pump-value">${ok?fuelPumpPrice(val):'–'}</div><p class="fuel-national-subtitle">Deutschlandweiter Durchschnitt</p><p class="fuel-national-date">${data.source_date?'Stand: '+escapeHtml(new Date(data.source_date).toLocaleString('de-DE')):'Kein Datenstand'}</p><div class="market-tile-hint">📈 Preisverlauf öffnen ↗</div></article>`;
         }).join('');
         footer.textContent='Quelle: Benzinpreis-Aktuell · Datenstand: '+(data.source_date?new Date(data.source_date).toLocaleString('de-DE'):'unbekannt')+' · Abgerufen: '+(data.fetched_at?new Date(data.fetched_at).toLocaleString('de-DE'):'–');
-      }catch(e){grid.innerHTML='<p class="muted">Noch keine Spritpreise gespeichert. Der erste GitHub-Workflow füllt die Daten.</p>';footer.textContent=String(e.message||e);}
+      }catch(e){grid.innerHTML='<p class="muted">Noch keine Spritpreise gespeichert. Cloudflare aktualisiert die Daten beim nächsten fälligen Abruf.</p>';footer.textContent=String(e.message||e);}
     }
     async function openNationalFuelHistory(key){
       if(!NATIONAL_FUEL_TYPES[key])return;
@@ -2728,7 +2728,16 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       document.getElementById('nationalFuelHistoryTitle').textContent=NATIONAL_FUEL_TYPES[key][0];
       document.getElementById('nationalFuelHistoryPeriod').value='30';
       document.getElementById('nationalFuelHistoryChart').textContent='Preisverlauf wird geladen …';
-      try{const r=await fetch('./fuel-price-history.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('Noch keine Historie');const data=await r.json();nationalFuelHistory=Array.isArray(data.records)?data.records:[];renderNationalFuelHistory();}
+      try{
+        const results=await Promise.allSettled([
+          fetch('./fuel-price-history.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():{records:[]}),
+          fetch(LIVE_FUEL_WORKER+'/fuel-national/history?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():{records:[]})
+        ]);
+        const records=new Map();
+        for(const result of results)if(result.status==='fulfilled')for(const item of (result.value.records||[]))if(item.source_date)records.set(item.source_date,item);
+        nationalFuelHistory=[...records.values()].sort((a,b)=>String(a.source_date).localeCompare(String(b.source_date)));
+        renderNationalFuelHistory();
+      }
       catch(e){document.getElementById('nationalFuelHistoryChart').textContent='Noch keine historischen Werte vorhanden.';}
     }
     function closeNationalFuelHistory(){const el=document.getElementById('nationalFuelHistoryModal');el.hidden=true;el.setAttribute('aria-hidden','true');}

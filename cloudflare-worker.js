@@ -40,7 +40,7 @@ export default {
     ['Wetter-Grenzwerte und Offline',()=>weatherCron(env)],
     ['Wetteralarm-Synchronisierung',()=>syncWeatherAlarm(env,safePart(env.PUSH_HOUSEHOLD_ID))],
     ['Wettervorhersage',()=>forecastCron(env)],
-    ['Spritpreis-Dispatch',()=>fuelAverageDispatchCron(env)]
+    ['Bundesweite Spritpreise',()=>fuelAverageCloudflareCron(env)]
   ];
   ctx.waitUntil(Promise.allSettled(jobs.map(async ([name,run])=>{
     const begin=Date.now();
@@ -109,6 +109,14 @@ export default {
       if(origin&&!headers['Access-Control-Allow-Origin'])return respond({error:'Origin nicht erlaubt'},403,headers);
       return weatherRoute(req,env,new URL(req.url).pathname,headers);
     }
+if(new URL(req.url).pathname==='/fuel-national/latest'||new URL(req.url).pathname==='/fuel-national/history'){
+    if(req.method!=='GET')return respond({error:'Nur GET erlaubt'},405,headers);
+    if(origin&&!headers['Access-Control-Allow-Origin'])return respond({error:'Origin nicht erlaubt'},403,headers);
+    if(!env.PUSH_DEVICES)return respond({error:'Spritpreis-Speicher fehlt'},503,headers);
+    const history=new URL(req.url).pathname.endsWith('/history');
+    const data=await env.PUSH_DEVICES.get(history?FUEL_NATIONAL_HISTORY:FUEL_NATIONAL_LATEST,'json');
+    return data?respond(data,200,{...headers,'Cache-Control':'no-store'}):respond({error:'Noch kein Cloudflare-Abruf gespeichert'},404,{...headers,'Cache-Control':'no-store'});
+  }
 if(new URL(req.url).pathname==='/fuel-prices'){
     if(req.method!=='POST')return respond({error:'Nur POST erlaubt'},405,headers);
     if(!origin||!headers['Access-Control-Allow-Origin'])return respond({error:'Origin nicht erlaubt'},403,headers);
@@ -715,35 +723,55 @@ async function fetchAndCacheForecast(env,slot){
  return result;
 }
 
-// v136: Trigger GitHub fuel-price workflow from the existing 5-minute Cloudflare cron.
-// Scheduled slots are local Europe/Berlin: 00:15,04:15,08:15,11:45,12:15,16:15,20:15.
-// Only dispatch GitHub Actions; Python fetch + JSON history remain in GitHub.
-const FUEL_AVERAGE_SLOTS=['00:15','04:15','08:15','11:45','12:15','16:15','20:15'];
-async function fuelAverageDispatchCron(env){
-  if(!env.PUSH_DEVICES)return;
-  const local=berlinParts(new Date());
-  const nowMinutes=minuteOf(local.time);
-  // Five-minute grace window. Cloudflare can run slightly late.
-  const slot=FUEL_AVERAGE_SLOTS.find(time=>nowMinutes>=minuteOf(time)&&nowMinutes<minuteOf(time)+10);
-  if(!slot)return;
-  const token=env.GITHUB_WORKFLOW_TOKEN;
-  if(!token){console.error('Fuel Dispatch: GITHUB_WORKFLOW_TOKEN fehlt');return;}
-  const repo=String(env.GITHUB_FUEL_REPOSITORY||'simonkreis6289-web/Verbrauch-Home');
-  if(!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo))throw Error('GITHUB_FUEL_REPOSITORY ungültig');
-  const stamp=local.day+':'+slot;
-  const key='fuel-average-dispatch:v1:'+stamp;
-  if(await env.PUSH_DEVICES.get(key))return;
-  const url='https://api.github.com/repos/'+repo+'/actions/workflows/update_fuel_average.yml/dispatches';
-  const response=await fetch(url,{
-    method:'POST',headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json',
-      'X-GitHub-Api-Version':'2022-11-28','User-Agent':'Verbrauch-Zuhause-Cloudflare'},
-    body:JSON.stringify({ref:'main'})
-  });
-  if(response.status!==204){
-    const message=(await response.text()).slice(0,500);
-    throw Error('GitHub Workflow Dispatch '+response.status+': '+message);
-  }
-  // Write success marker only after GitHub accepts the dispatch.
-  await env.PUSH_DEVICES.put(key,new Date().toISOString(),{expirationTtl:4*86400});
-  console.log('Fuel GitHub workflow triggered for '+stamp);
+// Bundesweite Durchschnittspreise: Cloudflare ruft die Quelle selbst ab.
+// Keine GitHub-Dispatches, keine Schreibrechte auf das Repository erforderlich.
+const FUEL_NATIONAL_SOURCE='https://www.benzinpreis-aktuell.de/api.v2.php?data=nationwide';
+const FUEL_NATIONAL_LATEST='fuel-national:v1:latest';
+const FUEL_NATIONAL_HISTORY='fuel-national:v1:history';
+const FUEL_NATIONAL_ATTEMPT='fuel-national:v1:attempt';
+const FUEL_NATIONAL_PERIOD=4*3600*1000;
+const FUEL_NATIONAL_RETRY=20*60*1000;
+function nationalDateBerlin(value){
+  if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(value))throw Error('Quellenzeit ungültig');
+  // Europe/Berlin: determine the applicable UTC offset, including DST.
+  const iso=value.replace(' ','T');
+  const nominal=Date.parse(iso+'Z');
+  const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Berlin',timeZoneName:'shortOffset'}).formatToParts(new Date(nominal));
+  const zone=parts.find(p=>p.type==='timeZoneName')?.value||'GMT+1';
+  const match=zone.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+  const offset=match?(match[1]==='+'?1:-1)*(Number(match[2])*60+Number(match[3]||0)):60;
+  return new Date(nominal-offset*60000).toISOString();
 }
+async function fuelAverageCloudflareCron(env){
+  if(!env.PUSH_DEVICES)throw Error('PUSH_DEVICES KV fehlt');
+  const now=Date.now();
+  const last=await env.PUSH_DEVICES.get(FUEL_NATIONAL_LATEST,'json');
+  const previousAttempt=await env.PUSH_DEVICES.get(FUEL_NATIONAL_ATTEMPT);
+  const lastSuccess=Date.parse(last?.fetched_at||'')||0;
+  if(now-lastSuccess<FUEL_NATIONAL_PERIOD)return;
+  if(previousAttempt&&now-Date.parse(previousAttempt)<FUEL_NATIONAL_RETRY)return;
+  // Begrenzte Retry-Frequenz auch bei fehlerhafter oder veralteter Quelle.
+  await env.PUSH_DEVICES.put(FUEL_NATIONAL_ATTEMPT,new Date(now).toISOString());
+  const response=await fetch(FUEL_NATIONAL_SOURCE,{headers:{'Accept':'application/json','User-Agent':'Verbrauch-Zuhause-Cloudflare/1.0'},signal:AbortSignal.timeout(20000)});
+  if(!response.ok)throw Error('Benzinpreis-Aktuell HTTP '+response.status);
+  const payload=await response.json();
+  const sourceDate=nationalDateBerlin(payload?.date);
+  const age=now-Date.parse(sourceDate);
+  if(age< -10*60000||age>2*3600000)throw Error('Quellendaten zu alt oder in der Zukunft: '+payload?.date);
+  const prices=Object.fromEntries(['super','e10','diesel'].map(k=>[k,Number(payload[k])]));
+  if(!Object.values(prices).every(n=>Number.isFinite(n)&&n>=0.5&&n<=5))throw Error('Unplausible Spritpreise');
+  const fetchedAt=new Date(now).toISOString();
+  const latest={source:FUEL_NATIONAL_SOURCE,source_date:sourceDate,fetched_at:fetchedAt,prices};
+  const oldHistory=await env.PUSH_DEVICES.get(FUEL_NATIONAL_HISTORY,'json');
+  const cutoff=now-1096*86400000;
+  const records=(Array.isArray(oldHistory?.records)?oldHistory.records:[])
+    .filter(r=>Date.parse(r.source_date)>=cutoff&&r.source_date!==sourceDate);
+  records.push({source_date:sourceDate,fetched_at:fetchedAt,prices});
+  records.sort((a,b)=>String(a.source_date).localeCompare(String(b.source_date)));
+  // Max. ca. 3 Jahre bei vierstündlichen Abrufen; unter KV-Grenze bleiben.
+  const history={source:FUEL_NATIONAL_SOURCE,retention_years:3,records:records.slice(-6600)};
+  await env.PUSH_DEVICES.put(FUEL_NATIONAL_HISTORY,JSON.stringify(history));
+  await env.PUSH_DEVICES.put(FUEL_NATIONAL_LATEST,JSON.stringify(latest));
+  console.log('Bundesweite Spritpreise aktualisiert',JSON.stringify({sourceDate,fetchedAt,records:history.records.length,prices}));
+}
+
