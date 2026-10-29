@@ -1209,7 +1209,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v163</strong> · 1.3.1.193<br><small>Letzte Änderung: 29.10.2026, 06:00 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v164</strong> · 1.3.1.194<br><small>Letzte Änderung: 29.10.2026, 06:20 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -4363,7 +4363,7 @@ async function openCreateFuelStationDialog({address = '', name = '', initialStat
         <p class="fuel-create-status muted" role="status" aria-live="polite">Bitte die Adresse auf der Karte überprüfen. Bei Bedarf kannst du den Marker verschieben oder den Standort anklicken.</p>
         <div class="fuel-create-map" aria-label="Kartenansicht der neuen Tankstelle"></div>
         <p class="fuel-edit-error" role="alert" hidden></p>
-        <footer class="fuel-edit-footer"><span>Wird im Tankstellenkatalog gespeichert und auf deinen Geräten synchronisiert, wenn Firebase aktiv ist.</span><div class="fuel-edit-buttons"><button class="btn ghost" type="button" data-cancel>Abbrechen</button><button class="btn primary" type="submit" data-save disabled>Tankstelle speichern</button></div></footer>
+        <footer class="fuel-edit-footer"><span>Wird im Tankstellenkatalog gespeichert und auf deinen Geräten synchronisiert, wenn Firebase aktiv ist.</span><div class="fuel-edit-buttons"><button class="btn ghost" type="button" data-cancel>Abbrechen</button><button class="btn primary" type="submit" data-save>Tankstelle speichern</button></div></footer>
       </form></section>`;
     document.body.appendChild(overlay);
     const oldOverflow=document.body.style.overflow; document.body.style.overflow='hidden';
@@ -4387,7 +4387,7 @@ async function openCreateFuelStationDialog({address = '', name = '', initialStat
     document.addEventListener('keydown',onKey);
     overlay.querySelectorAll('[data-cancel]').forEach(btn=>btn.addEventListener('click',()=>{if(!busy)close(null);}));
     overlay.addEventListener('click',e=>{if(e.target===overlay&&!busy)close(null);});
-    function invalidate(){coords=null;save.disabled=true;error.hidden=true;status.textContent='Adresse geändert. Bitte die neue Position auf der Karte suchen.';}
+    function invalidate(){coords=null;if(marker){marker.remove();marker=null;}save.disabled=false;error.hidden=true;status.textContent='Adresse geändert. Beim Speichern wird die neue Adresse automatisch auf der Karte gesucht.';}
     field('address').addEventListener('input',invalidate);
     field('name').addEventListener('input',()=>{error.hidden=true;});
     if(coords) setTimeout(()=>{
@@ -4396,12 +4396,12 @@ async function openCreateFuelStationDialog({address = '', name = '', initialStat
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
       marker=L.marker([coords.latitude,coords.longitude],{draggable:true}).addTo(map);
       marker.on('dragend',()=>{const pos=marker.getLatLng();coords={latitude:pos.lat,longitude:pos.lng};});
-      map.on('click',e=>{coords={latitude:e.latlng.lat,longitude:e.latlng.lng};marker.setLatLng(e.latlng);save.disabled=false;});
+      map.on('click',e=>{coords={latitude:e.latlng.lat,longitude:e.latlng.lng};if(marker)marker.setLatLng(e.latlng);else {marker=L.marker(e.latlng,{draggable:true}).addTo(map);marker.on('dragend',()=>{const p=marker.getLatLng();coords={latitude:p.lat,longitude:p.lng};});}status.textContent='Standort auf der Karte gewählt. Du kannst jetzt speichern.';save.disabled=false;});
       map.invalidateSize();
     },80);
-    locate.addEventListener('click',async()=>{
+    async function locateAddress(){
       const text=field('address').value.trim();
-      if(!text)return fail('Bitte Straße, Hausnummer, PLZ und Ort eingeben.');
+      if(!text){fail('Bitte Straße, Hausnummer, PLZ und Ort eingeben.');return false;}
       busy=true;locate.disabled=true;save.disabled=true;error.hidden=true;status.textContent='Adresse wird gesucht …';
       try {
         if(typeof L==='undefined')throw new Error('Die Kartenbibliothek ist nicht geladen. Bitte App neu laden.');
@@ -4431,15 +4431,20 @@ async function openCreateFuelStationDialog({address = '', name = '', initialStat
         setTimeout(()=>map?.invalidateSize(),100);
         status.textContent='Gefunden: '+(found.display_name||text)+'. Marker bei Bedarf verschieben.';
         save.disabled=false;
-      }catch(err){coords=null;fail('Adresse konnte nicht automatisch gefunden werden. Du kannst den Standort direkt auf der Karte anklicken.');status.textContent='Bitte auf der Karte zum richtigen Ort navigieren und den Standort anklicken.';if(map){map.invalidateSize();}}
-      finally{busy=false;locate.disabled=false;}
-    });
+        return true;
+      }catch(err){coords=null;fail('Adresse konnte nicht automatisch gefunden werden. Du kannst den Standort direkt auf der Karte anklicken.');status.textContent='Bitte auf der Karte zum richtigen Ort navigieren und den Standort anklicken.';if(map){map.invalidateSize();}return false;}
+      finally{busy=false;locate.disabled=false;save.disabled=false;}
+    }
+    locate.addEventListener('click',()=>{void locateAddress();});
     form.addEventListener('submit',async e=>{
       e.preventDefault();
       const stationName=field('name').value.trim(), stationAddress=field('address').value.trim();
       if(!stationName)return fail('Bitte einen Tankstellennamen eingeben.');
       if(!stationAddress)return fail('Bitte die vollständige Adresse eingeben.');
-      if(!coords)return fail('Bitte zuerst die Adresse auf der Karte anzeigen und prüfen.');
+      if(!coords){
+        const located=await locateAddress();
+        if(!located || !coords)return;
+      }
       busy=true;save.disabled=true;save.textContent='Wird gespeichert …';error.hidden=true;
       try {
         const station=normalizeStation({id:editingStation?.id || `custom-${crypto.randomUUID()}`,name:stationName,brand:'',address:stationAddress,latitude:coords.latitude,longitude:coords.longitude,custom:true,managed:true},'fuel');
