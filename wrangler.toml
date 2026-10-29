@@ -19,3 +19,9 @@ class_name = "WeatherReportAlarm"
 [[migrations]]
 tag = "weather_alarm_v1"
 new_sqlite_classes = ["WeatherReportAlarm"]
+
+# Logs nach jedem GitHub-Deployment dauerhaft im Cloudflare-Dashboard speichern.
+[observability.logs]
+enabled = true
+invocation_logs = true
+persist = true
