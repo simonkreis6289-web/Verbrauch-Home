@@ -109,7 +109,32 @@ export default {
       if(origin&&!headers['Access-Control-Allow-Origin'])return respond({error:'Origin nicht erlaubt'},403,headers);
       return weatherRoute(req,env,new URL(req.url).pathname,headers);
     }
-if(new URL(req.url).pathname==='/fuel-national/latest'||new URL(req.url).pathname==='/fuel-national/history'){
+// v171: Historienpflege nur mit Push-Admin-Zugangscode, nie öffentlich.
+  if(new URL(req.url).pathname==='/fuel-national/history/manage'){
+    if(req.method!=='POST')return respond({error:'Nur POST erlaubt'},405,headers);
+    if(!origin||!headers['Access-Control-Allow-Origin'])return respond({error:'Origin nicht erlaubt'},403,headers);
+    if(!env.PUSH_DEVICES)return respond({error:'Spritpreis-Speicher fehlt'},503,headers);
+    const token=(req.headers.get('Authorization')||'').replace(/^Bearer\s+/i,'');
+    if(!await compareSecret(token,env.PUSH_SECRET))return respond({error:'Push-Zugangscode erforderlich'},401,headers);
+    let input;try{input=await req.json();}catch{return respond({error:'Ungültiges JSON'},400,headers);}
+    if(safePart(input?.household)!==safePart(env.PUSH_HOUSEHOLD_ID))return respond({error:'Haushalt ungültig'},403,headers);
+    const action=input?.action;
+    if(action!=='delete-point'&&action!=='clear-all')return respond({error:'Aktion ungültig'},400,headers);
+    const current=await env.PUSH_DEVICES.get(FUEL_NATIONAL_HISTORY,'json');
+    const records=Array.isArray(current?.records)?current.records:[];
+    let remaining=[];
+    if(action==='delete-point'){
+      const stamp=input?.source_date;
+      if(typeof stamp!=='string'||stamp.length>40||!Number.isFinite(Date.parse(stamp)))return respond({error:'Messpunkt ungültig'},400,headers);
+      remaining=records.filter(p=>p.source_date!==stamp);
+      if(remaining.length===records.length)return respond({error:'Messpunkt nicht mehr vorhanden'},404,headers);
+    }
+    const history={...(current||{}),records:remaining};
+    await env.PUSH_DEVICES.put(FUEL_NATIONAL_HISTORY,JSON.stringify(history));
+    console.log('Spritpreis-Historie bereinigt',JSON.stringify({action,deleted:records.length-remaining.length,remaining:remaining.length}));
+    return respond({ok:true,deleted:records.length-remaining.length,remaining:remaining.length},200,{...headers,'Cache-Control':'no-store'});
+  }
+  if(new URL(req.url).pathname==='/fuel-national/latest'||new URL(req.url).pathname==='/fuel-national/history'){
     if(req.method!=='GET')return respond({error:'Nur GET erlaubt'},405,headers);
     if(origin&&!headers['Access-Control-Allow-Origin'])return respond({error:'Origin nicht erlaubt'},403,headers);
     if(!env.PUSH_DEVICES)return respond({error:'Spritpreis-Speicher fehlt'},503,headers);
@@ -618,6 +643,18 @@ async function weatherRoute(req,env,route,headers){
   st.latest=point;await weatherSaveStations(env,h,rows);
   return respond({ok:true,at},200,headers);
  }
+ // v171: Messwert-Historie einer Station schrittweise löschen, ohne andere KV-Daten anzufassen.
+ if(route==='/weather/history/clear'){
+  if(!id||!rows.some(s=>s.id===id))return respond({error:'Station nicht gefunden'},404,headers);
+  const prefix=weatherKey(h,'point:'+id+':');
+  const page=await env.PUSH_DEVICES.list({prefix,limit:40});
+  await Promise.all(page.keys.map(k=>env.PUSH_DEVICES.delete(k.name)));
+  const next=await env.PUSH_DEVICES.list({prefix,limit:1});
+  const done=next.keys.length===0;
+  if(done){const station=rows.find(s=>s.id===id);station.latest=null;await weatherSaveStations(env,h,rows);}
+  console.log('Wetterhistorie bereinigt',JSON.stringify({station:id,deleted:page.keys.length,done}));
+  return respond({ok:true,deleted:page.keys.length,done},200,headers);
+ }
  if(route==='/weather/history'){
   const st=rows.find(s=>s.id===id);if(!st)return respond({error:'Station nicht gefunden'},404,headers);
   const hours=Math.min(8760,Math.max(1,Number(input.hours)||24)),cutoff=Date.now()-hours*3600000;
@@ -633,7 +670,7 @@ async function weatherCron(env){
   const v=st.latest,age=v?.at?now-Date.parse(v.at):Infinity;
   const checks=[['tempMin','temperatureC','unter'],['tempMax','temperatureC','über'],['humidityMin','humidityPercent','unter'],['humidityMax','humidityPercent','über'],['lightMin','brightnessPercent','unter'],['lightMax','brightnessPercent','über']];
   if(st.alerts&&v&&age<25*60000){for(const [limit,field,side] of checks){const value=Number(v[field]),threshold=Number(st[limit]);if(!Number.isFinite(threshold))continue;const hit=side==='unter'?value<threshold:value>threshold;const key=weatherKey(h,'alert:'+st.id+':'+limit),old=await env.PUSH_DEVICES.get(key,'json');if(hit&&(!old||old.active===false)&&(!old||now-(old.changed||0)>15*60000)){await broadcastInternal(env,h,'🌡️ '+st.name+' · Grenzwert',field+': '+value+' '+side+' '+threshold);await env.PUSH_DEVICES.put(key,JSON.stringify({active:true,changed:now}));}else if(!hit&&old?.active&&Math.abs(value-threshold)>= (field==='temperatureC'?0.5:2)){await env.PUSH_DEVICES.put(key,JSON.stringify({active:false,changed:now}));}}}
-  if(st.alerts&&age>Number(st.offlineMinutes||30)*60000){await sendEventOnce(env,h,'offline:'+st.id+':'+local.day,'📡 Wetterstation offline',st.name+': Seit mehr als '+(st.offlineMinutes||30)+' Minuten keine Messung.');}
+  if(st.alerts&&v?.at&&age>Number(st.offlineMinutes||30)*60000){await sendEventOnce(env,h,'offline:'+st.id+':'+local.day,'📡 Wetterstation offline',st.name+': Seit mehr als '+(st.offlineMinutes||30)+' Minuten keine Messung.');}
 
  }
 }

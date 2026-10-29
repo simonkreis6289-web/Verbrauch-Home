@@ -1209,7 +1209,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v170</strong> · 1.3.1.200<br><small>Letzte Änderung: 29.10.2026, 11:36 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v171</strong> · 1.3.1.201<br><small>Letzte Änderung: 29.10.2026, 11:42 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -2321,7 +2321,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
     <div class="market-history-panel" style="max-width:850px">
       <div class="card-head"><div><p class="section-kicker">Spritpreis-Historie · Deutschland</p><h2 id="nationalFuelHistoryTitle">Preisverlauf</h2><small class="muted">Sechs Zeitpunkte pro Tag, maximal drei Jahre</small></div><button class="btn ghost" type="button" id="nationalFuelHistoryClose">Schließen ✕</button></div>
       <label>Zeitraum <select id="nationalFuelHistoryPeriod"><option value="7">7 Tage</option><option value="30" selected>30 Tage</option><option value="90">3 Monate</option><option value="365">1 Jahr</option><option value="all">Gesamter Verlauf</option></select></label>
-      <div id="nationalFuelHistoryChart" style="margin-top:14px"></div><div id="nationalFuelHistoryDetails" class="market-history-details"></div>
+      <div id="nationalFuelHistoryChart" style="margin-top:14px"></div><div id="nationalFuelHistoryDetails" class="market-history-details"></div><div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line)"><h3 style="margin:0 0 8px">Messwerte verwalten</h3><p class="muted">Nur die bundesweite Spritpreis-Historie wird geändert. Tankvorgänge und aktuelle Preise bleiben erhalten.</p><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end"><label style="flex:1;min-width:230px">Messpunkt auswählen<select id="nationalFuelHistoryDeletePoint"><option value="">Bitte Messpunkt auswählen</option></select></label><button type="button" class="btn secondary" id="nationalFuelHistoryDelete">Ausgewählten Messpunkt löschen</button><button type="button" class="btn secondary" id="nationalFuelHistoryClear">Gesamte Spritpreis-Historie löschen</button></div><p id="nationalFuelHistoryManageStatus" class="muted" aria-live="polite"></p></div>
     </div>
   </div>
   <div id="marketHistoryModal" class="market-history-backdrop" role="dialog" aria-modal="true" aria-labelledby="marketHistoryTitle" aria-hidden="true" hidden>
@@ -2375,7 +2375,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script src="./forecast.js" defer></script>
-  <script src="./weather.js?v=170" defer></script>
+  <script src="./weather.js?v=171" defer></script>
   <script type="module">
     import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getMessaging, getToken, onMessage, deleteToken, isSupported } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-messaging.js";
@@ -2731,22 +2731,49 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       document.getElementById('nationalFuelHistoryPeriod').value='30';
       document.getElementById('nationalFuelHistoryChart').textContent='Preisverlauf wird geladen …';
       try{
-        const results=await Promise.allSettled([
-          fetch('./fuel-price-history.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():{records:[]}),
-          fetch(LIVE_FUEL_WORKER+'/fuel-national/history?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():{records:[]})
-        ]);
-        const records=new Map();
-        for(const result of results)if(result.status==='fulfilled')for(const item of (result.value.records||[]))if(item.source_date)records.set(item.source_date,item);
-        nationalFuelHistory=[...records.values()].sort((a,b)=>String(a.source_date).localeCompare(String(b.source_date)));
+        const response=await fetch(LIVE_FUEL_WORKER+'/fuel-national/history?t='+Date.now(),{cache:'no-store'});
+        if(!response.ok)throw Error('Cloudflare-Historie nicht erreichbar: HTTP '+response.status);
+        const data=await response.json();
+        nationalFuelHistory=(Array.isArray(data.records)?data.records:[]).sort((a,b)=>String(a.source_date).localeCompare(String(b.source_date)));
         renderNationalFuelHistory();
       }
       catch(e){document.getElementById('nationalFuelHistoryChart').textContent='Noch keine historischen Werte vorhanden.';}
+    }
+    let nationalFuelManageBusy=false;
+    async function manageNationalFuelHistory(action){
+      if(nationalFuelManageBusy)return;
+      const select=document.getElementById('nationalFuelHistoryDeletePoint');
+      const stamp=select?.value;
+      if(action==='delete-point'&&!stamp){showToast('Bitte zuerst einen Messpunkt auswählen.','error');return;}
+      const description=action==='clear-all'?'ALLE bundesweiten Spritpreis-Messwerte':'den Messpunkt vom '+new Date(stamp).toLocaleString('de-DE');
+      if(!confirm(`Wirklich ${description} endgültig löschen?`))return;
+      if(action==='clear-all'&&!confirm('Zweite Bestätigung: Die komplette Spritpreis-Historie wird unwiderruflich gelöscht.'))return;
+      let admin=sessionStorage.getItem('weatherAdminKey')||localStorage.getItem('verbrauch-weather-admin-key-device-v1')||'';
+      if(!admin){admin=prompt('Push-Zugangscode für die Löschfunktion eingeben:')||'';if(!admin)return;sessionStorage.setItem('weatherAdminKey',admin);}
+      const status=document.getElementById('nationalFuelHistoryManageStatus');
+      nationalFuelManageBusy=true;
+      document.querySelectorAll('#nationalFuelHistoryDelete,#nationalFuelHistoryClear').forEach(b=>b.disabled=true);
+      try{
+        const res=await fetch(LIVE_FUEL_WORKER+'/fuel-national/history/manage',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+admin},body:JSON.stringify({household:localStorage.getItem('verbrauch-household-id-v1')||'zuhause-haupt',action,source_date:stamp})});
+        const data=await res.json().catch(()=>({}));
+        if(!res.ok)throw Error(data.error||'HTTP '+res.status);
+        status.textContent=`✓ ${data.deleted} Messpunkt(e) gelöscht. ${data.remaining} verbleiben.`;
+        const historyRes=await fetch(LIVE_FUEL_WORKER+'/fuel-national/history?t='+Date.now(),{cache:'no-store'});
+        if(!historyRes.ok)throw Error('Löschung erfolgreich, aber Verlauf konnte nicht neu geladen werden.');
+        const updated=await historyRes.json();
+        nationalFuelHistory=Array.isArray(updated.records)?updated.records:[];
+        renderNationalFuelHistory();
+      }catch(e){status.textContent='Fehler: '+e.message;showToast(e.message,'error');}
+      finally{nationalFuelManageBusy=false;document.querySelectorAll('#nationalFuelHistoryDelete,#nationalFuelHistoryClear').forEach(b=>b.disabled=false);}
     }
     function closeNationalFuelHistory(){const el=document.getElementById('nationalFuelHistoryModal');el.hidden=true;el.setAttribute('aria-hidden','true');}
     function renderNationalFuelHistory(){
       const period=document.getElementById('nationalFuelHistoryPeriod').value,cutoff=period==='all'?0:Date.now()-Number(period)*86400000;
       const points=nationalFuelHistory.map(r=>({time:Date.parse(r.source_date||r.fetched_at),price:Number(r.prices?.[nationalFuelKey])})).filter(p=>Number.isFinite(p.time)&&p.time>=cutoff&&Number.isFinite(p.price)&&p.price>0).sort((a,b)=>a.time-b.time);
       const chart=document.getElementById('nationalFuelHistoryChart'),details=document.getElementById('nationalFuelHistoryDetails');
+      const deleteSelect=document.getElementById('nationalFuelHistoryDeletePoint');
+      if(deleteSelect){const selected=deleteSelect.value;deleteSelect.innerHTML='<option value="">Bitte Messpunkt auswählen</option>'+nationalFuelHistory.filter(r=>{const d=Date.parse(r.source_date);return Number.isFinite(d)&&d>=cutoff;}).map(r=>`<option value="${escapeHtml(r.source_date)}">${escapeHtml(new Date(r.source_date).toLocaleString('de-DE'))} · ${fmtFuel(r.prices?.[nationalFuelKey])}</option>`).join('');if([...deleteSelect.options].some(o=>o.value===selected))deleteSelect.value=selected;}
+
       if(!points.length){chart.innerHTML='<div class="empty-state">Keine gespeicherten Preise im gewählten Zeitraum.</div>';details.innerHTML='';return;}
       const w=900,h=290,l=65,r=20,t=22,b=44,min=Math.min(...points.map(p=>p.price)),max=Math.max(...points.map(p=>p.price)),pad=Math.max(.025,(max-min)*.15),low=min-pad,high=max+pad,start=points[0].time,end=points.at(-1).time;
       const x=p=>l+(p.time-start)/(end-start||1)*(w-l-r),y=p=>t+(high-p.price)/(high-low)*(h-t-b);
@@ -2870,6 +2897,8 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       document.getElementById('nationalFuelHistoryClose')?.addEventListener('click',closeNationalFuelHistory);
       document.getElementById('nationalFuelHistoryModal')?.addEventListener('click',e=>{if(e.target.id==='nationalFuelHistoryModal')closeNationalFuelHistory();});
       document.getElementById('nationalFuelHistoryPeriod')?.addEventListener('change',renderNationalFuelHistory);
+      document.getElementById('nationalFuelHistoryDelete')?.addEventListener('click',()=>void manageNationalFuelHistory('delete-point'));
+      document.getElementById('nationalFuelHistoryClear')?.addEventListener('click',()=>void manageNationalFuelHistory('clear-all'));
       document.getElementById('liveFuelType')?.addEventListener('change',renderLiveFuelPrices);
       document.getElementById('liveFuelSort')?.addEventListener('change',renderLiveFuelPrices);
       document.getElementById('liveFuelRadius')?.addEventListener('change',()=>{if(liveFuelPayload)renderLiveFuelPrices();});

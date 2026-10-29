@@ -111,17 +111,47 @@ function graph(data){const vals=data.map(p=>Number(p[metric])).filter(Number.isF
 function weatherDateTimeLocal(date){const d=new Date(date),p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;}
 let customStart=weatherDateTimeLocal(Date.now()-24*3600000),customEnd=weatherDateTimeLocal(Date.now());
 let historyLoadSerial=0;
+let weatherClearBusy=false;
+async function clearWeatherMeasurements(ids){
+ if(weatherClearBusy||!ids.length)return;
+ const names=ids.map(id=>stations.find(s=>s.id===id)?.name||id);
+ if(!confirm(`ACHTUNG: Alle aufgezeichneten Messwerte für ${names.join(', ')} endgültig löschen?\n\nStationen, Push-Einstellungen und andere Verbrauchsdaten bleiben erhalten.`))return;
+ if(!confirm('Zur Sicherheit erneut bestätigen: Die Wetter-Messwerte können danach nicht wiederhergestellt werden.'))return;
+ weatherClearBusy=true;
+ const status=$('weatherClearStatus');
+ document.querySelectorAll('#weatherClearStation,#weatherClearAll').forEach(b=>b.disabled=true);
+ let total=0;
+ try{
+  for(const id of ids){
+   let done=false;
+   for(let batch=0;batch<1000&&!done;batch++){
+    if(status)status.textContent=`Lösche Messwerte für ${id} … (${total} entfernt)`;
+    const result=await request('/weather/history/clear',{id});
+    total+=Number(result.deleted)||0;
+    done=result.done===true;
+    if(!done&&Number(result.deleted)===0)throw Error('Löschvorgang hat keinen Fortschritt gemacht.');
+   }
+   if(!done)throw Error('Sehr viele Messwerte. Bitte Löschung erneut starten.');
+  }
+  history=[];
+  await refresh();
+  showError(`✓ ${total} Wetter-Messwerte gelöscht.`);
+ }catch(e){showError(`Löschen unterbrochen nach ${total} Messwerten: ${e.message}. Du kannst den Vorgang erneut starten.`);}
+ finally{weatherClearBusy=false;document.querySelectorAll('#weatherClearStation,#weatherClearAll').forEach(b=>b.disabled=false);}
+}
 async function renderHistory(){
  const el=$('weatherHistory');if(!el)return;
  if(!stations.length){el.innerHTML='<p class="muted">Noch keine Station eingerichtet. Unter Einstellungen → Wetterstationen hinzufügen.</p>';return;}
  const st=selectedStation();if(!st)return;selected=st.id;
  const custom=period==='custom';
- el.innerHTML=`<div class="weather-config"><label>Station<select id="weatherChartStation">${stations.map(x=>`<option value="${esc(x.id)}" ${x.id===selected?'selected':''}>${esc(x.emoji||'🌡️')} ${esc(x.name)}</option>`).join('')}</select></label><label>Messwert<select id="weatherChartMetric"><option value="temperatureC">Temperatur (°C)</option><option value="humidityPercent">Luftfeuchtigkeit (%)</option><option value="brightnessPercent">Helligkeit (%)</option></select></label><label>Zeitraum<select id="weatherChartPeriod"><option value="24">24 Stunden</option><option value="168">7 Tage</option><option value="720">30 Tage</option><option value="8760">1 Jahr</option><option value="custom">Eigener Zeitraum</option></select></label></div><div id="weatherCustomRange" class="weather-config" style="margin:12px 0"><label>Von<input id="weatherCustomFrom" type="datetime-local" value="${esc(customStart)}"></label><label>Bis<input id="weatherCustomTo" type="datetime-local" value="${esc(customEnd)}"></label><label><span>&nbsp;</span><button type="button" class="btn secondary" id="weatherCustomApply">Zeitraum anzeigen</button></label></div><p id="weatherRangeInfo" class="weather-muted" style="margin:8px 0"></p><div id="weatherChart">Lade Messwerte …</div>`;
+ el.innerHTML=`<div class="weather-config"><label>Station<select id="weatherChartStation">${stations.map(x=>`<option value="${esc(x.id)}" ${x.id===selected?'selected':''}>${esc(x.emoji||'🌡️')} ${esc(x.name)}</option>`).join('')}</select></label><label>Messwert<select id="weatherChartMetric"><option value="temperatureC">Temperatur (°C)</option><option value="humidityPercent">Luftfeuchtigkeit (%)</option><option value="brightnessPercent">Helligkeit (%)</option></select></label><label>Zeitraum<select id="weatherChartPeriod"><option value="24">24 Stunden</option><option value="168">7 Tage</option><option value="720">30 Tage</option><option value="8760">1 Jahr</option><option value="custom">Eigener Zeitraum</option></select></label></div><div id="weatherCustomRange" class="weather-config" style="margin:12px 0"><label>Von<input id="weatherCustomFrom" type="datetime-local" value="${esc(customStart)}"></label><label>Bis<input id="weatherCustomTo" type="datetime-local" value="${esc(customEnd)}"></label><label><span>&nbsp;</span><button type="button" class="btn secondary" id="weatherCustomApply">Zeitraum anzeigen</button></label></div><p id="weatherRangeInfo" class="weather-muted" style="margin:8px 0"></p><div id="weatherChart">Lade Messwerte …</div><div class="weather-config" style="margin-top:18px;align-items:end"><button type="button" class="btn secondary" id="weatherClearStation">Messwerte dieser Station löschen</button><button type="button" class="btn secondary" id="weatherClearAll">Alle Wetter-Messwerte löschen</button></div><p class="weather-muted" id="weatherClearStatus">Nur die aufgezeichneten Messwerte werden entfernt. Stationen und Einstellungen bleiben bestehen.</p>`;
  $('weatherChartMetric').value=metric;$('weatherChartPeriod').value=period;
  $('weatherChartStation').onchange=e=>{selected=e.target.value;renderOverview();void renderHistory();};
  $('weatherChartMetric').onchange=e=>{metric=e.target.value;$('weatherChart').innerHTML=graph(history);};
  $('weatherChartPeriod').onchange=e=>{period=e.target.value;void renderHistory();};
  $('weatherCustomApply').onclick=()=>{customStart=$('weatherCustomFrom').value;customEnd=$('weatherCustomTo').value;period='custom';void renderHistory();};
+ $('weatherClearStation').onclick=()=>void clearWeatherMeasurements([st.id]);
+ $('weatherClearAll').onclick=()=>void clearWeatherMeasurements(stations.map(s=>s.id));
  const serial=++historyLoadSerial;
  try{
   let hours=Number(period),from=0,to=Date.now();
