@@ -1209,7 +1209,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v167</strong> · 1.3.1.197<br><small>Letzte Änderung: 29.10.2026, 07:18 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v168</strong> · 1.3.1.198<br><small>Letzte Änderung: 29.10.2026, 08:00 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -4165,6 +4165,13 @@ function formatStationShort(station) {
     function fuelStationSearchTerms(searchText) {
       const text = String(searchText || '').trim().replace(/\s+/g, ' ');
       const brands = ['TotalEnergies', 'Raiffeisen', 'Westfalen', 'Orlen', 'Aral', 'Shell', 'Total', 'Esso', 'JET', 'HEM', 'AVIA', 'Star'];
+      // „Pfennings, Olpe“ bedeutet: Tankstellenname Pfennings im Raum Olpe.
+      // Eine vollständige Straßenadresse (mit Hausnummer) bleibt dagegen eine Ortssuche.
+      const commaParts = text.split(',').map(part => part.trim()).filter(Boolean);
+      if (commaParts.length === 2 && !/\d/.test(commaParts[0]) &&
+          !/^(straße|strasse|str\.|weg|platz|allee)$/i.test(commaParts[0])) {
+        return { location: commaParts[1], brand: commaParts[0] };
+      }
       const brand = brands.find(value => new RegExp('^' + value + '(?:\\s+|\\s*,\\s*)', 'i').test(text));
       const location = brand ? text.slice(brand.length).replace(/^\s*,?\s*/, '').trim() : text;
       return { location, brand: brand || '' };
@@ -4272,36 +4279,40 @@ function formatStationShort(station) {
     }
 
     async function fuelSearchAround(latitude, longitude, radiusMeters = 6000, term = '') {
-      // Erst Photon mit einem gezielten Suchbegriff, dann allgemeine Tankstellen.
-      // Overpass ist nur Fallback, nicht Voraussetzung für die Suche.
-      let stations = [];
-      const attempts = term ? [term, 'Tankstelle'] : ['Tankstelle'];
-      for (const query of attempts) {
-        try {
-          stations = await fuelPhotonAround(latitude, longitude, radiusMeters, query);
-          if (stations.length) return fuelSearchUnique(stations);
-        } catch (error) { console.warn('Photon-Tankstellensuche:', error); }
+      // v168: Photon ist eine Volltextsuche, keine vollständige Umkreisdatenbank.
+      // Ein einziger Treffer auf „Tankstelle“ darf die Suche deshalb NICHT beenden.
+      // Mehrere Suchbegriffe und der geografische Nominatim-Index werden vereinigt.
+      const queries = term
+        ? [term, 'Tankstelle', 'Aral', 'Shell', 'Esso', 'JET']
+        : ['Tankstelle', 'Aral', 'Shell', 'Esso', 'JET', 'Total'];
+      const results = await Promise.allSettled([
+        ...queries.map(query => fuelPhotonAround(latitude, longitude, radiusMeters, query)),
+        fuelNominatimAround(latitude, longitude, radiusMeters)
+      ]);
+      const stations = fuelSearchUnique(results.flatMap(result => result.status === 'fulfilled' ? result.value : []));
+      // Nur bei sehr wenigen Treffern einen kurzen Overpass-Versuch machen.
+      if (stations.length < 4) {
+        try { stations.push(...await fuelOverpassAround(latitude, longitude, radiusMeters)); }
+        catch (error) { console.warn('Tankstellen-Fallback:', error); }
       }
-      try {
-        stations = await fuelNominatimAround(latitude, longitude, radiusMeters);
-        if (stations.length) return fuelSearchUnique(stations);
-      } catch (error) { console.warn('Nominatim-Tankstellensuche:', error); }
-      try { return fuelSearchUnique(await fuelOverpassAround(latitude, longitude, radiusMeters)); }
-      catch (error) { console.warn('Tankstellen-Fallback:', error); return []; }
+      return fuelSearchUnique(stations).sort((a,b) => a.distanceKm - b.distanceKm);
     }
 
     async function fetchFuelStationsByText(searchText) {
       const { location, brand } = fuelStationSearchTerms(searchText);
       if (!location) throw new Error('Bitte einen Ort oder eine Postleitzahl eingeben.');
       const place = await fuelSearchGeocode(location);
-      const stations = await fuelSearchAround(place.latitude, place.longitude, 6500, brand);
-      if (!brand) return stations.slice(0, 30);
+      // Größerer Suchradius, damit auch Tankstellen am Stadtrand erscheinen.
+      const stations = await fuelSearchAround(place.latitude, place.longitude, 12000, brand);
+      if (!brand) return stations.slice(0, 50);
       const term = brand.toLocaleLowerCase('de');
-      return stations.filter(st => `${st.name} ${st.brand}`.toLocaleLowerCase('de').includes(term)).slice(0, 30);
+      const matching = stations.filter(st => `${st.name} ${st.brand}`.toLocaleLowerCase('de').includes(term));
+      // Eine Namenssuche soll nicht einfach fremde Tankstellen als Treffer melden.
+      return matching.slice(0, 50);
     }
 
     async function fetchNearbyFuelStations(latitude, longitude) {
-      return (await fuelSearchAround(latitude, longitude, 5500)).slice(0, 30);
+      return (await fuelSearchAround(latitude, longitude, 8000)).slice(0, 50);
     }
 
     function fuelSearchSetBusy(button, busy, label) {
