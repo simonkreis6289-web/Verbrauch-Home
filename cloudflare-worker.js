@@ -104,6 +104,27 @@ export default {
       return respond({ok:true,seq},200,headers);
     }catch(error){console.error('Sofort-Push fehlgeschlagen',String(error));return respond({error:'Versand wird beim naechsten Cron erneut geprueft'},503,headers);}
   }
+  // Android-Widget: separater, nur lesender Zugang. Kein Push-Admin-Schluessel.
+  // Der lange Widget-Schluessel wird ausschliesslich als Cloudflare Secret hinterlegt.
+  if(new URL(req.url).pathname==='/widget/weather'){
+    if(req.method!=='GET')return respond({error:'Nur GET erlaubt'},405,{...headers,'Cache-Control':'no-store'});
+    const noCache={...headers,'Cache-Control':'no-store','Referrer-Policy':'no-referrer'};
+    if(!env.PUSH_DEVICES||!env.PUSH_HOUSEHOLD_ID||!env.WIDGET_READ_TOKEN)
+      return respond({error:'Widget-Lesezugang nicht eingerichtet'},503,noCache);
+    const supplied=new URL(req.url).searchParams.get('key')||'';
+    if(!await compareSecret(supplied,env.WIDGET_READ_TOKEN))
+      return respond({error:'Widget-Schluessel ungueltig'},401,noCache);
+    const household=safePart(env.PUSH_HOUSEHOLD_ID);
+    if(!household)return respond({error:'Haushalt nicht konfiguriert'},503,noCache);
+    const rows=await weatherStations(env,household);
+    const station=rows.find(st=>st.id==='WS-01'&&st.enabled!==false);
+    if(!station)return respond({error:'WS-01 nicht vorhanden oder deaktiviert'},404,noCache);
+    if(!station.latest)return respond({error:'Noch keine Messung von WS-01 vorhanden'},404,noCache);
+    const {temperatureC,humidityPercent,at}=station.latest;
+    if(!Number.isFinite(Number(temperatureC))||!Number.isFinite(Number(humidityPercent))||!at)
+      return respond({error:'Messung unvollstaendig'},503,noCache);
+    return respond({id:'WS-01',temperatureC:Number(temperatureC),humidityPercent:Number(humidityPercent),at},200,noCache);
+  }
   if(new URL(req.url).pathname.startsWith('/weather/')){
       if(req.method!=='POST')return respond({error:'Nur POST erlaubt'},405,headers);
       if(origin&&!headers['Access-Control-Allow-Origin'])return respond({error:'Origin nicht erlaubt'},403,headers);
