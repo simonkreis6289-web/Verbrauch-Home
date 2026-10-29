@@ -108,7 +108,37 @@ function renderStationSettings(){
  el.querySelectorAll('[data-remove]').forEach(b=>b.onclick=async()=>{if(!confirm('Station '+b.dataset.remove+' wirklich entfernen? Die Historie bleibt zunächst erhalten.'))return;try{await request('/weather/admin',{action:'remove',id:b.dataset.remove});await refresh();}catch(e){showError(e.message);}});
 }
 function graph(data){const vals=data.map(p=>Number(p[metric])).filter(Number.isFinite);if(!vals.length)return '<p class="muted">Für diesen Zeitraum liegen noch keine Messwerte vor.</p>';const lo=Math.min(...vals),hi=Math.max(...vals),span=Math.max(hi-lo,.5);const w=720,h=240;const path=data.map((p,i)=>{const n=Number(p[metric]);if(!Number.isFinite(n))return '';const x=38+i/Math.max(data.length-1,1)*665,y=205-(n-lo)/span*166;return `${i?'L':'M'}${x.toFixed(1)},${y.toFixed(1)}`;}).join(' ');return `<svg class="weather-plot" viewBox="0 0 ${w} ${h}" role="img" aria-label="Messwertverlauf"><path d="M38 20V205H703" stroke="currentColor" opacity=".35" fill="none"/><path d="${path}" fill="none" stroke="#0891b2" stroke-width="2.5"/><text x="5" y="23" font-size="13" fill="currentColor">${fmt(hi)}</text><text x="5" y="205" font-size="13" fill="currentColor">${fmt(lo)}</text><text x="38" y="230" font-size="12" fill="currentColor">${esc(new Date(data[0].at).toLocaleString('de-DE'))}</text><text x="703" y="230" font-size="12" text-anchor="end" fill="currentColor">${esc(new Date(data[data.length-1].at).toLocaleString('de-DE'))}</text></svg><p class="weather-muted">Min: ${fmt(lo)} · Max: ${fmt(hi)} · Ø ${fmt(vals.reduce((a,b)=>a+b,0)/vals.length)} · ${vals.length} Messungen</p>`;}
-async function renderHistory(){const el=$('weatherHistory');if(!el)return;if(!stations.length){el.innerHTML='<p class="muted">Noch keine Station eingerichtet. Unter Einstellungen → Wetterstationen hinzufügen.</p>';return;}const st=selectedStation();if(!st)return;selected=st.id;el.innerHTML=`<div class="weather-config"><label>Station<select id="weatherChartStation">${stations.map(x=>`<option value="${esc(x.id)}" ${x.id===selected?'selected':''}>${esc(x.emoji||'🌡️')} ${esc(x.name)}</option>`).join('')}</select></label><label>Messwert<select id="weatherChartMetric"><option value="temperatureC">Temperatur (°C)</option><option value="humidityPercent">Luftfeuchtigkeit (%)</option><option value="brightnessPercent">Helligkeit (%)</option></select></label><label>Zeitraum<select id="weatherChartPeriod"><option value="24">24 Stunden</option><option value="168">7 Tage</option><option value="720">30 Tage</option><option value="8760">1 Jahr</option></select></label></div><div id="weatherChart">Lade Messwerte …</div>`;$('weatherChartMetric').value=metric;$('weatherChartPeriod').value=period;$('weatherChartStation').onchange=e=>{selected=e.target.value;renderOverview();void renderHistory();};$('weatherChartMetric').onchange=e=>{metric=e.target.value;$('weatherChart').innerHTML=graph(history);};$('weatherChartPeriod').onchange=e=>{period=e.target.value;void renderHistory();};try{const j=await request('/weather/history',{id:st.id,hours:Number(period)});history=j.points||[];$('weatherChart').innerHTML=graph(history);}catch(e){$('weatherChart').textContent=e.message;}}
+function weatherDateTimeLocal(date){const d=new Date(date),p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;}
+let customStart=weatherDateTimeLocal(Date.now()-24*3600000),customEnd=weatherDateTimeLocal(Date.now());
+let historyLoadSerial=0;
+async function renderHistory(){
+ const el=$('weatherHistory');if(!el)return;
+ if(!stations.length){el.innerHTML='<p class="muted">Noch keine Station eingerichtet. Unter Einstellungen → Wetterstationen hinzufügen.</p>';return;}
+ const st=selectedStation();if(!st)return;selected=st.id;
+ const custom=period==='custom';
+ el.innerHTML=`<div class="weather-config"><label>Station<select id="weatherChartStation">${stations.map(x=>`<option value="${esc(x.id)}" ${x.id===selected?'selected':''}>${esc(x.emoji||'🌡️')} ${esc(x.name)}</option>`).join('')}</select></label><label>Messwert<select id="weatherChartMetric"><option value="temperatureC">Temperatur (°C)</option><option value="humidityPercent">Luftfeuchtigkeit (%)</option><option value="brightnessPercent">Helligkeit (%)</option></select></label><label>Zeitraum<select id="weatherChartPeriod"><option value="24">24 Stunden</option><option value="168">7 Tage</option><option value="720">30 Tage</option><option value="8760">1 Jahr</option><option value="custom">Eigener Zeitraum</option></select></label></div><div id="weatherCustomRange" class="weather-config" ${custom?'':'hidden'} style="margin:12px 0"><label>Von<input id="weatherCustomFrom" type="datetime-local" value="${esc(customStart)}"></label><label>Bis<input id="weatherCustomTo" type="datetime-local" value="${esc(customEnd)}"></label><label><span>&nbsp;</span><button type="button" class="btn secondary" id="weatherCustomApply">Zeitraum anzeigen</button></label></div><p id="weatherRangeInfo" class="weather-muted" style="margin:8px 0"></p><div id="weatherChart">Lade Messwerte …</div>`;
+ $('weatherChartMetric').value=metric;$('weatherChartPeriod').value=period;
+ $('weatherChartStation').onchange=e=>{selected=e.target.value;renderOverview();void renderHistory();};
+ $('weatherChartMetric').onchange=e=>{metric=e.target.value;$('weatherChart').innerHTML=graph(history);};
+ $('weatherChartPeriod').onchange=e=>{period=e.target.value;void renderHistory();};
+ $('weatherCustomApply').onclick=()=>{customStart=$('weatherCustomFrom').value;customEnd=$('weatherCustomTo').value;void renderHistory();};
+ const serial=++historyLoadSerial;
+ try{
+  let hours=Number(period),from=0,to=Date.now();
+  if(custom){
+   from=new Date(customStart).getTime();to=new Date(customEnd).getTime();
+   if(!Number.isFinite(from)||!Number.isFinite(to)||from>=to)throw Error('Bitte einen gültigen Zeitraum auswählen: „Von“ muss vor „Bis“ liegen.');
+   if(to>Date.now()+60000)throw Error('Das Enddatum darf nicht in der Zukunft liegen.');
+   if(from<Date.now()-8760*3600000)throw Error('Die Wetterhistorie kann derzeit maximal ein Jahr zurück abgefragt werden. Bitte ein neueres Startdatum wählen.');
+   hours=Math.min(8760,Math.ceil((Date.now()-from)/3600000)+1);
+  }
+  const j=await request('/weather/history',{id:st.id,hours});
+  if(serial!==historyLoadSerial)return;
+  history=(j.points||[]).filter(p=>{const t=Date.parse(p.at);return Number.isFinite(t)&&(!custom||(t>=from&&t<=to));});
+  $('weatherChart').innerHTML=graph(history);
+  $('weatherRangeInfo').textContent=(custom?`${new Date(from).toLocaleString('de-DE')} bis ${new Date(to).toLocaleString('de-DE')} · `:'')+`${history.length} Messwerte`+(j.partial?' · Achtung: Server hat nur einen Teil der Messwerte geliefert.':'');
+ }catch(e){if(serial!==historyLoadSerial)return;$('weatherChart').textContent=e.message;$('weatherRangeInfo').textContent='';}
+}
 let latestRefreshing=null;
 async function refreshReadings(){
  if(latestRefreshing)return latestRefreshing;
