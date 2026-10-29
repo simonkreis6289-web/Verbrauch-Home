@@ -1209,7 +1209,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v164</strong> · 1.3.1.194<br><small>Letzte Änderung: 29.10.2026, 06:20 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v166</strong> · 1.3.1.196<br><small>Letzte Änderung: 29.10.2026, 07:00 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -4190,24 +4190,74 @@ function formatStationShort(station) {
       throw new Error('Ort nicht gefunden. Bitte Stadt oder Postleitzahl genauer angeben.');
     }
 
+    // v165: Tankstellen direkt aus dem Browser suchen, ohne Cloudflare.
+    // Photon liefert OSM-Tankstellen mit Geokoordinaten. Overpass ist nur noch
+    // ein zeitlich begrenzter Ersatzweg, falls Photon keine Ergebnisse liefert.
+    function fuelPhotonStation(feature) {
+      const p = feature?.properties || {};
+      const [longitude, latitude] = feature?.geometry?.coordinates || [];
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+      if (p.osm_key !== 'amenity' || p.osm_value !== 'fuel') return null;
+      const name = String(p.name || p.brand || 'Tankstelle').trim();
+      const street = [p.street, p.housenumber].filter(Boolean).join(' ');
+      const city = [p.postcode, p.city || p.locality || p.county].filter(Boolean).join(' ');
+      const address = [street, city].filter(Boolean).join(', ');
+      return { id: `photon-${p.osm_type || 'node'}-${p.osm_id || `${latitude}-${longitude}`}`,
+        name, brand: String(p.brand || ''), address,
+        displayName: address ? `${name}, ${address}` : name,
+        latitude, longitude, distanceKm: null };
+    }
+
+    async function fuelPhotonAround(latitude, longitude, radiusMeters = 6000, term = 'Tankstelle') {
+      const params = new URLSearchParams({ q: term, lat: String(latitude), lon: String(longitude),
+        limit: '50', lang: 'de', osm_tag: 'amenity:fuel' });
+      const data = await fuelSearchFetch(`https://photon.komoot.io/api/?${params}`, 4500);
+      if (!Array.isArray(data?.features)) throw new Error('Ungültige Photon-Antwort');
+      return data.features.map(fuelPhotonStation).filter(Boolean)
+        .map(st => ({ ...st, distanceKm: calculateDistanceKm(latitude, longitude, st.latitude, st.longitude) }))
+        .filter(st => st.distanceKm * 1000 <= radiusMeters)
+        .sort((a,b) => a.distanceKm - b.distanceKm);
+    }
+
+    async function fuelNominatimAround(latitude, longitude, radiusMeters = 6000) {
+      const latDelta = radiusMeters / 111000;
+      const lonDelta = radiusMeters / (111000 * Math.max(0.25, Math.cos(latitude * Math.PI / 180)));
+      const viewbox = [longitude - lonDelta, latitude + latDelta, longitude + lonDelta, latitude - latDelta].join(',');
+      const params = new URLSearchParams({ format: 'jsonv2', amenity: 'fuel', viewbox,
+        bounded: '1', limit: '40', addressdetails: '1', countrycodes: 'de' });
+      const data = await fuelSearchFetch(`https://nominatim.openstreetmap.org/search?${params}`, 4500);
+      if (!Array.isArray(data)) throw new Error('Ungültige Nominatim-Antwort');
+      return data.filter(item => Number.isFinite(Number(item.lat)) && Number.isFinite(Number(item.lon)))
+        .filter(item => item.type === 'fuel' || item.addresstype === 'amenity' || item.category === 'amenity')
+        .map(item => {
+          const stationLat = Number(item.lat), stationLon = Number(item.lon);
+          const addr = item.address || {};
+          const name = String(item.name || item.namedetails?.name || item.display_name?.split(',')[0] || 'Tankstelle');
+          const street = [addr.road, addr.house_number].filter(Boolean).join(' ');
+          const city = [addr.postcode, addr.city || addr.town || addr.village].filter(Boolean).join(' ');
+          const address = [street, city].filter(Boolean).join(', ');
+          return { id: `nominatim-${item.osm_type}-${item.osm_id}`, name, brand: '', address,
+            displayName: address ? `${name}, ${address}` : name, latitude: stationLat, longitude: stationLon,
+            distanceKm: calculateDistanceKm(latitude, longitude, stationLat, stationLon) };
+        })
+        .sort((a,b) => a.distanceKm - b.distanceKm);
+    }
+
     async function fuelOverpassAround(latitude, longitude, radiusMeters = 6000) {
-      const query = `[out:json][timeout:12];(node["amenity"="fuel"](around:${radiusMeters},${latitude},${longitude});way["amenity"="fuel"](around:${radiusMeters},${latitude},${longitude});relation["amenity"="fuel"](around:${radiusMeters},${latitude},${longitude}););out center tags;`;
-      const endpoints = [
-        'https://overpass-api.de/api/interpreter',
-        'https://overpass.kumi.systems/api/interpreter'
-      ];
+      const query = `[out:json][timeout:7];(node["amenity"="fuel"](around:${radiusMeters},${latitude},${longitude});way["amenity"="fuel"](around:${radiusMeters},${latitude},${longitude}););out center tags;`;
+      // Nur ein kurzer Versuch, damit die Oberfläche nicht minutenlang wartet.
+      const endpoints = ['https://overpass-api.de/api/interpreter'];
       let lastError = null;
       for (const endpoint of endpoints) {
         try {
-          const data = await fuelSearchFetch(`${endpoint}?data=${encodeURIComponent(query)}`, 11000);
-          if (!Array.isArray(data.elements)) throw new Error('Ungültige Antwort der Tankstellensuche');
-          return data.elements.map(mapOverpassFuelStation)
-            .filter(Boolean)
-            .map(station => ({ ...station, distanceKm: calculateDistanceKm(latitude, longitude, station.latitude, station.longitude) }))
-            .sort((left, right) => left.distanceKm - right.distanceKm);
-        } catch (error) { lastError = error; console.warn('Tankstellenanbieter nicht erreichbar:', endpoint, error); }
+          const data = await fuelSearchFetch(`${endpoint}?data=${encodeURIComponent(query)}`, 4500);
+          if (!Array.isArray(data?.elements)) throw new Error('Ungültige Overpass-Antwort');
+          return data.elements.map(mapOverpassFuelStation).filter(Boolean)
+            .map(st => ({ ...st, distanceKm: calculateDistanceKm(latitude, longitude, st.latitude, st.longitude) }))
+            .sort((a,b) => a.distanceKm - b.distanceKm);
+        } catch (error) { lastError = error; console.warn('OSM-Ersatzanbieter:', endpoint, error); }
       }
-      throw new Error('Die Tankstellendaten sind momentan nicht erreichbar. Bitte später erneut suchen.');
+      throw lastError || new Error('OSM-Dienst nicht erreichbar');
     }
 
     function fuelSearchUnique(stations) {
@@ -4219,20 +4269,37 @@ function formatStationShort(station) {
       return [...unique.values()];
     }
 
+    async function fuelSearchAround(latitude, longitude, radiusMeters = 6000, term = '') {
+      // Erst Photon mit einem gezielten Suchbegriff, dann allgemeine Tankstellen.
+      // Overpass ist nur Fallback, nicht Voraussetzung für die Suche.
+      let stations = [];
+      const attempts = term ? [term, 'Tankstelle'] : ['Tankstelle'];
+      for (const query of attempts) {
+        try {
+          stations = await fuelPhotonAround(latitude, longitude, radiusMeters, query);
+          if (stations.length) return fuelSearchUnique(stations);
+        } catch (error) { console.warn('Photon-Tankstellensuche:', error); }
+      }
+      try {
+        stations = await fuelNominatimAround(latitude, longitude, radiusMeters);
+        if (stations.length) return fuelSearchUnique(stations);
+      } catch (error) { console.warn('Nominatim-Tankstellensuche:', error); }
+      try { return fuelSearchUnique(await fuelOverpassAround(latitude, longitude, radiusMeters)); }
+      catch (error) { console.warn('Tankstellen-Fallback:', error); return []; }
+    }
+
     async function fetchFuelStationsByText(searchText) {
       const { location, brand } = fuelStationSearchTerms(searchText);
       if (!location) throw new Error('Bitte einen Ort oder eine Postleitzahl eingeben.');
       const place = await fuelSearchGeocode(location);
-      const stations = fuelSearchUnique(await fuelOverpassAround(place.latitude, place.longitude));
+      const stations = await fuelSearchAround(place.latitude, place.longitude, 6500, brand);
       if (!brand) return stations.slice(0, 30);
       const term = brand.toLocaleLowerCase('de');
-      const matching = stations.filter(station => `${station.name} ${station.brand}`.toLocaleLowerCase('de').includes(term));
-      // Bei expliziter Marke nur passende Ergebnisse zeigen; sonst eigene Tankstelle anbieten.
-      return matching.slice(0, 30);
+      return stations.filter(st => `${st.name} ${st.brand}`.toLocaleLowerCase('de').includes(term)).slice(0, 30);
     }
 
     async function fetchNearbyFuelStations(latitude, longitude) {
-      return fuelSearchUnique(await fuelOverpassAround(latitude, longitude, 5000)).slice(0, 20);
+      return (await fuelSearchAround(latitude, longitude, 5500)).slice(0, 30);
     }
 
     function fuelSearchSetBusy(button, busy, label) {
@@ -4334,7 +4401,7 @@ async function searchManagedFuelStations(gpsMode) {
     select.innerHTML='<option value="">'+(found.length?`${found.length} Vorschläge, bitte auswählen`:'Keine Tankstelle gefunden. Bitte manuell anlegen.')+'</option>'+
       found.map((st,i)=>`<option value="${i}">${escapeHtml(st.displayName||st.name)}</option>`).join('');
     showToast(found.length?`${found.length} Vorschläge gefunden. Bitte gewünschten Eintrag speichern.`:'Keine Treffer. Bitte Tankstelle manuell anlegen.',found.length?'success':'error');
-  } catch(error){console.warn('Tankstellensuche',error);showToast('Tankstellensuche nicht erreichbar. Bitte manuell anlegen.','error');}
+  } catch(error){console.warn('Tankstellensuche',error);showToast((error?.message || 'Tankstellensuche nicht erreichbar.') + ' Du kannst eine Tankstelle manuell anlegen.', 'error');}
   finally{fuelSearchSetBusy(btn,false);}
 }
 async function deleteManagedFuelStation(station) {
@@ -5781,14 +5848,15 @@ if (!car || car.fuelType === "electric") {
 // Kleiner PDF-Generator direkt im Browser: keine externe Bibliothek, kein CDN.
 // Standard-PDF-Fonts mit WinAnsi unterstützen u.a. deutsche Umlaute und Euro.
 class LocalReceiptPDF {
-  constructor() {
+  constructor(orientation = 'portrait') {
+    this.landscape = orientation === 'landscape';
     this.commands = [];
     this.fontSize = 10;
     this.bold = false;
     this.drawColor = [0, 0, 0];
     this.fillColor = [255, 255, 255];
     this.textColor = [0, 0, 0];
-    this.pageHeight = 297 * 72 / 25.4;
+    this.pageHeight = (this.landscape ? 210 : 297) * 72 / 25.4;
   }
   pt(mm) { return Number(mm) * 72 / 25.4; }
   rgb(rgb) { return rgb.map(x => (Math.max(0, Math.min(255, Number(x))) / 255).toFixed(3)).join(' '); }
@@ -5860,7 +5928,7 @@ class LocalReceiptPDF {
       const pageId=objects.length+1, streamId=pageId+1;
       const stream=commands.join('\n')+'\n';
       ids.push(pageId);
-      objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${streamId} 0 R >>`);
+      objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${this.landscape ? "841.89 595.28" : "595.28 841.89"}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${streamId} 0 R >>`);
       objects.push(`<< /Length ${stream.length} >>\nstream\n${stream}endstream`);
     }
     objects[1]=`<< /Type /Pages /Kids [${ids.map(id=>id+' 0 R').join(' ')}] /Count ${ids.length} >>`;
@@ -5891,36 +5959,103 @@ class LocalReceiptPDF {
 }
 
 function exportAllFuelPdf() {
-  const car=state.cars.find(c=>c.id===state.selectedAnalyticsCarId);
-  if(!car)return showToast('Bitte ein Fahrzeug auswählen.','error');
-  const entries=state.fuelEntries.filter(e=>e.carId===car.id).sort((a,b)=>new Date(a.date)-new Date(b.date));
-  if(!entries.length)return showToast('Für dieses Fahrzeug sind noch keine Tankvorgänge vorhanden.','error');
-  const pdf=new LocalReceiptPDF();
-  const text=(v,x,y,size=9,bold=false)=>{pdf.setFont('helvetica',bold?'bold':'normal');pdf.setFontSize(size);pdf.setTextColor(20,42,70);pdf.text(String(v),x,y);};
-  const fmt=(v,d=2)=>Number(v||0).toLocaleString('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d});
-  let page=0,y=0;
-  const header=()=>{
-    page++;pdf.setFillColor(237,246,255);pdf.rect(0,0,210,36,'F');
-    text('Tankvorgänge - '+car.name,15,16,16,true);
-    text('Erstellt am '+new Date().toLocaleDateString('de-DE')+' | Seite '+page,15,25,9);
-    y=44;text('Datum',15,y,9,true);text('Tankstelle',49,y,9,true);text('Liter',133,y,9,true);text('EUR/l',153,y,9,true);text('Betrag',179,y,9,true);
-    pdf.setDrawColor(200,210,225);pdf.line(15,y+3,197,y+3);y+=10;
-  };
-  header();
-  for(const e of entries){
-    if(y>274){pdf.addPage();header();}
-    const name=String(e.stationName||e.stationDisplayName||e.locationText||'–');
-    const truncated=name.length>37?name.slice(0,35)+'..':name;
-    text(new Date(e.date).toLocaleDateString('de-DE'),15,y,8);
-    text(truncated,49,y,8);text(fmt(e.liters),133,y,8);text(fmt(Number(e.totalPrice)/Number(e.liters),3),153,y,8);text(fmt(e.totalPrice),179,y,8);
-    y+=8;
+  const car = state.cars.find(c => c.id === state.selectedAnalyticsCarId);
+  if (!car) return showToast('Bitte ein Fahrzeug auswählen.', 'error');
+  const entries = buildComputedFuelEntriesForCar(car.id);
+  if (!entries.length) return showToast('Für dieses Fahrzeug sind noch keine Tankvorgänge vorhanden.', 'error');
+
+  try {
+    // DIN A4 quer; der einzelne Tanknachweis bleibt weiterhin DIN A4 hochkant.
+    const pdf = new LocalReceiptPDF('landscape');
+    const fmt = (v, digits = 2) => v == null || v === '' || !Number.isFinite(Number(v))
+      ? '–' : Number(v).toLocaleString('de-DE', {minimumFractionDigits: digits, maximumFractionDigits: digits});
+    const val = v => v == null || String(v).trim() === '' ? '–' : String(v).trim();
+    const date = v => {
+      const d = new Date(v);
+      return Number.isNaN(d.getTime()) ? '–' : d.toLocaleString('de-DE', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+    };
+    const write = (v, x, y, size = 7, bold = false, color = [24, 44, 72]) => {
+      pdf.setFont('helvetica', bold ? 'bold' : 'normal');
+      pdf.setFontSize(size);
+      pdf.setTextColor(...color);
+      pdf.text(String(v), x, y);
+    };
+    const left = 12, right = 285;
+    // 11 Spalten mit allen erfassten und berechneten Fahrzeug-/Verbrauchswerten.
+    const columns = [
+      {title:'Datum / Uhrzeit', width:31, get:e=>date(e.date)},
+      {title:'Tankstelle', width:52, get:e=>val(e.stationName || e.stationDisplayName || e.locationText)},
+      {title:'Liter', width:17, get:e=>fmt(e.liters)},
+      {title:'EUR/l', width:18, get:e=>fmt(e.pricePerLiter ?? (Number(e.liters)>0 ? Number(e.totalPrice)/Number(e.liters) : null),3)},
+      {title:'Betrag EUR', width:22, get:e=>fmt(e.totalPrice)},
+      {title:'km-Stand', width:22, get:e=>fmt(e.mileage,0)},
+      {title:'Strecke km', width:20, get:e=>fmt(e.distanceKm,0)},
+      {title:'l/100 km', width:20, get:e=>fmt(e.litersPer100km)},
+      {title:'EUR/100 km', width:22, get:e=>fmt(e.costPer100km)},
+      {title:'Rest vor km', width:20, get:e=>fmt(e.rangeBefore,0)},
+      {title:'Rest nach km', width:20, get:e=>fmt(e.rangeAfter,0)}
+    ];
+    const tableWidth = columns.reduce((s,c)=>s+c.width,0);
+    let page = 0, y = 0, rowIndex = 0;
+    const heading = () => {
+      page++;
+      pdf.setFillColor(236, 245, 253);
+      pdf.rect(0, 0, 297, 34, 'F');
+      write('VERBRAUCH ZUHAUSE  |  TANKHISTORIE', left, 12, 13, true);
+      write('Fahrzeug: ' + val(car.name) + (car.plate ? '  |  Kennzeichen: ' + car.plate : '') +
+        (car.fuelType ? '  |  Antrieb: ' + car.fuelType : ''), left, 21, 9);
+      write('Erstellt: ' + date(new Date().toISOString()) + '  |  Seite ' + page, left, 29, 7);
+      y = 42;
+      pdf.setFillColor(222, 236, 248);
+      pdf.rect(left, y - 5, tableWidth, 10, 'F');
+      let x = left;
+      for (const col of columns) { write(col.title, x + 1.5, y + 1.5, 6.8, true); x += col.width; }
+      y += 9;
+    };
+    heading();
+    for (const entry of entries) {
+      // Auch lange Adressen, Notizen und GPS-Daten werden vollständig unter der Tabellenzeile ausgegeben.
+      const detailParts = [];
+      const stationFull = entry.stationDisplayName || entry.locationText || entry.stationName || '';
+      if (stationFull) detailParts.push('Tankstelle / Ort: ' + stationFull);
+      if (entry.stationAddress && !stationFull.includes(entry.stationAddress)) detailParts.push('Adresse: ' + entry.stationAddress);
+      if (entry.stationBrand) detailParts.push('Marke: ' + entry.stationBrand);
+      if (entry.latitude != null && entry.longitude != null) detailParts.push('GPS: ' + entry.latitude + ', ' + entry.longitude);
+      if (entry.gpsAccuracy != null) detailParts.push('GPS-Genauigkeit: ' + fmt(entry.gpsAccuracy,0) + ' m');
+      if (entry.gpsCapturedAt) detailParts.push('GPS erfasst: ' + date(entry.gpsCapturedAt));
+      if (entry.note) detailParts.push('Notiz: ' + entry.note);
+      const details = detailParts.flatMap(t => pdf.splitTextToSize(t, tableWidth - 6));
+      const rowHeight = 8 + details.length * 4 + 3;
+      if (y + rowHeight > 190) { pdf.addPage(); heading(); }
+      if (rowIndex % 2 === 0) { pdf.setFillColor(247, 250, 254); pdf.rect(left, y - 5, tableWidth, rowHeight, 'F'); }
+      let x = left;
+      for (const col of columns) {
+        const raw = col.get(entry);
+        // Der vollständige Tankstellenname steht zusätzlich in der Detailzeile.
+        const display = col.title === 'Tankstelle' ?
+          (String(raw).length > 26 ? String(raw).slice(0, 24) + '..' : raw) : raw;
+        write(display, x + 1.5, y, 7);
+        x += col.width;
+      }
+      y += 5;
+      for (const line of details) { write(line, left + 2, y, 6.7, false, [88, 105, 127]); y += 4; }
+      y += 6;
+      pdf.setDrawColor(219, 228, 238); pdf.line(left, y - 4, right - 9, y - 4);
+      rowIndex++;
+    }
+    if (y + 25 > 193) { pdf.addPage(); heading(); }
+    pdf.setFillColor(226, 241, 251); pdf.rect(left, y - 5, tableWidth, 16, 'F');
+    write('SUMME  |  ' + entries.length + ' Tankvorgänge', left + 2, y + 1, 9, true);
+    write('Menge: ' + fmt(entries.reduce((s,e)=>s+(Number(e.liters)||0),0)) + ' l', left + 101, y + 1, 9, true);
+    write('Gesamtkosten: ' + fmt(entries.reduce((s,e)=>s+(Number(e.totalPrice)||0),0)) + ' EUR', left + 177, y + 1, 9, true);
+    write('Eigene Aufzeichnung, kein Original-Tankstellenbeleg. Leere Felder sind nicht erfasste Werte.', left, 202, 7, false, [88,105,127]);
+    const safeName = String(car.name || 'Auto').normalize('NFKD').replace(/[^a-zA-Z0-9_-]+/g,'_').slice(0,32);
+    pdf.save('Tankhistorie_' + safeName + '_Querformat.pdf');
+    showToast('Tankhistorie als PDF im Querformat erstellt.', 'success');
+  } catch (error) {
+    console.error('Tankhistorie-PDF fehlgeschlagen:', error);
+    showToast('Tankhistorie-PDF konnte nicht erstellt werden.', 'error');
   }
-  if(y>269){pdf.addPage();header();}
-  pdf.setDrawColor(170,190,210);pdf.line(15,y,197,y);y+=9;
-  text('Summe ('+entries.length+' Tankungen)',15,y,10,true);
-  text(fmt(entries.reduce((sum,e)=>sum+Number(e.liters||0),0))+' l',122,y,9,true);
-  text(fmt(entries.reduce((sum,e)=>sum+Number(e.totalPrice||0),0))+' EUR',174,y,9,true);
-  pdf.save('Tankhistorie_'+String(car.name).replace(/[^a-z0-9_-]/gi,'_')+'.pdf');
 }
 
 async function exportFuelEntryPdf(entryId) {
