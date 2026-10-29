@@ -26,6 +26,9 @@ jobs:
           test -f wrangler.toml
           grep -q '754345e217f2433ea2d8c81dd4b92ee6' wrangler.toml
           node --check cloudflare-worker.js
+          grep -q '^\[observability.logs\]' wrangler.toml
+          grep -q '^persist = true' wrangler.toml
+          grep -q 'crons = \["\*/5 \* \* \* \*"\]' wrangler.toml
       - name: Cloudflare Worker mit Durable Object bereitstellen
         uses: cloudflare/wrangler-action@v3
         with:
