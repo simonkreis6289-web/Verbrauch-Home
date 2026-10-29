@@ -589,7 +589,7 @@ function berlinInstant(day,time){
 function dayBefore(day){const [y,m,d]=day.split('-').map(Number);return new Date(Date.UTC(y,m-1,d-1,12)).toISOString().slice(0,10);}
 
 const weatherKey=(h,id)=>WEATHER_PREFIX+h+':'+id;
-function weatherDefaults(x){return {id:x.id,name:x.name||x.id,enabled:x.enabled!==false,alerts:x.alerts!==false,morning:x.morning!==false,emoji:x.emoji||'🌡️',reportTime:x.reportTime||'07:00',dayStart:x.dayStart||'06:00',nightStart:x.nightStart||'18:00',latitude:x.latitude??WEATHER_DEFAULT_LAT,longitude:x.longitude??WEATHER_DEFAULT_LON,location:x.location==='outside'?'outside':'inside',reportMode:x.reportMode==='fixed'?'fixed':'sunrise',dayNightMode:x.dayNightMode==='solar'||x.dayNightMode==='fixed'?x.dayNightMode:(x.reportMode==='fixed'?'fixed':'solar'),reportRevision:Number.isSafeInteger(x.reportRevision)?x.reportRevision:0,tempMin:x.tempMin??0,tempMax:x.tempMax??35,humidityMin:x.humidityMin??20,humidityMax:x.humidityMax??80,lightMin:x.lightMin??0,lightMax:x.lightMax??100,offlineMinutes:x.offlineMinutes??30,latest:x.latest||null,tokenHash:x.tokenHash||'',created:x.created||new Date().toISOString()};}
+function weatherDefaults(x){return {id:x.id,name:x.name||x.id,enabled:x.enabled!==false,alerts:x.alerts!==false,morning:x.morning!==false,emoji:x.emoji||'🌡️',reportTime:x.reportTime||'07:00',dayStart:x.dayStart||'06:00',nightStart:x.nightStart||'18:00',latitude:x.latitude??WEATHER_DEFAULT_LAT,longitude:x.longitude??WEATHER_DEFAULT_LON,location:x.location==='outside'?'outside':'inside',reportMode:x.reportMode==='fixed'?'fixed':'sunrise',dayNightMode:x.dayNightMode==='solar'||x.dayNightMode==='fixed'?x.dayNightMode:(x.reportMode==='fixed'?'fixed':'solar'),reportRevision:Number.isSafeInteger(x.reportRevision)?x.reportRevision:0,tempMin:x.tempMin??0,tempMax:x.tempMax??35,humidityMin:x.humidityMin??20,humidityMax:x.humidityMax??80,lightMin:x.lightMin??0,lightMax:x.lightMax??100,offlineMinutes:x.offlineMinutes??30,latest:x.latest||null,historyResetAt:x.historyResetAt||null,tokenHash:x.tokenHash||'',created:x.created||new Date().toISOString()};}
 async function weatherHash(s){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',encoder.encode(s))),x=>x.toString(16).padStart(2,'0')).join('');}
 async function weatherStations(env,h){return (await env.PUSH_DEVICES.get(weatherKey(h,'stations'),'json'))||[];}
 async function weatherSaveStations(env,h,rows){await env.PUSH_DEVICES.put(weatherKey(h,'stations'),JSON.stringify(rows));}
@@ -643,30 +643,27 @@ async function weatherRoute(req,env,route,headers){
   st.latest=point;await weatherSaveStations(env,h,rows);
   return respond({ok:true,at},200,headers);
  }
- // v172: Vorwärts durch die KV-Schlüssel blättern. Nicht nach jedem Delete wieder
- // beim selben Prefix beginnen: KV-Listen können gelöschte Schlüssel noch kurz zeigen.
- if(route==='/weather/history/clear'){
-  if(!id||!rows.some(s=>s.id===id))return respond({error:'Station nicht gefunden'},404,headers);
-  const cursor=input.cursor;
-  if(cursor!==undefined&&(typeof cursor!=='string'||cursor.length>2048))return respond({error:'Ungültiger Lösch-Cursor'},400,headers);
-  const prefix=weatherKey(h,'point:'+id+':');
-  const page=await env.PUSH_DEVICES.list({prefix,limit:40,...(cursor?{cursor}:{})});
-  await Promise.all(page.keys.map(k=>env.PUSH_DEVICES.delete(k.name)));
-  // list_complete ist die verlässliche Ende-Markierung der aktuellen Iteration.
-  // Ein erneutes list({prefix,limit:1}) kann wegen KV-Konsistenz alte Schlüssel liefern.
-  const done=page.list_complete===true;
-  if(!done&&(!page.cursor||page.cursor===cursor))return respond({error:'KV-Paginierung ohne Fortschritt'},503,headers);
-  if(done){
-   const station=rows.find(s=>s.id===id);
-   station.latest=null;
-   await weatherSaveStations(env,h,rows);
+ // v173: Ein logischer Neustart benötigt genau einen KV-Write für die Stationsliste.
+ // Historische Punkt-Schlüssel bleiben bis zu ihrem normalen TTL-Ablauf bestehen.
+ if(route==='/weather/history/reset'){
+  const all=input.all===true;
+  if(!all&&(!id||!rows.some(s=>s.id===id)))return respond({error:'Station nicht gefunden'},404,headers);
+  if(input.all!==undefined&&typeof input.all!=='boolean')return respond({error:'Ungültige Auswahl'},400,headers);
+  const resetAt=new Date().toISOString();
+  let changed=0;
+  for(const st of rows){
+   if(all||st.id===id){st.historyResetAt=resetAt;changed++;}
   }
-  console.log('Wetterhistorie bereinigt',JSON.stringify({station:id,deleted:page.keys.length,done}));
-  return respond({ok:true,deleted:page.keys.length,done,...(!done?{cursor:page.cursor}:{})},200,headers);
+  // Persistenz zuerst: Eine fehlgeschlagene KV-Schreiboperation darf nie als Erfolg gelten.
+  await weatherSaveStations(env,h,rows);
+  console.log('Wetter-Aufzeichnung neu gestartet',JSON.stringify({stations:changed,all,resetAt}));
+  return respond({ok:true,resetAt,stations:changed,mode:'logical'},200,headers);
  }
+ // Den alten physischen Massenlösch-Endpunkt nicht mehr ausführen.
+ if(route==='/weather/history/clear')return respond({error:'Physische Massenlöschung deaktiviert. Bitte die App aktualisieren und Aufzeichnung neu starten.'},410,headers);
  if(route==='/weather/history'){
   const st=rows.find(s=>s.id===id);if(!st)return respond({error:'Station nicht gefunden'},404,headers);
-  const hours=Math.min(8760,Math.max(1,Number(input.hours)||24)),cutoff=Date.now()-hours*3600000;
+  const hours=Math.min(8760,Math.max(1,Number(input.hours)||24)),resetAt=Date.parse(st.historyResetAt||'')||0,cutoff=Math.max(Date.now()-hours*3600000,resetAt);
   let cursor,points=[],loops=0;do{const page=await env.PUSH_DEVICES.list({prefix:weatherKey(h,'point:'+id+':'),cursor,limit:1000});for(const k of page.keys){const at=k.name.split(':').slice(-3).join(':');if(Date.parse(at)>=cutoff){const p=await env.PUSH_DEVICES.get(k.name,'json');if(p)points.push(p);}}cursor=page.list_complete?null:page.cursor;loops++;}while(cursor&&loops<15);
   points.sort((a,b)=>Date.parse(a.at)-Date.parse(b.at));return respond({points,partial:!!cursor},200,headers);
  }
@@ -713,7 +710,7 @@ async function weatherSendReport(env,h,st){
          const page=await env.PUSH_DEVICES.list({prefix,cursor,limit:1000});
          for(const k of page.keys){
            const at=Date.parse(k.name.slice(prefix.length));
-           if(at>=dayBegin&&at<Math.min(nightEnd,now)){
+           if(at>=Math.max(dayBegin,Date.parse(st.historyResetAt||'')||0)&&at<Math.min(nightEnd,now)){
              const p=await env.PUSH_DEVICES.get(k.name,'json');
              const value=Number(p?.temperatureC);
              if(p&&Number.isFinite(value))(at<nightBegin?dayVals:nightVals).push(value);

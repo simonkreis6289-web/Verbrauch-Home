@@ -112,40 +112,30 @@ function weatherDateTimeLocal(date){const d=new Date(date),p=n=>String(n).padSta
 let customStart=weatherDateTimeLocal(Date.now()-24*3600000),customEnd=weatherDateTimeLocal(Date.now());
 let historyLoadSerial=0;
 let weatherClearBusy=false;
-async function clearWeatherMeasurements(ids){
+async function resetWeatherMeasurements(ids){
  if(weatherClearBusy||!ids.length)return;
+ const all=ids.length===stations.length;
  const names=ids.map(id=>stations.find(s=>s.id===id)?.name||id);
- if(!confirm(`ACHTUNG: Alle aufgezeichneten Messwerte für ${names.join(', ')} endgültig löschen?\n\nStationen, Push-Einstellungen und andere Verbrauchsdaten bleiben erhalten.`))return;
- if(!confirm('Zur Sicherheit erneut bestätigen: Die Wetter-Messwerte können danach nicht wiederhergestellt werden.'))return;
+ const subject=all?'alle Wetterstationen':names.join(', ');
+ if(!confirm(`Aufzeichnung für ${subject} neu starten?\n\nBisherige Messwerte werden aus Diagrammen und Wetterberichten ausgeblendet. Sie bleiben technisch bis zum automatischen Ablauf im Cloudflare-Speicher.\n\nAktuelle Messwerte, Stationen und Einstellungen bleiben erhalten.`))return;
+ if(!confirm('Neuen Startpunkt für '+subject+' jetzt speichern?'))return;
  weatherClearBusy=true;
  document.querySelectorAll('#weatherClearStation,#weatherClearAll').forEach(b=>b.disabled=true);
- let total=0;
+ const status=$('weatherClearStatus');
+ if(status)status.textContent='Speichere neuen Startpunkt …';
  try{
-  for(const id of ids){
-   let done=false,cursor=undefined;
-   const seen=new Set();
-   for(let batch=0;batch<1000&&!done;batch++){
-    const status=$('weatherClearStatus');
-    if(status)status.textContent=`Lösche Messwerte für ${id} … (${total} entfernt)`;
-    const result=await request('/weather/history/clear',{id,...(cursor?{cursor}:{})});
-    total+=Number(result.deleted)||0;
-    done=result.done===true;
-    if(!done){
-     if(typeof result.cursor!=='string'||!result.cursor||seen.has(result.cursor))throw Error('Server meldet keinen weiteren Löschfortschritt.');
-     seen.add(result.cursor);cursor=result.cursor;
-    }
-   }
-   if(!done)throw Error('Sehr viele Messwerte. Bitte Löschung erneut starten.');
-  }
+  const result=await request('/weather/history/reset',all?{all:true}:{id:ids[0]});
+  if(!result.ok||!result.resetAt)throw Error('Server hat den Startpunkt nicht bestätigt.');
   history=[];
+  // Stationsdaten neu einlesen, damit der gespeicherte Startpunkt auch auf diesem Gerät gilt.
   await refresh();
-  const status=$('weatherClearStatus');
-  if(status)status.textContent=`✓ ${total} Wetter-Messwerte gelöscht. Die Aufzeichnung beginnt mit der nächsten Messung neu.`;
-  showError(`✓ ${total} Wetter-Messwerte gelöscht.`);
+  const msg=`✓ Aufzeichnung für ${subject} neu gestartet: ${date(result.resetAt)}. Alte Messwerte sind ausgeblendet.`;
+  const current=$('weatherClearStatus');if(current)current.textContent=msg;
+  showError(msg);
  }catch(e){
-  const status=$('weatherClearStatus');
-  if(status)status.textContent=`Löschen unterbrochen nach ${total} Messwerten: ${e.message}. Bitte erneut starten.`;
-  showError(`Löschen unterbrochen nach ${total} Messwerten: ${e.message}. Du kannst den Vorgang erneut starten.`);
+  const msg='Neustart nicht gespeichert: '+e.message+'. Bitte später erneut versuchen, falls das Cloudflare-KV-Tageslimit erreicht ist.';
+  const current=$('weatherClearStatus');if(current)current.textContent=msg;
+  showError(msg);
  }finally{
   weatherClearBusy=false;
   document.querySelectorAll('#weatherClearStation,#weatherClearAll').forEach(b=>b.disabled=false);
@@ -156,15 +146,15 @@ async function renderHistory(){
  if(!stations.length){el.innerHTML='<p class="muted">Noch keine Station eingerichtet. Unter Einstellungen → Wetterstationen hinzufügen.</p>';return;}
  const st=selectedStation();if(!st)return;selected=st.id;
  const custom=period==='custom';
- el.innerHTML=`<div class="weather-config"><label>Station<select id="weatherChartStation">${stations.map(x=>`<option value="${esc(x.id)}" ${x.id===selected?'selected':''}>${esc(x.emoji||'🌡️')} ${esc(x.name)}</option>`).join('')}</select></label><label>Messwert<select id="weatherChartMetric"><option value="temperatureC">Temperatur (°C)</option><option value="humidityPercent">Luftfeuchtigkeit (%)</option><option value="brightnessPercent">Helligkeit (%)</option></select></label><label>Zeitraum<select id="weatherChartPeriod"><option value="24">24 Stunden</option><option value="168">7 Tage</option><option value="720">30 Tage</option><option value="8760">1 Jahr</option><option value="custom">Eigener Zeitraum</option></select></label></div><div id="weatherCustomRange" class="weather-config" style="margin:12px 0"><label>Von<input id="weatherCustomFrom" type="datetime-local" value="${esc(customStart)}"></label><label>Bis<input id="weatherCustomTo" type="datetime-local" value="${esc(customEnd)}"></label><label><span>&nbsp;</span><button type="button" class="btn secondary" id="weatherCustomApply">Zeitraum anzeigen</button></label></div><p id="weatherRangeInfo" class="weather-muted" style="margin:8px 0"></p><div id="weatherChart">Lade Messwerte …</div><div class="weather-config" style="margin-top:18px;align-items:end"><button type="button" class="btn secondary" id="weatherClearStation">Messwerte dieser Station löschen</button><button type="button" class="btn secondary" id="weatherClearAll">Alle Wetter-Messwerte löschen</button></div><p class="weather-muted" id="weatherClearStatus">Nur die aufgezeichneten Messwerte werden entfernt. Stationen und Einstellungen bleiben bestehen.</p>`;
+ el.innerHTML=`<div class="weather-config"><label>Station<select id="weatherChartStation">${stations.map(x=>`<option value="${esc(x.id)}" ${x.id===selected?'selected':''}>${esc(x.emoji||'🌡️')} ${esc(x.name)}</option>`).join('')}</select></label><label>Messwert<select id="weatherChartMetric"><option value="temperatureC">Temperatur (°C)</option><option value="humidityPercent">Luftfeuchtigkeit (%)</option><option value="brightnessPercent">Helligkeit (%)</option></select></label><label>Zeitraum<select id="weatherChartPeriod"><option value="24">24 Stunden</option><option value="168">7 Tage</option><option value="720">30 Tage</option><option value="8760">1 Jahr</option><option value="custom">Eigener Zeitraum</option></select></label></div><div id="weatherCustomRange" class="weather-config" style="margin:12px 0"><label>Von<input id="weatherCustomFrom" type="datetime-local" value="${esc(customStart)}"></label><label>Bis<input id="weatherCustomTo" type="datetime-local" value="${esc(customEnd)}"></label><label><span>&nbsp;</span><button type="button" class="btn secondary" id="weatherCustomApply">Zeitraum anzeigen</button></label></div><p id="weatherRangeInfo" class="weather-muted" style="margin:8px 0"></p><div id="weatherChart">Lade Messwerte …</div><div class="weather-config" style="margin-top:18px;align-items:end"><button type="button" class="btn secondary" id="weatherClearStation">Aufzeichnung dieser Station neu starten</button><button type="button" class="btn secondary" id="weatherClearAll">Alle Wetter-Aufzeichnungen neu starten</button></div><p class="weather-muted" id="weatherClearStatus">Ein Neustart blendet ältere Messwerte aus. Die gespeicherten Rohdaten laufen später automatisch ab; Stationen und Einstellungen bleiben erhalten.</p>`;
  $('weatherChartMetric').value=metric;$('weatherChartPeriod').value=period;
  $('weatherChartStation').onchange=e=>{selected=e.target.value;renderOverview();void renderHistory();};
  $('weatherChartMetric').onchange=e=>{metric=e.target.value;$('weatherChart').innerHTML=graph(history);};
  $('weatherChartPeriod').onchange=e=>{period=e.target.value;void renderHistory();};
  $('weatherCustomApply').onclick=()=>{customStart=$('weatherCustomFrom').value;customEnd=$('weatherCustomTo').value;period='custom';void renderHistory();};
- $('weatherClearStation').onclick=()=>void clearWeatherMeasurements([st.id]);
- $('weatherClearAll').onclick=()=>void clearWeatherMeasurements(stations.map(s=>s.id));
- if(weatherClearBusy){document.querySelectorAll('#weatherClearStation,#weatherClearAll').forEach(b=>b.disabled=true);const status=$('weatherClearStatus');if(status)status.textContent='Löschvorgang läuft …';}
+ $('weatherClearStation').onclick=()=>void resetWeatherMeasurements([st.id]);
+ $('weatherClearAll').onclick=()=>void resetWeatherMeasurements(stations.map(s=>s.id));
+ if(weatherClearBusy){document.querySelectorAll('#weatherClearStation,#weatherClearAll').forEach(b=>b.disabled=true);const status=$('weatherClearStatus');if(status)status.textContent='Neustart wird gespeichert …';}
  const serial=++historyLoadSerial;
  try{
   let hours=Number(period),from=0,to=Date.now();
