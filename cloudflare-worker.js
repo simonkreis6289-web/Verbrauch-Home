@@ -643,17 +643,26 @@ async function weatherRoute(req,env,route,headers){
   st.latest=point;await weatherSaveStations(env,h,rows);
   return respond({ok:true,at},200,headers);
  }
- // v171: Messwert-Historie einer Station schrittweise löschen, ohne andere KV-Daten anzufassen.
+ // v172: Vorwärts durch die KV-Schlüssel blättern. Nicht nach jedem Delete wieder
+ // beim selben Prefix beginnen: KV-Listen können gelöschte Schlüssel noch kurz zeigen.
  if(route==='/weather/history/clear'){
   if(!id||!rows.some(s=>s.id===id))return respond({error:'Station nicht gefunden'},404,headers);
+  const cursor=input.cursor;
+  if(cursor!==undefined&&(typeof cursor!=='string'||cursor.length>2048))return respond({error:'Ungültiger Lösch-Cursor'},400,headers);
   const prefix=weatherKey(h,'point:'+id+':');
-  const page=await env.PUSH_DEVICES.list({prefix,limit:40});
+  const page=await env.PUSH_DEVICES.list({prefix,limit:40,...(cursor?{cursor}:{})});
   await Promise.all(page.keys.map(k=>env.PUSH_DEVICES.delete(k.name)));
-  const next=await env.PUSH_DEVICES.list({prefix,limit:1});
-  const done=next.keys.length===0;
-  if(done){const station=rows.find(s=>s.id===id);station.latest=null;await weatherSaveStations(env,h,rows);}
+  // list_complete ist die verlässliche Ende-Markierung der aktuellen Iteration.
+  // Ein erneutes list({prefix,limit:1}) kann wegen KV-Konsistenz alte Schlüssel liefern.
+  const done=page.list_complete===true;
+  if(!done&&(!page.cursor||page.cursor===cursor))return respond({error:'KV-Paginierung ohne Fortschritt'},503,headers);
+  if(done){
+   const station=rows.find(s=>s.id===id);
+   station.latest=null;
+   await weatherSaveStations(env,h,rows);
+  }
   console.log('Wetterhistorie bereinigt',JSON.stringify({station:id,deleted:page.keys.length,done}));
-  return respond({ok:true,deleted:page.keys.length,done},200,headers);
+  return respond({ok:true,deleted:page.keys.length,done,...(!done?{cursor:page.cursor}:{})},200,headers);
  }
  if(route==='/weather/history'){
   const st=rows.find(s=>s.id===id);if(!st)return respond({error:'Station nicht gefunden'},404,headers);

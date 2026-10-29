@@ -118,26 +118,38 @@ async function clearWeatherMeasurements(ids){
  if(!confirm(`ACHTUNG: Alle aufgezeichneten Messwerte für ${names.join(', ')} endgültig löschen?\n\nStationen, Push-Einstellungen und andere Verbrauchsdaten bleiben erhalten.`))return;
  if(!confirm('Zur Sicherheit erneut bestätigen: Die Wetter-Messwerte können danach nicht wiederhergestellt werden.'))return;
  weatherClearBusy=true;
- const status=$('weatherClearStatus');
  document.querySelectorAll('#weatherClearStation,#weatherClearAll').forEach(b=>b.disabled=true);
  let total=0;
  try{
   for(const id of ids){
-   let done=false;
+   let done=false,cursor=undefined;
+   const seen=new Set();
    for(let batch=0;batch<1000&&!done;batch++){
+    const status=$('weatherClearStatus');
     if(status)status.textContent=`Lösche Messwerte für ${id} … (${total} entfernt)`;
-    const result=await request('/weather/history/clear',{id});
+    const result=await request('/weather/history/clear',{id,...(cursor?{cursor}:{})});
     total+=Number(result.deleted)||0;
     done=result.done===true;
-    if(!done&&Number(result.deleted)===0)throw Error('Löschvorgang hat keinen Fortschritt gemacht.');
+    if(!done){
+     if(typeof result.cursor!=='string'||!result.cursor||seen.has(result.cursor))throw Error('Server meldet keinen weiteren Löschfortschritt.');
+     seen.add(result.cursor);cursor=result.cursor;
+    }
    }
    if(!done)throw Error('Sehr viele Messwerte. Bitte Löschung erneut starten.');
   }
   history=[];
   await refresh();
+  const status=$('weatherClearStatus');
+  if(status)status.textContent=`✓ ${total} Wetter-Messwerte gelöscht. Die Aufzeichnung beginnt mit der nächsten Messung neu.`;
   showError(`✓ ${total} Wetter-Messwerte gelöscht.`);
- }catch(e){showError(`Löschen unterbrochen nach ${total} Messwerten: ${e.message}. Du kannst den Vorgang erneut starten.`);}
- finally{weatherClearBusy=false;document.querySelectorAll('#weatherClearStation,#weatherClearAll').forEach(b=>b.disabled=false);}
+ }catch(e){
+  const status=$('weatherClearStatus');
+  if(status)status.textContent=`Löschen unterbrochen nach ${total} Messwerten: ${e.message}. Bitte erneut starten.`;
+  showError(`Löschen unterbrochen nach ${total} Messwerten: ${e.message}. Du kannst den Vorgang erneut starten.`);
+ }finally{
+  weatherClearBusy=false;
+  document.querySelectorAll('#weatherClearStation,#weatherClearAll').forEach(b=>b.disabled=false);
+ }
 }
 async function renderHistory(){
  const el=$('weatherHistory');if(!el)return;
@@ -152,6 +164,7 @@ async function renderHistory(){
  $('weatherCustomApply').onclick=()=>{customStart=$('weatherCustomFrom').value;customEnd=$('weatherCustomTo').value;period='custom';void renderHistory();};
  $('weatherClearStation').onclick=()=>void clearWeatherMeasurements([st.id]);
  $('weatherClearAll').onclick=()=>void clearWeatherMeasurements(stations.map(s=>s.id));
+ if(weatherClearBusy){document.querySelectorAll('#weatherClearStation,#weatherClearAll').forEach(b=>b.disabled=true);const status=$('weatherClearStatus');if(status)status.textContent='Löschvorgang läuft …';}
  const serial=++historyLoadSerial;
  try{
   let hours=Number(period),from=0,to=Date.now();
