@@ -1209,7 +1209,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v166</strong> · 1.3.1.196<br><small>Letzte Änderung: 29.10.2026, 07:00 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v167</strong> · 1.3.1.197<br><small>Letzte Änderung: 29.10.2026, 07:18 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -1587,6 +1587,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
     </div>
     <h3 style="margin-top:24px">Meine gespeicherten Tankstellen</h3>
     <div id="managedFuelList" class="entries-list"><p class="muted">Noch keine Tankstellen angelegt.</p></div>
+    <div id="managedFuelDuplicates" style="margin-top:12px" hidden><button id="managedFuelCleanup" class="btn secondary" type="button">Doppelte Tankstellen bereinigen</button><p class="muted" id="managedFuelDuplicateCount"></p></div>
   </section>
 </section>
 <section id="carsView" class="view">
@@ -3463,6 +3464,7 @@ async function loadMarketPrices(force = false) {
       document.getElementById('backupRestoreBtn')?.addEventListener('click',()=>void restoreBackupV94());
 
       els.quickUseNow?.addEventListener("change", syncQuickNowUi);
+      document.getElementById('managedFuelCleanup')?.addEventListener('click', () => void cleanupManagedFuelDuplicates());
       document.getElementById('managedFuelSearch')?.addEventListener('click', () => void searchManagedFuelStations(false));
       document.getElementById('managedFuelGps')?.addEventListener('click', () => void searchManagedFuelStations(true));
       document.getElementById('managedFuelCreate')?.addEventListener('click', async () => {
@@ -4371,10 +4373,58 @@ function selectCustomFuelStation(station) {
 
 // v163: Explizit angelegte Tankstellen, keine automatische Übernahme aus Tankhistorie.
 let managedFuelSuggestions = [];
-function managedFuelCatalog() {
+// Gleiche Tankstelle anhand von Name UND Adresse erkennen, unabhängig von GPS-Rundung oder Dokument-ID.
+function managedFuelIdentity(station) {
+  const normalized = value => String(value || '').normalize('NFKC').toLocaleLowerCase('de-DE')
+    .replace(/ß/g,'ss').replace(/\s+/g,' ').replace(/\s*,\s*/g,',').trim();
+  return `${normalized(station?.name)}|${normalized(station?.address)}`;
+}
+function managedFuelRawCatalog() {
   return state.stations.filter(st => st.kind === 'fuel' && (st.managed === true || st.custom === true))
-    .map(st => normalizeStation(st, 'fuel')).filter(Boolean)
-    .sort((a,b) => a.displayName.localeCompare(b.displayName,'de'));
+    .map(st => normalizeStation(st, 'fuel')).filter(Boolean);
+}
+function managedFuelCatalog() {
+  const unique = new Map();
+  for (const station of managedFuelRawCatalog()) {
+    const key = managedFuelIdentity(station);
+    const previous = unique.get(key);
+    if (!previous || (!previous.storageId && station.storageId)) unique.set(key,station);
+  }
+  return [...unique.values()].sort((a,b) => a.displayName.localeCompare(b.displayName,'de'));
+}
+function managedFuelDuplicateGroups() {
+  const groups = new Map();
+  for (const station of managedFuelRawCatalog()) {
+    const key=managedFuelIdentity(station);
+    if(!groups.has(key))groups.set(key,[]);
+    groups.get(key).push(station);
+  }
+  return [...groups.values()].filter(group=>group.length>1);
+}
+async function cleanupManagedFuelDuplicates() {
+  const groups=managedFuelDuplicateGroups();
+  const count=groups.reduce((sum,group)=>sum+group.length-1,0);
+  if(!count)return showToast('Keine doppelten Tankstellen vorhanden.','success');
+  if(!confirm(`${count} doppelte Tankstellen-Einträge dauerhaft entfernen? Pro Name und Adresse bleibt genau eine Tankstelle erhalten. Tankvorgänge werden nicht verändert.`))return;
+  const button=document.getElementById('managedFuelCleanup');
+  if(button)button.disabled=true;
+  try {
+    const toRemove=groups.flatMap(group=>group.slice(1).filter(st=>stationFirestoreId(st)!==stationFirestoreId(group[0])));
+    if(state.firebaseEnabled) {
+      // Gleiche Dokument-ID kann durch doppelte lokale Übernahme auftreten: nicht aus Firebase löschen.
+      for(const station of toRemove) await deleteDoc(doc(state.db,`${householdBasePath()}/stations/${stationFirestoreId(station)}`));
+    }
+    const seen=new Set();
+    state.stations=state.stations.filter(st=>{
+      if(st.kind!=='fuel' || !(st.managed===true || st.custom===true))return true;
+      const key=managedFuelIdentity(st);
+      if(seen.has(key))return false;
+      seen.add(key);return true;
+    });
+    persistLocalSnapshot();renderSavedStationOptions();
+    showToast(`${count} doppelte Einträge entfernt.`, 'success');
+  }catch(error){console.error('Tankstellen-Duplikate',error);showToast('Bereinigung nicht vollständig: '+(error?.message||error),'error');}
+  finally{if(button)button.disabled=false;renderManagedFuelStations();}
 }
 function stationFirestoreId(station) {
   const key=savedStationKey(normalizeStation(station,'fuel'));
@@ -4383,6 +4433,12 @@ function stationFirestoreId(station) {
 function renderManagedFuelStations() {
   const list=document.getElementById('managedFuelList');if(!list)return;
   const catalog=managedFuelCatalog();
+  const duplicateGroups=managedFuelDuplicateGroups();
+  const duplicates=duplicateGroups.reduce((sum,group)=>sum+group.length-1,0);
+  const cleanup=document.getElementById('managedFuelDuplicates');
+  if(cleanup)cleanup.hidden=duplicates===0;
+  const countLabel=document.getElementById('managedFuelDuplicateCount');
+  if(countLabel)countLabel.textContent=`${duplicates} doppelte Einträge erkannt. Die Liste zeigt jede Tankstelle nur einmal.`;
   list.innerHTML=catalog.length ? catalog.map(st=>`<div class="entry" style="padding:14px;margin:8px 0;border:1px solid var(--border);border-radius:12px">
     <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><strong>${escapeHtml(st.name)}</strong><div class="muted">${escapeHtml(st.address)}</div></div>
     <div style="display:flex;gap:8px"><button class="btn ghost" type="button" data-action="edit" data-id="${escapeHtml(st.id)}">Bearbeiten</button>
@@ -4505,6 +4561,7 @@ async function openCreateFuelStationDialog({address = '', name = '', initialStat
     locate.addEventListener('click',()=>{void locateAddress();});
     form.addEventListener('submit',async e=>{
       e.preventDefault();
+      if(busy || closed)return;
       const stationName=field('name').value.trim(), stationAddress=field('address').value.trim();
       if(!stationName)return fail('Bitte einen Tankstellennamen eingeben.');
       if(!stationAddress)return fail('Bitte die vollständige Adresse eingeben.');
@@ -4516,13 +4573,18 @@ async function openCreateFuelStationDialog({address = '', name = '', initialStat
       try {
         const station=normalizeStation({id:editingStation?.id || `custom-${crypto.randomUUID()}`,name:stationName,brand:'',address:stationAddress,latitude:coords.latitude,longitude:coords.longitude,custom:true,managed:true},'fuel');
         station.storageId=editingStation ? stationFirestoreId(editingStation) : stationFirestoreId(station);
-        const duplicate=managedFuelCatalog().find(x=>x.id!==editingStation?.id && savedStationKey(x)===savedStationKey(station));
+        const duplicate=managedFuelCatalog().find(x=>x.id!==editingStation?.id && managedFuelIdentity(x)===managedFuelIdentity(station));
         if(duplicate)throw Error('Diese Tankstelle ist bereits im Katalog vorhanden.');
         if(state.firebaseEnabled){
           await setDoc(doc(state.db,`${householdBasePath()}/stations/${station.storageId}`),station);
         }
-        state.stations=state.stations.filter(x=>x.id!==editingStation?.id);
-        state.stations.push(station);
+        // Firebase onSnapshot kann bereits während await setDoc ausgelöst worden sein.
+        // Daher niemals blind pushen, sondern die Station anhand ihrer Dokument-ID ersetzen.
+        const existingIndex=state.stations.findIndex(x=>stationFirestoreId(x)===station.storageId);
+        if(existingIndex>=0)state.stations[existingIndex]=station;
+        else state.stations.push(station);
+        if(editingStation && editingStation.id!==station.id)
+          state.stations=state.stations.filter(x=>x.id!==editingStation.id || stationFirestoreId(x)===station.storageId);
         persistLocalSnapshot();renderSavedStationOptions();renderManagedFuelStations();
         showToast('Eigene Tankstelle gespeichert.', 'success');
         close(station);
@@ -6635,7 +6697,7 @@ renderFuelMap();
           listenerError("chargeEntriesQuery", error);
         }));
       state.unsubscribers.push(onSnapshot(stationsCollection, (snapshot) => {
-        state.stations = snapshot.docs.map(mapFirestoreDoc);
+        state.stations = snapshot.docs.map(docSnap => ({...mapFirestoreDoc(docSnap), storageId: docSnap.id}));
         persistLocalSnapshot();
         renderSavedStationOptions();
       }, (error) => listenerError("stations", error)));
