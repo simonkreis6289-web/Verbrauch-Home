@@ -824,6 +824,15 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 @media(max-width:600px){.fuel-edit-backdrop{padding:8px;align-items:flex-end}.fuel-edit-panel{border-radius:20px 20px 0 0;max-height:95dvh}.fuel-edit-header{padding:18px}.fuel-edit-form{padding:16px}.fuel-edit-fields{grid-template-columns:1fr;gap:12px}.fuel-edit-footer>span{max-width:unset}.fuel-edit-buttons{width:100%}.fuel-edit-buttons button{flex:1}.fuel-edit-search{flex-wrap:wrap}.fuel-edit-search button{width:100%}}
 
 
+
+/* v162: eigene Tankstelle mit Adresssuche und Kartenkontrolle */
+.fuel-manual-actions{display:flex;flex-wrap:wrap;gap:10px}
+.fuel-create-panel{width:min(760px,100%)}
+.fuel-create-map{height:300px;min-height:250px;border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:12px 0 18px;background:var(--app-inner,#e7eef5)}
+.fuel-create-status{margin:12px 0 6px;line-height:1.5;font-size:.87rem}
+.fuel-create-panel .fuel-edit-fields{grid-template-columns:1fr;margin-bottom:12px}
+@media(max-width:600px){.fuel-create-map{height:260px;min-height:240px}.fuel-manual-actions button{width:100%}}
+
 /* v86/87: Push-Verwaltung und Pelletreichweite */
 .push-rule-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:12px;margin:16px 0}
 .push-rule{border:1px solid var(--line);border-radius:16px;padding:16px;background:var(--card-solid);display:flex;justify-content:space-between;gap:15px;align-items:center}
@@ -1200,7 +1209,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v161</strong> · 1.3.1.191<br><small>Letzte Änderung: 28.10.2026, 13:45 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v162</strong> · 1.3.1.192<br><small>Letzte Änderung: 28.10.2026, 14:05 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -1619,10 +1628,9 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
               <input id="fuelStationSearchText" type="text" maxlength="160" placeholder="z. B. Shell Köln, Aral München Sendling" />
             </label>
 
-            <div class="form-actions span-12">
-              <button id="searchFuelStationByTextBtn" class="btn ghost" type="button">
-                Tankstelle suchen
-              </button>
+            <div class="form-actions span-12 fuel-manual-actions">
+              <button id="searchFuelStationByTextBtn" class="btn ghost" type="button">Tankstelle suchen</button>
+              <button id="createFuelStationBtn" class="btn secondary" type="button">+ Eigene Tankstelle anlegen</button>
             </div>
 
         <label>
@@ -3534,6 +3542,10 @@ async function loadMarketPrices(force = false) {
           setTimeout(() => fuelMapInstance.invalidateSize(), 80);
         });
       els.findFuelStationsBtn?.addEventListener("click", findNearbyFuelStations);
+      document.getElementById('createFuelStationBtn')?.addEventListener('click', async () => {
+        const station = await openCreateFuelStationDialog({ address: els.fuelStationSearchText?.value || '' });
+        if (station) selectCustomFuelStation(station);
+      });
 
       els.fuelStationSelect?.addEventListener("change", applySelectedFuelStation);
       
@@ -4130,40 +4142,69 @@ function formatStationShort(station) {
       });
     }
     
-    // v161: Gemeinsame Suche fuer Erfassung/Bearbeitung ueber Cloudflare.
-    // Direkte Browserzugriffe auf Nominatim/Overpass sind unzuverlaessig (CORS/Timeout).
+    // Gemeinsame Tankstellensuche für Erfassung und Bearbeitung (v160).
+    // Erst Ort geokodieren, danach echte OSM-Kraftstofftankstellen im Umkreis abfragen.
+    // Jeder externe Aufruf hat eine Zeitbegrenzung, damit kein Suchbutton hängen bleibt.
+    async function fuelSearchFetch(url, timeoutMs = 9000) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(url, { signal: controller.signal, headers: { Accept: 'application/json' } });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return await response.json();
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
     function fuelStationSearchTerms(searchText) {
       const text = String(searchText || '').trim().replace(/\s+/g, ' ');
       const brands = ['TotalEnergies', 'Raiffeisen', 'Westfalen', 'Orlen', 'Aral', 'Shell', 'Total', 'Esso', 'JET', 'HEM', 'AVIA', 'Star'];
-      const matchingBrand = brands.find(brand => {
-        const lower = text.toLocaleLowerCase('de');
-        const prefix = brand.toLocaleLowerCase('de');
-        return lower.startsWith(prefix + ' ') || lower.startsWith(prefix + ',');
-      });
-      const location = matchingBrand ? text.slice(matchingBrand.length).replace(/^\s*,?\s*/, '').trim() : text;
-      return { location, brand: matchingBrand || '' };
+      const brand = brands.find(value => new RegExp('^' + value + '(?:\\s+|\\s*,\\s*)', 'i').test(text));
+      const location = brand ? text.slice(brand.length).replace(/^\s*,?\s*/, '').trim() : text;
+      return { location, brand: brand || '' };
     }
 
-    async function fuelStationWorkerSearch(payload) {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 25000);
-      try {
-        const response = await fetch(LIVE_FUEL_WORKER + '/fuel-stations', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify(payload),
-          signal: controller.signal,
-          cache: 'no-store'
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || `Tankstellensuche: HTTP ${response.status}`);
-        if (!Array.isArray(data.elements)) throw new Error('Ungueltige Antwort der Tankstellensuche.');
-        return data;
-      } catch (error) {
-        if (error?.name === 'AbortError') throw new Error('Die Tankstellensuche hat zu lange gedauert. Bitte erneut versuchen.');
-        if (error instanceof TypeError) throw new Error('Verbindung zum Tankstellenserver fehlgeschlagen. Ist der neue Cloudflare-Worker bereitgestellt?');
-        throw error;
-      } finally { clearTimeout(timeout); }
+    async function fuelSearchGeocode(location) {
+      const queries = [location];
+      // Bei Stadtteil-/Straßennamen erst die vollständige Angabe, danach die Stadt probieren.
+      const parts = location.split(/[,\s]+/).filter(Boolean);
+      if (parts.length > 1) queries.push(parts.slice(0, -1).join(' '));
+      if (parts.length > 1) queries.push(parts.slice(-1)[0]);
+      let lastError = null;
+      for (const query of [...new Set(queries)].slice(0, 3)) {
+        try {
+          const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=de&limit=4&addressdetails=1&q=${encodeURIComponent(query)}`;
+          const results = await fuelSearchFetch(url, 7000);
+          const place = (Array.isArray(results) ? results : []).find(item =>
+            Number.isFinite(Number(item.lat)) && Number.isFinite(Number(item.lon)) &&
+            !['charging_station', 'fuel'].includes(String(item.type || '').toLowerCase())
+          );
+          if (place) return { latitude: Number(place.lat), longitude: Number(place.lon), label: place.display_name };
+        } catch (error) { lastError = error; }
+      }
+      if (lastError) throw new Error('Die Ortssuche ist derzeit nicht erreichbar. Bitte erneut versuchen.');
+      throw new Error('Ort nicht gefunden. Bitte Stadt oder Postleitzahl genauer angeben.');
+    }
+
+    async function fuelOverpassAround(latitude, longitude, radiusMeters = 6000) {
+      const query = `[out:json][timeout:12];(node["amenity"="fuel"](around:${radiusMeters},${latitude},${longitude});way["amenity"="fuel"](around:${radiusMeters},${latitude},${longitude});relation["amenity"="fuel"](around:${radiusMeters},${latitude},${longitude}););out center tags;`;
+      const endpoints = [
+        'https://overpass-api.de/api/interpreter',
+        'https://overpass.kumi.systems/api/interpreter'
+      ];
+      let lastError = null;
+      for (const endpoint of endpoints) {
+        try {
+          const data = await fuelSearchFetch(`${endpoint}?data=${encodeURIComponent(query)}`, 11000);
+          if (!Array.isArray(data.elements)) throw new Error('Ungültige Antwort der Tankstellensuche');
+          return data.elements.map(mapOverpassFuelStation)
+            .filter(Boolean)
+            .map(station => ({ ...station, distanceKm: calculateDistanceKm(latitude, longitude, station.latitude, station.longitude) }))
+            .sort((left, right) => left.distanceKm - right.distanceKm);
+        } catch (error) { lastError = error; console.warn('Tankstellenanbieter nicht erreichbar:', endpoint, error); }
+      }
+      throw new Error('Die Tankstellendaten sind momentan nicht erreichbar. Bitte später erneut suchen.');
     }
 
     function fuelSearchUnique(stations) {
@@ -4175,25 +4216,20 @@ function formatStationShort(station) {
       return [...unique.values()];
     }
 
-    function fuelStationsFromWorker(data) {
-      const lat = Number(data.latitude), lon = Number(data.longitude);
-      return fuelSearchUnique(data.elements.map(mapOverpassFuelStation).filter(Boolean)
-        .map(station => ({ ...station, distanceKm: calculateDistanceKm(lat, lon, station.latitude, station.longitude) })))
-        .sort((a, b) => a.distanceKm - b.distanceKm);
-    }
-
     async function fetchFuelStationsByText(searchText) {
       const { location, brand } = fuelStationSearchTerms(searchText);
       if (!location) throw new Error('Bitte einen Ort oder eine Postleitzahl eingeben.');
-      const stations = fuelStationsFromWorker(await fuelStationWorkerSearch({ query: location }));
+      const place = await fuelSearchGeocode(location);
+      const stations = fuelSearchUnique(await fuelOverpassAround(place.latitude, place.longitude));
       if (!brand) return stations.slice(0, 30);
       const term = brand.toLocaleLowerCase('de');
       const matching = stations.filter(station => `${station.name} ${station.brand}`.toLocaleLowerCase('de').includes(term));
-      return [...matching, ...stations.filter(station => !matching.includes(station))].slice(0, 30);
+      // Bei expliziter Marke nur passende Ergebnisse zeigen; sonst eigene Tankstelle anbieten.
+      return matching.slice(0, 30);
     }
 
     async function fetchNearbyFuelStations(latitude, longitude) {
-      return fuelStationsFromWorker(await fuelStationWorkerSearch({ latitude, longitude, radius: 5000 })).slice(0, 20);
+      return fuelSearchUnique(await fuelOverpassAround(latitude, longitude, 5000)).slice(0, 20);
     }
 
     function fuelSearchSetBusy(button, busy, label) {
@@ -4221,10 +4257,12 @@ function formatStationShort(station) {
         const stations = await fetchNearbyFuelStations(gps.latitude, gps.longitude);
         state.nearbyFuelStations = stations;
         fillFuelStationOptions(stations, stations.length ? `${stations.length} Tankstellen gefunden · bitte auswählen` : 'Keine Tankstellen im Umkreis gefunden');
-        showToast(stations.length ? `${stations.length} Tankstellen gefunden. Bitte eine auswählen.` : 'Keine Tankstellen im Umkreis gefunden.', stations.length ? 'success' : 'error');
+        if (stations.length) showToast(`${stations.length} Tankstellen gefunden. Bitte eine auswählen.`, 'success');
+        else { const created = await openCreateFuelStationDialog(); if (created) selectCustomFuelStation(created); }
       } catch (error) {
         console.error('GPS-Tankstellensuche:', error);
-        showToast(error.message || 'Tankstellensuche fehlgeschlagen.', 'error');
+        showToast('Online-Suche nicht erreichbar. Du kannst eine eigene Tankstelle anlegen.', 'error');
+        const created = await openCreateFuelStationDialog(); if (created) selectCustomFuelStation(created);
       } finally { fuelSearchSetBusy(button, false); }
     }
 
@@ -4238,12 +4276,122 @@ function formatStationShort(station) {
         const stations = await fetchFuelStationsByText(text);
         state.nearbyFuelStations = stations;
         fillFuelStationOptions(stations, stations.length ? `${stations.length} Treffer · Tankstelle auswählen` : 'Keine passenden Tankstellen gefunden');
-        showToast(stations.length ? `${stations.length} Tankstellen gefunden. Bitte eine auswählen.` : 'Keine Tankstellen gefunden. Suchort genauer angeben.', stations.length ? 'success' : 'error');
+        if (stations.length) showToast(`${stations.length} Tankstellen gefunden. Bitte eine auswählen.`, 'success');
+        else { const created = await openCreateFuelStationDialog({address: text}); if (created) selectCustomFuelStation(created); }
       } catch (error) {
         console.error('Manuelle Tankstellensuche:', error);
-        showToast(error.message || 'Tankstellensuche fehlgeschlagen.', 'error');
+        showToast('Online-Suche nicht erreichbar. Du kannst eine eigene Tankstelle anlegen.', 'error');
+        const created = await openCreateFuelStationDialog({address: text}); if (created) selectCustomFuelStation(created);
       } finally { fuelSearchSetBusy(button, false); }
     }
+
+// Eigene Tankstelle: Geocoding und Karte direkt im Browser, Speicherung in Firestore/lokal.
+function selectCustomFuelStation(station) {
+  const list = state.nearbyFuelStations || [];
+  const saved = normalizeStation(station, 'fuel');
+  if (!saved) return;
+  state.nearbyFuelStations = [saved, ...list.filter(item => savedStationKey(normalizeStation(item, 'fuel')) !== savedStationKey(saved))];
+  renderSavedStationOptions();
+  const choice = state.nearbyFuelStations.find(item => savedStationKey(normalizeStation(item, 'fuel')) === savedStationKey(saved));
+  if (choice && els.fuelStationSelect) {
+    els.fuelStationSelect.value = choice.id;
+    applySelectedFuelStation();
+  }
+}
+
+async function openCreateFuelStationDialog({address = '', name = ''} = {}) {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.className = 'fuel-edit-backdrop fuel-create-backdrop';
+    overlay.innerHTML = `<section class="fuel-edit-panel fuel-create-panel" role="dialog" aria-modal="true" aria-labelledby="fuelCreateTitle">
+      <header class="fuel-edit-header"><div><p class="section-kicker">EIGENER TANKSTELLENKATALOG</p><h2 id="fuelCreateTitle">⛽ Tankstelle anlegen</h2><p class="fuel-edit-subtitle">Name und Adresse eingeben, Position auf der Karte prüfen und speichern.</p></div><button class="fuel-edit-close" type="button" data-cancel aria-label="Schließen">✕</button></header>
+      <form class="fuel-edit-form" id="fuelCreateForm">
+        <div class="fuel-edit-fields">
+          <label class="fuel-edit-wide">Name der Tankstelle<input name="name" type="text" maxlength="120" required placeholder="z. B. TotalEnergies Siegen" value="${escapeHtml(name)}"></label>
+          <label class="fuel-edit-wide">Vollständige Adresse<input name="address" type="text" maxlength="240" required placeholder="Straße, Hausnummer, PLZ, Ort" value="${escapeHtml(address)}"></label>
+        </div>
+        <button class="btn ghost" type="button" data-locate>📍 Adresse auf Karte anzeigen</button>
+        <p class="fuel-create-status muted" role="status" aria-live="polite">Bitte die Adresse auf der Karte überprüfen. Bei Bedarf kannst du den Marker verschieben oder den Standort anklicken.</p>
+        <div class="fuel-create-map" aria-label="Kartenansicht der neuen Tankstelle"></div>
+        <p class="fuel-edit-error" role="alert" hidden></p>
+        <footer class="fuel-edit-footer"><span>Wird im Tankstellenkatalog gespeichert und auf deinen Geräten synchronisiert, wenn Firebase aktiv ist.</span><div class="fuel-edit-buttons"><button class="btn ghost" type="button" data-cancel>Abbrechen</button><button class="btn primary" type="submit" data-save disabled>Tankstelle speichern</button></div></footer>
+      </form></section>`;
+    document.body.appendChild(overlay);
+    const oldOverflow=document.body.style.overflow; document.body.style.overflow='hidden';
+    const form=overlay.querySelector('#fuelCreateForm');
+    const field=n=>form.elements.namedItem(n);
+    const status=overlay.querySelector('.fuel-create-status');
+    const error=overlay.querySelector('.fuel-edit-error');
+    const locate=overlay.querySelector('[data-locate]');
+    const save=overlay.querySelector('[data-save]');
+    let map=null, marker=null, coords=null, busy=false, closed=false;
+    const fail=message=>{error.hidden=false;error.textContent=message;};
+    const close=result=>{
+      if(closed)return;closed=true;
+      document.removeEventListener('keydown',onKey);
+      if(map)map.remove();overlay.remove();document.body.style.overflow=oldOverflow;resolve(result);
+    };
+    const onKey=e=>{if(e.key==='Escape'&&!busy)close(null);};
+    document.addEventListener('keydown',onKey);
+    overlay.querySelectorAll('[data-cancel]').forEach(btn=>btn.addEventListener('click',()=>{if(!busy)close(null);}));
+    overlay.addEventListener('click',e=>{if(e.target===overlay&&!busy)close(null);});
+    function invalidate(){coords=null;save.disabled=true;error.hidden=true;status.textContent='Adresse geändert. Bitte die neue Position auf der Karte suchen.';}
+    field('address').addEventListener('input',invalidate);
+    field('name').addEventListener('input',()=>{error.hidden=true;});
+    locate.addEventListener('click',async()=>{
+      const text=field('address').value.trim();
+      if(!text)return fail('Bitte Straße, Hausnummer, PLZ und Ort eingeben.');
+      busy=true;locate.disabled=true;save.disabled=true;error.hidden=true;status.textContent='Adresse wird gesucht …';
+      try {
+        if(typeof L==='undefined')throw new Error('Die Kartenbibliothek ist nicht geladen. Bitte App neu laden.');
+        if(!map){
+          map=L.map(overlay.querySelector('.fuel-create-map')).setView([51.1657,10.4515],6);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
+          map.on('click',e=>{
+            coords={latitude:e.latlng.lat,longitude:e.latlng.lng};
+            if(marker)marker.remove();
+            marker=L.marker(e.latlng,{draggable:true}).addTo(map);
+            marker.on('dragend',()=>{const pos=marker.getLatLng();coords={latitude:pos.lat,longitude:pos.lng};});
+            status.textContent='Standort auf der Karte gewählt. Bitte prüfen und speichern.';
+            save.disabled=false;error.hidden=true;
+          });
+          setTimeout(()=>map?.invalidateSize(),100);
+        }
+        const url=`https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=de&limit=5&addressdetails=1&q=${encodeURIComponent(text)}`;
+        const results=await fuelSearchFetch(url,12000);
+        const found=(Array.isArray(results)?results:[]).find(x=>Number.isFinite(Number(x.lat))&&Number.isFinite(Number(x.lon)));
+        if(!found)throw new Error('Adresse nicht gefunden. Bitte Straße, Hausnummer und Ort überprüfen.');
+        coords={latitude:Number(found.lat),longitude:Number(found.lon)};
+        if(marker)marker.remove();
+        marker=L.marker([coords.latitude,coords.longitude],{draggable:true}).addTo(map);
+        marker.bindPopup(escapeHtml(found.display_name||text)).openPopup();
+        marker.on('dragend',()=>{const pos=marker.getLatLng();coords={latitude:pos.lat,longitude:pos.lng};status.textContent='Position manuell angepasst. Du kannst die Tankstelle jetzt speichern.';});
+        map.setView([coords.latitude,coords.longitude],17);
+        setTimeout(()=>map?.invalidateSize(),100);
+        status.textContent='Gefunden: '+(found.display_name||text)+'. Marker bei Bedarf verschieben.';
+        save.disabled=false;
+      }catch(err){coords=null;fail('Adresse konnte nicht automatisch gefunden werden. Du kannst den Standort direkt auf der Karte anklicken.');status.textContent='Bitte auf der Karte zum richtigen Ort navigieren und den Standort anklicken.';if(map){map.invalidateSize();}}
+      finally{busy=false;locate.disabled=false;}
+    });
+    form.addEventListener('submit',async e=>{
+      e.preventDefault();
+      const stationName=field('name').value.trim(), stationAddress=field('address').value.trim();
+      if(!stationName)return fail('Bitte einen Tankstellennamen eingeben.');
+      if(!stationAddress)return fail('Bitte die vollständige Adresse eingeben.');
+      if(!coords)return fail('Bitte zuerst die Adresse auf der Karte anzeigen und prüfen.');
+      busy=true;save.disabled=true;save.textContent='Wird gespeichert …';error.hidden=true;
+      try {
+        const station=normalizeStation({id:`custom-${crypto.randomUUID()}`,name:stationName,brand:'',address:stationAddress,latitude:coords.latitude,longitude:coords.longitude,custom:true},'fuel');
+        await rememberStation(station,'fuel');
+        // Der Katalog wird von Firestore auch auf anderen Geräten synchronisiert.
+        if(!state.stations.some(s=>savedStationKey(normalizeStation(s,'fuel'))===savedStationKey(station)))state.stations.push(station);
+        showToast('Eigene Tankstelle gespeichert.', 'success');
+        close(station);
+      }catch(err){fail('Speichern fehlgeschlagen: '+(err.message||err));busy=false;save.disabled=false;save.textContent='Tankstelle speichern';}
+    });
+    setTimeout(()=>field('name')?.focus(),50);
+  });
+}
 
 // Stationsfunktionen: Zustandsvariablen werden vor init() initialisiert.
 
@@ -7719,7 +7867,7 @@ async function updateRecord(kind, id, payload) {
         <div class="fuel-edit-section-title">Tankstelle und Notiz</div>
         <div class="fuel-edit-fields">
           <label class="fuel-edit-wide">Tankstelle suchen
-            <div class="fuel-edit-search"><input name="stationSearch" type="search" placeholder="z. B. Aral Olpe"><button class="btn ghost" type="button" data-search-station>Suchen</button></div>
+            <div class="fuel-edit-search"><input name="stationSearch" type="search" placeholder="z. B. Aral Olpe"><button class="btn ghost" type="button" data-search-station>Suchen</button><button class="btn secondary" type="button" data-create-station>+ Eigene Tankstelle</button></div>
           </label>
           <label class="fuel-edit-wide">Suchergebnis
             <select name="stationSelect"><option value="">Vorhandene Tankstelle beibehalten</option></select>
@@ -7767,9 +7915,17 @@ async function updateRecord(kind, id, payload) {
     try {
       editorStations=await fetchFuelStationsByText(query);
       field('stationSelect').innerHTML='<option value="">Vorhandene Tankstelle beibehalten</option>'+editorStations.map((s,i)=>`<option value="${i}">${escapeHtml(s.displayName||s.name||'Tankstelle')}</option>`).join('');
-      if(!editorStations.length)showEditorError('Keine passenden Tankstellen gefunden.');
-    } catch(err){console.error(err);showEditorError(err.message || 'Tankstellensuche fehlgeschlagen.');}
+      if(!editorStations.length) { const created=await openCreateFuelStationDialog({address:query}); if(created) {editorStations=[created];selectedStation=created;field('stationSelect').innerHTML=`<option value="0">${escapeHtml(created.displayName)}</option>`;field('stationSelect').value='0';field('locationText').value=created.displayName;} }
+    } catch(err){console.error(err);const created=await openCreateFuelStationDialog({address:query});if(created){editorStations=[created];selectedStation=created;field('stationSelect').innerHTML=`<option value="0">${escapeHtml(created.displayName)}</option>`;field('stationSelect').value='0';field('locationText').value=created.displayName;}else showEditorError('Online-Suche nicht erreichbar. Eigene Tankstelle kann angelegt werden.');}
     finally{btn.disabled=false;btn.textContent='Suchen';}
+  });
+  overlay.querySelector('[data-create-station]').addEventListener('click', async () => {
+    const created=await openCreateFuelStationDialog({address:field('stationSearch').value.trim()});
+    if (!created) return;
+    editorStations=[created];selectedStation=created;
+    field('stationSelect').innerHTML=`<option value="0">${escapeHtml(created.displayName)}</option>`;
+    field('stationSelect').value='0';field('locationText').value=created.displayName;
+    errorLabel.hidden=true;
   });
   field('stationSearch').addEventListener('keydown', event => {
     if (event.key === 'Enter') { event.preventDefault(); overlay.querySelector('[data-search-station]').click(); }
