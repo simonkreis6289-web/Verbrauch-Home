@@ -1209,7 +1209,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v173</strong> · 1.3.1.203<br><small>Letzte Änderung: 29.10.2026, 13:12 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v174</strong> · 1.3.1.204<br><small>Letzte Änderung: 30.10.2026, 06:08 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -1865,6 +1865,44 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
   </div>
 </section>
       
+
+<section id="maintenanceView" class="view"><div class="grid">
+<section class="card glass wide"><div class="card-head"><div><p class="section-kicker">🚗 Digitales Serviceheft</p><h2>Wartung & Service</h2><p class="muted">Arbeiten, Ersatzteile, Reifen, Kosten und individuelle Erinnerungen pro Fahrzeug. Archivierte Fahrzeuge bleiben auswählbar.</p></div></div>
+<div class="form-grid"><label>Fahrzeug<select id="serviceCarSelect"></select></label><label>Letzter bekannter Kilometerstand<input id="serviceKnownMileage" type="number" readonly placeholder="Noch kein km-Stand" /></label></div>
+<div id="serviceSummary" class="stats-grid" style="margin:14px 0"></div>
+<div class="form-actions"><button id="serviceExportPdf" type="button" class="btn secondary">📄 Serviceheft als PDF</button></div></section>
+<section class="card wide"><div class="card-head"><div><p class="section-kicker">Serviceeintrag</p><h2>Wartung dokumentieren</h2></div></div>
+<form id="serviceForm" class="form-grid">
+<input type="hidden" id="serviceEditId" />
+<label>Kategorie<select id="serviceCategory"><option value="reifen">Reifenwechsel</option><option value="oel">Ölwechsel</option><option value="inspektion">Inspektion</option><option value="hu">HU / AU</option><option value="bremsen">Bremsen</option><option value="filter">Filterwechsel</option><option value="batterie">Batterie</option><option value="reparatur">Reparatur</option><option value="sonstiges">Sonstige Arbeiten</option></select></label>
+<label>Bezeichnung<input id="serviceTitle" maxlength="120" placeholder="z. B. Bremsscheiben und Beläge vorne" required /></label>
+<label>Datum<input id="serviceDate" type="date" required /></label>
+<label>Kilometerstand<input id="serviceMileage" type="number" min="0" step="1" required /></label>
+<label>Werkstatt / Eigenleistung<input id="serviceWorkshop" maxlength="120" placeholder="Werkstatt oder Eigenleistung" /></label>
+<label>Materialkosten (€)<input id="servicePartsCost" type="number" min="0" step="0.01" value="0" /></label>
+<label>Arbeitskosten (€)<input id="serviceLaborCost" type="number" min="0" step="0.01" value="0" /></label>
+<label>Sonstige Kosten (€)<input id="serviceOtherCost" type="number" min="0" step="0.01" value="0" /></label>
+<label class="span-12">Durchgeführte Arbeiten (eine pro Zeile)<textarea id="serviceTasks" rows="3" placeholder="Bremsscheiben vorne gewechselt&#10;Bremsbeläge vorne erneuert&#10;Führungen gereinigt"></textarea></label>
+<label class="span-12">Ersatzteile (je Zeile: Bezeichnung | Hersteller | Teilenummer | Menge | Preis €)<textarea id="serviceParts" rows="3" placeholder="Bremsscheiben vorne | ATE | 24.0125 | 2 | 120,00"></textarea></label>
+<label class="span-12">Notizen<input id="serviceNotes" maxlength="500" placeholder="Weitere Informationen" /></label>
+<label class="span-12">Beleg-Link (optional)<input id="serviceReceiptUrl" type="url" placeholder="https://... (keine Datei-Uploads)" /></label>
+<div class="span-12"><h3>🛞 Reifenangaben (optional)</h3></div>
+<label>Montiert<select id="serviceTireSeason"><option value="">Nicht relevant</option><option value="winter">Winterreifen</option><option value="sommer">Sommerreifen</option><option value="ganzjahr">Ganzjahresreifen</option></select></label>
+<label>Hersteller / Modell<input id="serviceTireModel" maxlength="120" /></label>
+<label>Reifengröße / DOT<input id="serviceTireSize" maxlength="120" placeholder="205/55 R16, DOT ..." /></label>
+<label>Profiltiefe VL / VR / HL / HR (mm)<input id="serviceTireDepth" maxlength="120" placeholder="6,0 / 6,0 / 5,5 / 5,5" /></label>
+<label>Lagerort demontierter Reifen<input id="serviceTireStorage" maxlength="120" /></label>
+<div class="span-12"><h3>🔔 Nächste Wartung & Erinnerung</h3><p class="muted">Datum und/oder Kilometerstand sind optional. Sobald einer der Vorwarnwerte erreicht ist, wird einmalig eine Push-Erinnerung gesendet. Fälligkeiten lassen sich je Eintrag individuell festlegen.</p></div>
+<label>Nächste Fälligkeit am<input id="serviceNextDate" type="date" /></label>
+<label>Oder bei Kilometerstand<input id="serviceNextKm" type="number" min="0" step="1" /></label>
+<label>Vorwarnung (Tage)<input id="serviceLeadDays" type="number" min="0" max="365" step="1" value="14" /></label>
+<label>Vorwarnung (km)<input id="serviceLeadKm" type="number" min="0" max="100000" step="1" value="1000" /></label>
+<label class="span-12"><input id="serviceRemind" type="checkbox" checked /> Push-Erinnerung aktivieren</label>
+<div class="form-actions span-12"><button class="btn primary" id="serviceSave" type="submit">Serviceeintrag speichern</button><button class="btn ghost" id="serviceCancel" type="button">Eingabe zurücksetzen</button></div>
+</form></section>
+<section class="card wide"><div class="card-head"><div><p class="section-kicker">Historie</p><h2>Durchgeführte Wartungen & Fälligkeiten</h2></div></div><div id="serviceHistory" class="list-stack"></div></section>
+</div></section>
+
 <section id="settingsView" class="view">
   <div class="grid">
     <section class="card glass wide" id="githubTokenExpiryPanel">
@@ -2431,6 +2469,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
     const state = {      
       cars: [],
       fuelEntries: [],
+      maintenanceEntries: [],
       selectedAnalyticsCarId: null,
       readings: [],
       refills: [],
@@ -2627,7 +2666,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       dashboardView: [['🏠 Übersicht','dashboardView']],
       readingsView: [['📈 Zählerstände','readingsView'],['🔄 Zählerneustart','resetView']],
       refillsView: [['🪣 Nachfüllen','refillsView'],['🏠 Pelletlager','pelletStoreView'],['📦 Sackgrößen','bagView'],['🏷️ Angebotsabfragen','offersView'],['🧾 Käufe','purchasesView']],
-      carsView: [['⛽ Tanken','carsView'],['📍 Tankstellen','fuelStationsView'],['🚙 Fahrzeugeinstellungen','carSettingsView']],
+      carsView: [['⛽ Tanken','carsView'],['📍 Tankstellen','fuelStationsView'],['🔧 Wartung & Service','maintenanceView'],['🚙 Fahrzeugeinstellungen','carSettingsView']],
       spritpreiseView: [['⛽ Tankstellenpreise','spritpreiseView']],
       weatherView: [['📈 Diagramme','weatherView']],
       firebaseView: [['☁️ Firebase','firebaseView'],['🔔 Benachrichtigungen','notificationsView'],['💰 Preise','pricesView'],['💾 Backup','backupView'],['🌡️ Wetterstationen','weatherSettingsView'],['🎛️ Darstellung','displayView']]
@@ -2650,6 +2689,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       els.views.forEach(v=>v.classList.toggle('active',v.id===viewName));
       window.weatherViewOpened?.(viewName);
       if(viewName==='fuelStationsView') renderManagedFuelStations();
+      if(viewName==='maintenanceView') renderService();
       if(viewName==='carsView') { setTimeout(()=>{renderFuelMap();refreshFuelMapSize();void refreshStationGps();},150); }
       if(viewName==='spritpreiseView') { void loadLiveFuelPrices(); setTimeout(()=>liveFuelMap?.invalidateSize(),150); }
     }
@@ -3198,6 +3238,7 @@ async function loadMarketPrices(force = false) {
       state.cars = local.cars || [];
       state.chargeEntries = normalizeDateArray(local.chargeEntries || []);
       state.fuelEntries = normalizeDateArray(local.fuelEntries || []);
+      state.maintenanceEntries = normalizeDateArray(local.maintenanceEntries || []);
       state.bagSizes = normalizeBagSizes(local.bagSizes || defaultBagSizes);
       state.stations = Array.isArray(local.stations) ? local.stations : [];
       fillSettingsForm();
@@ -3561,6 +3602,7 @@ async function loadMarketPrices(force = false) {
       });
       
       els.carForm?.addEventListener("submit", handleCarSubmit);
+      initService();
         els.showLiveLocationBtn?.addEventListener("click", async () => {
           const gps = await getCurrentPositionSafe();
           if (gps) { stationGps = gps; renderSavedStationOptions(); }
@@ -4978,6 +5020,130 @@ function mapOverpassFuelStation(item) {
       }
     }
 
+
+    // v174: Fahrzeug-Serviceheft, einheitlich lokal und Firestore synchronisiert.
+    const SERVICE_CATEGORIES={reifen:'Reifenwechsel',oel:'Ölwechsel',inspektion:'Inspektion',hu:'HU / AU',bremsen:'Bremsen',filter:'Filterwechsel',batterie:'Batterie',reparatur:'Reparatur',sonstiges:'Sonstiges'};
+    let serviceSelectedCarId='';
+    const serviceEl=id=>document.getElementById(id);
+    const serviceFields=['Category','Title','Date','Mileage','Workshop','PartsCost','LaborCost','OtherCost','Tasks','Parts','Notes','ReceiptUrl','TireSeason','TireModel','TireSize','TireDepth','TireStorage','NextDate','NextKm','LeadDays','LeadKm','Remind'];
+    function serviceKnownKm(carId){
+      const values=[...state.fuelEntries.filter(e=>e.carId===carId),...state.chargeEntries.filter(e=>e.carId===carId),...state.maintenanceEntries.filter(e=>e.carId===carId)]
+        .map(e=>Number(e.mileage||e.km||e.odometer)).filter(n=>Number.isFinite(n)&&n>=0);
+      return values.length?Math.max(...values):null;
+    }
+    function serviceReset(){
+      serviceEl('serviceForm')?.reset();serviceEl('serviceEditId').value='';serviceEl('serviceDate').value=new Date().toLocaleDateString('en-CA');
+      serviceEl('serviceLeadDays').value='14';serviceEl('serviceLeadKm').value='1000';serviceEl('serviceSave').textContent='Serviceeintrag speichern';
+    }
+    function serviceReadParts(raw){return String(raw||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean).slice(0,40).map(line=>{
+      const [name,manufacturer,partNumber,qty,price]=line.split('|').map(v=>String(v||'').trim());
+      return {name,manufacturer,partNumber,quantity:Math.max(1,Number(qty)||1),price:Number(String(price||'0').replace(',','.'))||0};
+    });}
+    function servicePartText(parts){return (Array.isArray(parts)?parts:[]).map(p=>[p.name,p.manufacturer,p.partNumber,p.quantity,p.price].join(' | ')).join('\n');}
+    function servicePayload(){
+      const v=id=>serviceEl('service'+id).value.trim();
+      const carId=serviceSelectedCarId;
+      const mileage=Number(v('Mileage'));
+      if(!carId||!state.cars.some(c=>c.id===carId))throw Error('Bitte Fahrzeug auswählen.');
+      if(!v('Title')||!v('Date')||!Number.isFinite(mileage)||mileage<0)throw Error('Titel, Datum und Kilometerstand eingeben.');
+      const nextKm=v('NextKm')===''?null:Number(v('NextKm'));
+      if(nextKm!==null&&(!Number.isFinite(nextKm)||nextKm<mileage))throw Error('Die nächste km-Fälligkeit muss mindestens dem aktuellen km-Stand entsprechen.');
+      const nextDate=v('NextDate')||null;
+      const url=v('ReceiptUrl');if(url&&!/^https:\/\//i.test(url))throw Error('Beleg-Link muss mit https:// beginnen.');
+      const partsCost=Number(v('PartsCost'))||0,laborCost=Number(v('LaborCost'))||0,otherCost=Number(v('OtherCost'))||0;
+      if([partsCost,laborCost,otherCost].some(x=>x<0))throw Error('Kosten dürfen nicht negativ sein.');
+      return {carId,category:v('Category'),title:v('Title'),date:v('Date'),mileage,workshop:v('Workshop'),
+        tasks:v('Tasks').split(/\r?\n/).map(x=>x.trim()).filter(Boolean).slice(0,60),parts:serviceReadParts(v('Parts')),
+        partsCost,laborCost,otherCost,totalCost:Math.round((partsCost+laborCost+otherCost)*100)/100,
+        notes:v('Notes'),receiptUrl:url,tireSeason:v('TireSeason'),tireModel:v('TireModel'),tireSize:v('TireSize'),tireDepth:v('TireDepth'),tireStorage:v('TireStorage'),
+        nextDate,nextMileage:nextKm,leadDays:Number(v('LeadDays'))||0,leadKm:Number(v('LeadKm'))||0,
+        remind:serviceEl('serviceRemind').checked,createdAt:new Date().toISOString()};
+    }
+    async function serviceSave(event){
+      event.preventDefault();const button=serviceEl('serviceSave');button.disabled=true;
+      try{
+        const payload=servicePayload(),id=serviceEl('serviceEditId').value;
+        if(id)await updateRecord('maintenanceEntries',id,payload);else await saveRecord('maintenanceEntries',payload);
+        serviceReset();showToast('Wartung gespeichert.','success');
+      }catch(e){console.error('Wartung speichern:',e);showToast('Speichern fehlgeschlagen: '+e.message,'error');}
+      finally{button.disabled=false;}
+    }
+    function serviceEdit(id){
+      const r=state.maintenanceEntries.find(x=>x.id===id);if(!r)return;
+      serviceSelectedCarId=r.carId;renderService();serviceEl('serviceEditId').value=id;
+      const data={Category:r.category,Title:r.title,Date:r.date,Mileage:r.mileage,Workshop:r.workshop,PartsCost:r.partsCost,LaborCost:r.laborCost,OtherCost:r.otherCost,
+        Tasks:(r.tasks||[]).join('\n'),Parts:servicePartText(r.parts),Notes:r.notes,ReceiptUrl:r.receiptUrl,TireSeason:r.tireSeason,TireModel:r.tireModel,TireSize:r.tireSize,TireDepth:r.tireDepth,TireStorage:r.tireStorage,
+        NextDate:r.nextDate,NextKm:r.nextMileage,LeadDays:r.leadDays,LeadKm:r.leadKm};
+      for(const [k,val] of Object.entries(data)){const el=serviceEl('service'+k);if(el)el.value=val??'';}
+      serviceEl('serviceRemind').checked=r.remind!==false;serviceEl('serviceSave').textContent='Änderungen speichern';
+      serviceEl('serviceForm').scrollIntoView({behavior:'smooth',block:'start'});
+    }
+    function serviceStatus(r,km){
+      if(!r.remind||(!r.nextDate&&r.nextMileage==null))return '';
+      const now=new Date(),day=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+      const diff=r.nextDate?Math.ceil((new Date(r.nextDate+'T00:00:00')-day)/86400000):null;
+      const kmLeft=r.nextMileage!=null&&km!=null?Number(r.nextMileage)-km:null;
+      const due=(diff!=null&&diff<=0)||(kmLeft!=null&&kmLeft<=0);
+      const soon=(diff!=null&&diff<=Number(r.leadDays||0))||(kmLeft!=null&&kmLeft<=Number(r.leadKm||0));
+      return due?'🔴 Fällig':soon?'🟠 Bald fällig':'🟢 Geplant';
+    }
+    function renderService(){
+      const select=serviceEl('serviceCarSelect');if(!select)return;
+      if(!serviceSelectedCarId||!state.cars.some(c=>c.id===serviceSelectedCarId))serviceSelectedCarId=state.selectedAnalyticsCarId||state.cars[0]?.id||'';
+      const options=state.cars.map(c=>`<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}${c.active===false?' (archiviert)':''}</option>`).join('');
+      if(select.innerHTML!==options)select.innerHTML=options;select.value=serviceSelectedCarId;
+      const km=serviceKnownKm(serviceSelectedCarId);serviceEl('serviceKnownMileage').value=km??'';
+      const rows=state.maintenanceEntries.filter(r=>r.carId===serviceSelectedCarId).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+      const total=rows.reduce((sum,r)=>sum+(Number(r.totalCost)||0),0);
+      const upcoming=rows.filter(r=>r.remind&&(r.nextDate||r.nextMileage!=null)).filter(r=>!rows.some(other=>other.id!==r.id&&other.category===r.category&&String(other.date)>String(r.date)));
+      const summary=serviceEl('serviceSummary');summary.innerHTML=`<div class="stat"><small>Wartungen</small><strong>${rows.length}</strong></div><div class="stat"><small>Gesamtkosten</small><strong>${total.toLocaleString('de-DE',{style:'currency',currency:'EUR'})}</strong></div><div class="stat"><small>Offene Wartungspläne</small><strong>${upcoming.length}</strong></div>`;
+      const list=serviceEl('serviceHistory');
+      list.innerHTML=rows.length?rows.map(r=>{
+        const tasks=(r.tasks||[]).map(t=>escapeHtml(t)).join(' · ');
+        const parts=(r.parts||[]).map(p=>escapeHtml(p.name)).join(', ');
+        const status=upcoming.some(x=>x.id===r.id)?serviceStatus(r,km):'';
+        return `<article class="entry-item"><div class="entry-main"><div class="entry-topline"><span class="entry-type">${escapeHtml(SERVICE_CATEGORIES[r.category]||'Wartung')}: ${escapeHtml(r.title||'')}</span><span class="entry-datetime">${escapeHtml(r.date||'')} · ${Number(r.mileage||0).toLocaleString('de-DE')} km</span></div>
+        <div class="entry-note">${escapeHtml(r.workshop||'')} ${tasks?'<p>Arbeiten: '+tasks+'</p>':''} ${parts?'<p>Teile: '+parts+'</p>':''} ${r.notes?'<p>'+escapeHtml(r.notes)+'</p>':''}</div>
+        <div class="entry-value">${Number(r.totalCost||0).toLocaleString('de-DE',{style:'currency',currency:'EUR'})} ${status?' · '+status:''}</div>
+        ${r.nextDate||r.nextMileage!=null?`<small>Nächste Wartung: ${escapeHtml(r.nextDate||'')} ${r.nextMileage!=null?' / '+Number(r.nextMileage).toLocaleString('de-DE')+' km':''}</small>`:''}
+        ${/^https:\/\//.test(r.receiptUrl||'')?`<p><a href="${escapeHtml(r.receiptUrl)}" target="_blank" rel="noopener noreferrer">Beleg öffnen</a></p>`:''}</div>
+        <div class="entry-actions"><button class="btn ghost" type="button" data-service-edit="${escapeHtml(r.id)}">✎ Bearbeiten</button><button class="icon-btn" type="button" data-service-delete="${escapeHtml(r.id)}" title="Löschen">🗑️</button></div></article>`;
+      }).join(''):'<div class="empty-state">Für dieses Fahrzeug sind noch keine Wartungen erfasst.</div>';
+    }
+    async function serviceHistoryClick(event){
+      const edit=event.target.closest('[data-service-edit]');if(edit)return serviceEdit(edit.dataset.serviceEdit);
+      const del=event.target.closest('[data-service-delete]');if(!del)return;
+      if(!confirm('Wartungseintrag endgültig löschen?'))return;
+      try{await deleteRecord('maintenanceEntries',del.dataset.serviceDelete);showToast('Wartung gelöscht.','success');}
+      catch(e){showToast('Löschen fehlgeschlagen: '+e.message,'error');}
+    }
+    function serviceExportPdf(){
+      const car=state.cars.find(c=>c.id===serviceSelectedCarId);if(!car)return showToast('Bitte Fahrzeug auswählen.','error');
+      const rows=state.maintenanceEntries.filter(r=>r.carId===car.id).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+      if(!rows.length)return showToast('Noch keine Wartungen vorhanden.','error');
+      const pdf=new LocalReceiptPDF();let y=18;
+      const line=(txt,bold=false)=>{pdf.setFont('helvetica',bold?'bold':'normal').setFontSize(bold?11:9);for(const part of pdf.splitTextToSize(txt,175)){if(y>272){pdf.addPage();y=18;}pdf.text(part,17,y);y+=5;} };
+      line('VERBRAUCH ZUHAUSE - FAHRZEUG-SERVICEHEFT',true);line(car.name+' · '+(car.plate||'ohne Kennzeichen'));y+=5;
+      for(const r of rows){if(y>247){pdf.addPage();y=18;}line((r.date||'')+' · '+Number(r.mileage||0).toLocaleString('de-DE')+' km · '+(SERVICE_CATEGORIES[r.category]||'Wartung'),true);
+        line(r.title||'');if(r.workshop)line('Werkstatt: '+r.workshop);
+        for(const task of (r.tasks||[]))line('  - '+task);
+        for(const part of (r.parts||[]))line('  Teil: '+part.name+' / '+(part.manufacturer||'')+' / '+(part.partNumber||'')+' / '+part.quantity+' Stk.');
+        if(r.tireSeason)line('Reifen: '+r.tireSeason+' · '+(r.tireModel||'')+' · '+(r.tireSize||'')+' · Profil: '+(r.tireDepth||''));
+        if(r.notes)line('Notiz: '+r.notes);
+        if(r.nextDate||r.nextMileage!=null)line('Nächste Fälligkeit: '+(r.nextDate||'')+' / '+(r.nextMileage??'')+' km');
+        line('Kosten: '+Number(r.totalCost||0).toFixed(2)+' EUR');y+=5;
+      }
+      y+=4;line('GESAMTKOSTEN: '+rows.reduce((sum,r)=>sum+Number(r.totalCost||0),0).toFixed(2)+' EUR',true);
+      pdf.save('Serviceheft_'+String(car.plate||car.name).replace(/[^a-z0-9_-]/gi,'_')+'.pdf');
+    }
+    function initService(){
+      serviceReset();serviceEl('serviceForm')?.addEventListener('submit',serviceSave);
+      serviceEl('serviceCancel')?.addEventListener('click',serviceReset);
+      serviceEl('serviceCarSelect')?.addEventListener('change',e=>{serviceSelectedCarId=e.target.value;serviceReset();renderService();});
+      serviceEl('serviceHistory')?.addEventListener('click',serviceHistoryClick);
+      serviceEl('serviceExportPdf')?.addEventListener('click',serviceExportPdf);
+    }
+
     function isCarActive(car){ return car.active !== false; } // Bestehende Autos bleiben aktiv.
     function resetCarEditor(){
       els.carForm?.reset();
@@ -5017,7 +5183,7 @@ function mapOverpassFuelStation(item) {
       els.carList.querySelectorAll('[data-car-toggle]').forEach(b=>b.addEventListener('click',()=>toggleCarActive(b.dataset.carToggle)));
       els.carList.querySelectorAll('[data-car-delete]').forEach(btn=>btn.addEventListener('click',async()=>{
         const id=btn.dataset.carDelete;
-        if(state.fuelEntries.some(e=>e.carId===id)||state.chargeEntries.some(e=>e.carId===id))return showToast('Fahrzeug mit Historie bitte archivieren statt löschen.','error');
+        if(state.fuelEntries.some(e=>e.carId===id)||state.chargeEntries.some(e=>e.carId===id)||state.maintenanceEntries.some(e=>e.carId===id))return showToast('Fahrzeug mit Historie bitte archivieren statt löschen.','error');
         if(!confirm('Fahrzeug endgültig löschen?'))return;
         await deleteRecord('cars',id);showToast('Auto gelöscht.','success');
       }));
@@ -6666,6 +6832,7 @@ renderFuelMap();
       const settingsDocRef = doc(state.db, `${basePath}/settings/main`);
       const carsQuery = query(collection(state.db, `${basePath}/cars`), orderBy("name", "asc"));
       const fuelEntriesQuery = query(collection(state.db, `${basePath}/fuelEntries`), orderBy("date", "desc"));
+      const maintenanceQuery = collection(state.db, `${basePath}/maintenanceEntries`);
       const chargeEntriesQuery = query(collection(state.db, `${basePath}/chargeEntries`), orderBy("date", "desc"));
       const stationsCollection = collection(state.db, `${basePath}/stations`);
       remotePelletOffers=null;remotePelletSuppliers=null;
@@ -6724,6 +6891,10 @@ renderFuelMap();
         }, (error) => {
           listenerError("carsQuery", error);
         }));
+      state.unsubscribers.push(onSnapshot(maintenanceQuery, (snap) => {
+        state.maintenanceEntries = snap.docs.map(mapFirestoreDoc);
+        persistLocalSnapshot();renderService();
+      }, (error) => listenerError("maintenanceEntries", error)));
       state.unsubscribers.push(onSnapshot(fuelEntriesQuery, (s) => {
         state.fuelEntries = s.docs.map(mapFirestoreDoc);
         persistLocalSnapshot();
@@ -6821,7 +6992,8 @@ renderFuelMap();
           fuelEntries: `${householdBasePath()}/fuelEntries`,
           pricePeriods: `${householdBasePath()}/pricePeriods`,
           chargeEntries: `${householdBasePath()}/chargeEntries`,
-          cars: `${householdBasePath()}/cars`
+          cars: `${householdBasePath()}/cars`,
+          maintenanceEntries: `${householdBasePath()}/maintenanceEntries`
         };
 
         if (!pathMap[kind]) {
@@ -6891,7 +7063,8 @@ renderFuelMap();
           fuelEntries: `${householdBasePath()}/fuelEntries/${id}`,
           pricePeriods: `${householdBasePath()}/pricePeriods/${id}`,
           chargeEntries: `${householdBasePath()}/chargeEntries/${id}`,
-          cars: `${householdBasePath()}/cars/${id}`
+          cars: `${householdBasePath()}/cars/${id}`,
+          maintenanceEntries: `${householdBasePath()}/maintenanceEntries/${id}`
         };
         await deleteDoc(doc(state.db, pathMap[kind]));
       } else {
@@ -7028,6 +7201,7 @@ async function updateRecord(kind, id, payload) {
         settings: state.settings,
         cars: state.cars,
         fuelEntries: state.fuelEntries,
+        maintenanceEntries: state.maintenanceEntries,
         chargeEntries: state.chargeEntries,
         bagSizes: state.bagSizes,
         stations: state.stations
@@ -7069,6 +7243,7 @@ async function updateRecord(kind, id, payload) {
       try { renderSettingsSummary(); } catch (e) { console.error("renderSettingsSummary", e); }
       try { renderSavedStationOptions(); } catch (e) { console.error("renderSavedStationOptions", e); }
       try { renderCars(); } catch (e) { console.error("renderCars", e); }
+      try { renderService(); } catch (e) { console.error("renderService", e); }
       try { renderChargeEntries(); } catch (e) { console.error("renderChargeEntries", e); }
       try { renderPelletInventoryStats(); } catch (e) { console.error("renderPelletInventoryStats", e); }
       try { renderPelletRangeForecast(); } catch (e) { console.error("renderPelletRangeForecast",e); }
@@ -8278,13 +8453,13 @@ async function updateRecord(kind, id, payload) {
 
     // v94: Firestore-Backup liest alle Sammlungen direkt aus dem Server,
     // nicht nur den eventuell noch unvollständig geladenen UI-Cache.
-    const BACKUP_COLLECTIONS_V94=['readings','refills','purchases','resets','chargeEntries','pricePeriods','cars','fuelEntries','stations'];
+    const BACKUP_COLLECTIONS_V94=['readings','refills','purchases','resets','chargeEntries','pricePeriods','cars','fuelEntries','stations','maintenanceEntries'];
     let selectedBackupV94=null;
     async function exportBackup(){
       const btn=els.exportBackupBtn;
       if(btn){btn.disabled=true;btn.textContent='Sicherung wird erstellt …';}
       try{
-        const payload={format:'verbrauch-zuhause-backup',schemaVersion:2,appVersion:'v107',exportedAt:new Date().toISOString(),householdId:state.householdId||null,source:state.firebaseEnabled?'firestore':'local',collections:{},settings:null,bagSizes:structuredClone(state.bagSizes),localPreferences:{theme:document.documentElement.dataset.theme||'dark',lastBagSize:localStorage.getItem(LOCAL_KEYS.lastBagSize)}};
+        const payload={format:'verbrauch-zuhause-backup',schemaVersion:2,appVersion:'v174',exportedAt:new Date().toISOString(),householdId:state.householdId||null,source:state.firebaseEnabled?'firestore':'local',collections:{},settings:null,bagSizes:structuredClone(state.bagSizes),localPreferences:{theme:document.documentElement.dataset.theme||'dark',lastBagSize:localStorage.getItem(LOCAL_KEYS.lastBagSize)}};
         if(state.firebaseEnabled){
           if(!state.db)throw new Error('Firestore-Verbindung nicht bereit.');
           for(const key of BACKUP_COLLECTIONS_V94){const result=await getDocs(collection(state.db,`${householdBasePath()}/${key}`));payload.collections[key]=result.docs.map(mapFirestoreDoc);}

@@ -40,7 +40,8 @@ export default {
     ['Wetter-Grenzwerte und Offline',()=>weatherCron(env)],
     ['Wetteralarm-Synchronisierung',()=>syncWeatherAlarm(env,safePart(env.PUSH_HOUSEHOLD_ID))],
     ['Wettervorhersage',()=>forecastCron(env)],
-    ['Bundesweite Spritpreise',()=>fuelAverageCloudflareCron(env)]
+    ['Bundesweite Spritpreise',()=>fuelAverageCloudflareCron(env)],
+    ['Fahrzeug-Wartungserinnerungen',()=>vehicleMaintenanceCron(env)]
   ];
   ctx.waitUntil(Promise.allSettled(jobs.map(async ([name,run])=>{
     const begin=Date.now();
@@ -916,3 +917,52 @@ async function fuelAverageCloudflareCron(env){
   console.log('Bundesweite Spritpreise aktualisiert',JSON.stringify({slot:due.slot,localDate:due.localDate,sourceDate,fetchedAt,records:history.records.length,prices}));
 }
 
+
+
+// Wartungs-Pushs: fällige Datums- und km-Termine, keine festen Intervalle.
+// Vorhandene Firestore-Daten sind die einzige Quelle. Nur aktive Wartungspläne.
+async function vehicleMaintenanceCron(env){
+  const household=safePart(env.PUSH_HOUSEHOLD_ID);
+  if(!household||!env.PUSH_DEVICES||!env.FCM_CLIENT_EMAIL||!env.FCM_PRIVATE_KEY||!env.FCM_PROJECT_ID)return;
+  const lastRun=Number(await env.PUSH_DEVICES.get('maintenance:cron:last')||0);
+  if(Date.now()-lastRun<55*60000)return;
+  const token=await accessToken(env);
+  const [records,cars,fuel,charges]=await Promise.all([
+    firestoreQuery(env,token,household,'maintenanceEntries',500),
+    firestoreQueryCars(env,token,household),
+    firestoreQuery(env,token,household,'fuelEntries',300),
+    firestoreQuery(env,token,household,'chargeEntries',300)
+  ]);
+  const carById=cars;
+  const latestKm=new Map();
+  for(const r of [...fuel,...charges,...records]){
+    const km=Number(r.mileage??r.km??r.odometer);
+    if(r.carId&&Number.isFinite(km)&&km>=0)latestKm.set(r.carId,Math.max(km,latestKm.get(r.carId)||0));
+  }
+  const now=new Date();
+  const berlinDay=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
+  const today=Date.parse(berlinDay+'T00:00:00Z');
+  let sent=0;
+  for(const r of records){
+    if(!r.remind||!r.carId||!carById.has(r.carId)||(!r.nextDate&&r.nextMileage==null))continue;
+    // Neuere Wartung derselben Kategorie ersetzt den älteren Erinnerungsplan.
+    if(records.some(other=>other.id!==r.id&&other.carId===r.carId&&other.category===r.category&&String(other.date||'')>String(r.date||'')))continue;
+    const car=carById.get(r.carId);
+    const dueDate=r.nextDate?Math.round((Date.parse(r.nextDate+'T00:00:00Z')-today)/86400000):null;
+    const km=latestKm.get(r.carId);
+    const kmRemaining=r.nextMileage!=null&&km!=null?Number(r.nextMileage)-km:null;
+    const dateReached=dueDate!=null&&dueDate<=Math.max(0,Number(r.leadDays)||0);
+    const kmReached=kmRemaining!=null&&kmRemaining<=Math.max(0,Number(r.leadKm)||0);
+    if(!dateReached&&!kmReached)continue;
+    const trigger=dateReached?'datum':'km';
+    const id=String(r.id||'').slice(0,120);
+    const label=String(r.title||r.category||'Wartung').slice(0,70);
+    const when=[r.nextDate?'am '+r.nextDate:null,r.nextMileage!=null?'bei '+r.nextMileage+' km':null].filter(Boolean).join(' oder ');
+    // Einmal pro Termin und Auslöseart, bei erneutem Bearbeiten neuer Termin neuer Schlüssel.
+    const key='maintenance:'+id+':'+trigger+':'+String(r.nextDate||'')+':'+String(r.nextMileage??'');
+    const result=await sendEventOnce(env,household,key,'🔧 Wartung: '+String(car||'Auto'),label+' fällig '+when);
+    if(result.status==='sent')sent++;
+  }
+  await env.PUSH_DEVICES.put('maintenance:cron:last',String(Date.now()));
+  if(sent)console.log('Fahrzeug-Wartungserinnerungen versendet',sent);
+}
