@@ -1204,6 +1204,9 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
 .service-tire-nav{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 12px}.service-tire-nav .btn{min-width:180px}.service-tire-page[hidden]{display:none!important}.service-tire-page .service-tire-panels{margin-top:16px}@media(max-width:650px){.service-tire-nav .btn{flex:1;min-width:0}}
 .service-tire-panels{display:grid;gap:22px;margin-top:20px}.service-tire-panel{padding:20px;border:1px solid rgba(125,145,160,.28);border-radius:18px;background:rgba(125,150,180,.035)}.service-panel-head{margin-bottom:16px}.service-panel-head h3{margin:0 0 6px;font-size:1.12rem}.service-panel-head p{margin:0}.service-tire-panel .service-detail-list{grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}.service-tire-panel .service-detail{background:rgba(125,145,160,.06)}.service-tire-panel .service-detail .btn{margin-top:10px}.service-hint{font-size:.87rem;margin:12px 0 0}.service-slot select{min-width:0}.service-tire-panel .form-grid{margin-top:14px}@media(max-width:650px){.service-tire-panel{padding:13px}.service-tire-panel .service-detail-list{grid-template-columns:1fr}}
 </style>
+<style>
+.analysis-filters{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin:20px 0}.analysis-filters label{display:flex;flex-direction:column;gap:6px;flex:1 1 160px}.analysis-filters input,.analysis-filters select{width:100%}.analysis-table-scroll{width:100%;overflow-x:auto;margin-top:16px}.analysis-table{width:100%;border-collapse:collapse;min-width:760px;font-size:.9rem}.analysis-table th,.analysis-table td{padding:11px 12px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}.analysis-table th{color:var(--muted);font-weight:700}.analysis-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;margin:18px 0}.analysis-stats>div{padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--card-solid)}.analysis-stats small{display:block;color:var(--muted);margin-bottom:7px}.analysis-stats strong{font-size:1.15rem}
+</style>
 </head>
 <body>
   <div class="app-shell">
@@ -1283,7 +1286,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       <div id="pelletComparisonDashboard" class="pellet-compare-grid"></div>
     </section>
         <section class="card wide" aria-label="Monatsvergleich" data-display-key="monthlyChart">
-          <div class="dash-section-header"><div><p class="section-kicker">Entwicklung</p><h2>Monatsvergleich · Ø pro Tag</h2><small class="muted">Verbrauch zwischen zwei Ablesungen wird zeitanteilig auf die jeweiligen Monate verteilt.</small></div><div class="dash-chart-controls"><label for="dashboardChartMetric">Anzeigen</label><select id="dashboardChartMetric"><option value="cost">Kosten (€)</option><option value="strom">Strom (kWh)</option><option value="wasser">Wasser (m³)</option><option value="pellets">Pellets (kg)</option></select></div></div>
+          <div class="dash-section-header"><div><p class="section-kicker">Entwicklung</p><h2>Monatsvergleich · Ø pro Tag</h2><small class="muted">Verbrauch zwischen zwei Ablesungen wird zeitanteilig auf die jeweiligen Monate verteilt.</small></div><div class="dash-chart-controls"><label for="dashboardChartRange">Zeitraum</label><select id="dashboardChartRange"><option value="6">6 Monate</option><option value="12" selected>12 Monate</option><option value="24">24 Monate</option><option value="60">5 Jahre</option><option value="all">Alle Daten</option></select><label for="dashboardChartMetric">Anzeigen</label><select id="dashboardChartMetric"><option value="cost">Kosten (€)</option><option value="strom">Strom (kWh)</option><option value="wasser">Wasser (m³)</option><option value="pellets">Pellets (kg)</option></select></div></div>
           <div id="dashboardMonthlyChart" class="dash-month-chart" aria-live="polite"></div>
           <div id="dashboardMonthlyChartLegend" class="dash-month-legend"></div>
         </section>
@@ -2328,7 +2331,8 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
   </div>
 </section>
 
-<section id="resetView" class="view"><div class="grid" id="resetViewGrid"></div></section>
+<section id="resetView" class="view"><div class="grid" id="resetViewGrid"></div><section class="card wide glass"><p class="section-kicker">Historie</p><h2>Bisherige Zählerneustarts</h2><div id="resetHistoryFull"></div></section></section>
+<section id="analysisView" class="view"><section class="card wide glass"><p class="section-kicker">Auswertung</p><h2>Verbrauchsanalyse &amp; Ablesungen</h2><p class="muted">Zeitraum und Zähler auswählen. Verbrauch wird für angeschnittene Ableseintervalle zeitanteilig geschätzt; Neustarts bleiben separat sichtbar.</p><div class="analysis-filters"><label>Bereich<select id="analysisType"><option value="wasser">Wasser</option><option value="strom">Strom</option><option value="pellets">Pellets Verbrauch</option></select></label><label>Von<input id="analysisFrom" type="date"></label><label>Bis<input id="analysisTo" type="date"></label><button type="button" class="btn ghost" id="analysisAll">Gesamter Zeitraum</button><button type="button" class="btn primary" id="analysisCsv">CSV für Excel</button></div><div id="analysisSummary"></div><div class="analysis-table-scroll"><table class="analysis-table"><thead><tr><th>Datum</th><th>Ereignis</th><th>Zählerstand</th><th>Verbrauch seit letzter Ablesung</th><th>Ø / Tag</th><th>Kosten</th><th>Hinweis</th></tr></thead><tbody id="analysisRows"></tbody></table></div></section></section>
 <section id="bagView" class="view"><div class="grid" id="bagViewGrid"></div></section>
 <section id="offersView" class="view"><div class="grid" id="offersViewGrid"></div></section>
 <section id="purchasesView" class="view"><div class="grid" id="purchasesViewGrid"></div></section>
@@ -2659,7 +2663,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
     // v94: Feste Hauptleiste und sichtbare zweite Menüleiste.
     const NAV_GROUPS_V94 = {
       dashboardView: [['🏠 Übersicht','dashboardView']],
-      readingsView: [['📈 Zählerstände','readingsView'],['🔄 Zählerneustart','resetView']],
+      readingsView: [['📈 Zählerstände','readingsView'],['🔄 Zählerneustart','resetView'],['📊 Verbrauchsanalyse','analysisView']],
       refillsView: [['🪣 Nachfüllen','refillsView'],['🏠 Pelletlager','pelletStoreView'],['📦 Sackgrößen','bagView'],['🏷️ Angebotsabfragen','offersView'],['🧾 Käufe','purchasesView']],
       carsView: [['⛽ Tanken','carsView'],['📍 Tankstellen','fuelStationsView'],['🔧 Wartung & Service','maintenanceView'],['🚙 Fahrzeugeinstellungen','carSettingsView']],
       spritpreiseView: [['⛽ Tankstellenpreise','spritpreiseView']],
@@ -3524,6 +3528,10 @@ async function loadMarketPrices(force = false) {
       document.getElementById('pelletConsumptionReferenceForm')?.addEventListener('submit',handlePelletConsumptionReferenceSave);
       document.getElementById('pelletAdjustmentDate').value=toDatetimeLocal(new Date());
       document.getElementById("dashboardChartMetric")?.addEventListener("change", renderDashboardMonthlyChart);
+      document.getElementById("dashboardChartRange")?.addEventListener("change", renderDashboardMonthlyChart);
+      for(const id of ['analysisType','analysisFrom','analysisTo']) document.getElementById(id)?.addEventListener('change',renderConsumptionAnalysis);
+      document.getElementById('analysisAll')?.addEventListener('click',()=>{document.getElementById('analysisFrom').value='';document.getElementById('analysisTo').value='';renderConsumptionAnalysis();});
+      document.getElementById('analysisCsv')?.addEventListener('click',exportConsumptionAnalysisCsv);
       els.exportBackupBtn?.addEventListener("click", ()=>void exportBackup());
       document.getElementById('backupRestoreFile')?.addEventListener('change',previewBackupV94);
       document.getElementById('backupRestoreBtn')?.addEventListener('click',()=>void restoreBackupV94());
@@ -7193,6 +7201,7 @@ async function updateRecord(kind, id, payload) {
       try { fillSettingsForm(); } catch (e) { console.error("fillSettingsForm", e); }
       try { hydrateBagSizeSelects(); } catch (e) { console.error("hydrateBagSizeSelects", e); }
       try { renderReadings(); } catch (e) { console.error("renderReadings", e); }
+      try { renderConsumptionAnalysis(); renderResetHistoryFull(); } catch(e) { console.error('renderConsumptionAnalysis',e); }
       try { renderRefills(); } catch (e) { console.error("renderRefills", e); }
       try { renderPurchases(); } catch (e) { console.error("renderPurchases", e); }
       try { renderPricePeriods(); } catch (e) { console.error("renderPricePeriods", e); }
@@ -7676,7 +7685,9 @@ async function updateRecord(kind, id, payload) {
       if (!target) return;
       const monthly = buildMonthlyStats();
       const metric = document.getElementById("dashboardChartMetric")?.value || "cost";
-      const dates = [...new Set(["strom","wasser","pellets"].flatMap(t=>Object.keys(monthly[t])))].sort().slice(-8);
+      const range = document.getElementById('dashboardChartRange')?.value || '12';
+      const allDates = [...new Set(["strom","wasser","pellets"].flatMap(t=>Object.keys(monthly[t])))].sort();
+      const dates = range === 'all' ? allDates : allDates.slice(-Number(range));
       if (!dates.length) {
         target.innerHTML = '<div class="empty-state">Sobald Zählerstände für mindestens ein Verbrauchsintervall vorhanden sind, erscheint hier die Monatsentwicklung.</div>';
         if(legend)legend.textContent="";
@@ -7697,7 +7708,7 @@ async function updateRecord(kind, id, payload) {
       const scale = 10**Math.floor(Math.log10(max));
       const step = Math.max(scale/2, Math.ceil(max / 4 / (scale/2))*(scale/2));
       const top = Math.ceil(max / step)*step;
-      const w=900,h=280,left=68,right=18,topPad=22,bottom=42,plotHeight=h-topPad-bottom;
+      const w=Math.max(900,dates.length*65+90),h=280,left=68,right=18,topPad=22,bottom=42,plotHeight=h-topPad-bottom;
       const plotWidth=w-left-right;
       const unit = metric==="cost"?"€/Tag":`${typeConfig[metric].unit}/Tag`;
       const grid=Array.from({length:5},(_,i)=>{
@@ -7715,8 +7726,51 @@ async function updateRecord(kind, id, payload) {
         const label=date.substring(5)+"/"+date.substring(2,4);
         return rects+`<text x="${cx}" y="${h-13}" text-anchor="middle" font-size="12" fill="var(--muted)">${label}</text>`;
       }).join("");
-      target.innerHTML=`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Monatsentwicklung ${metric==='cost'?'Kosten':typeConfig[metric].label} in ${unit}"><text x="${left}" y="14" fill="var(--muted)" font-size="12">${unit}</text>${grid}${bars}</svg>`;
+      target.style.overflowX="auto";target.innerHTML=`<svg style="min-width:${w}px;width:100%;height:auto" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMinYMid meet" role="img" aria-label="Monatsentwicklung ${metric==='cost'?'Kosten':typeConfig[metric].label} in ${unit}"><text x="${left}" y="14" fill="var(--muted)" font-size="12">${unit}</text>${grid}${bars}</svg>`;
       if(legend) legend.innerHTML=types.map(t=>`<span><i style="background:${colors[t]}"></i>${typeConfig[t].label}</span>`).join("");
+    }
+
+    // Read-only analysis: never writes to Firestore or changes the stored meter events.
+    function analysisSelectedData(){
+      const type=document.getElementById('analysisType')?.value||'wasser';
+      const from=document.getElementById('analysisFrom')?.value||'';
+      const to=document.getElementById('analysisTo')?.value||'';
+      const start=from?new Date(from+'T00:00:00').getTime():-Infinity;
+      const end=to?new Date(to+'T23:59:59.999').getTime():Infinity;
+      const readings=buildComputedReadings().filter(r=>r.type===type && Date.parse(r.date)>=start && Date.parse(r.date)<=end);
+      const resets=state.resets.filter(r=>r.type===type && Date.parse(r.date)>=start && Date.parse(r.date)<=end);
+      const intervals=buildComputedReadings().filter(r=>r.type===type && r.previousDate && Number.isFinite(r.delta));
+      let consumption=0, costs=0, coveredMs=0;
+      for(const r of intervals){
+        const a=Date.parse(r.previousDate),b=Date.parse(r.date);
+        if(!(b>a))continue;
+        const overlap=Math.max(0,Math.min(b,end)-Math.max(a,start));
+        if(!overlap)continue;
+        const share=overlap/(b-a);
+        consumption+=r.delta*share;
+        if(Number.isFinite(r.cost))costs+=r.cost*share;
+        coveredMs+=overlap;
+      }
+      const events=[...readings.map(r=>({date:r.date,kind:'Ablesung',value:r.value,delta:r.delta,daily:r.dailyDelta,cost:r.cost,note:r.resetApplied?'Intervall mit Neustart':''})),...resets.map(r=>({date:r.date,kind:'Zählerneustart',value:r.newMeterStartValue,previous:r.previousMeterValue,note:r.note||''}))].sort((a,b)=>Date.parse(a.date)-Date.parse(b.date));
+      return {type,events,consumption,costs,coveredDays:coveredMs/86400000,readings:readings.length,resets:resets.length,from,to};
+    }
+    function renderResetHistoryFull(){
+      const target=document.getElementById('resetHistoryFull');if(!target)return;
+      const resets=[...state.resets].sort((a,b)=>Date.parse(b.date)-Date.parse(a.date));
+      target.innerHTML=resets.length?`<div class="analysis-table-scroll"><table class="analysis-table"><thead><tr><th>Datum</th><th>Bereich</th><th>Alter Endstand</th><th>Neuer Startwert</th><th>Notiz</th></tr></thead><tbody>${resets.map(r=>`<tr><td>${formatDateTime(r.date)}</td><td>${typeConfig[r.type]?.label||r.type}</td><td>${formatNumber(r.previousMeterValue)} ${typeConfig[r.type]?.unit||''}</td><td>${formatNumber(r.newMeterStartValue)} ${typeConfig[r.type]?.unit||''}</td><td>${escapeHtml(String(r.note||''))}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-state">Noch keine Zählerneustarts gespeichert.</div>';
+    }
+    function renderConsumptionAnalysis(){
+      const target=document.getElementById('analysisRows'),summary=document.getElementById('analysisSummary');if(!target||!summary)return;
+      const data=analysisSelectedData(),unit=typeConfig[data.type].unit;
+      summary.innerHTML=`<div class="analysis-stats"><div><small>Verbrauch im Zeitraum (geschätzt)</small><strong>${formatNumber(data.consumption)} ${unit}</strong></div><div><small>Ø pro erfasstem Tag</small><strong>${data.coveredDays?formatNumber(data.consumption/data.coveredDays):'–'} ${unit}/Tag</strong></div><div><small>Kosten (soweit berechenbar)</small><strong>${formatCurrency(data.costs)}</strong></div><div><small>Ablesungen / Neustarts</small><strong>${data.readings} / ${data.resets}</strong></div></div>`;
+      target.innerHTML=data.events.length?data.events.map(e=>`<tr><td>${formatDateTime(e.date)}</td><td>${e.kind}</td><td>${formatNumber(e.value)} ${unit}</td><td>${e.kind==='Ablesung'&&e.delta!==null?formatNumber(e.delta)+' '+unit:'–'}</td><td>${Number.isFinite(e.daily)?formatNumber(e.daily)+' '+unit:'–'}</td><td>${Number.isFinite(e.cost)?formatCurrency(e.cost):'–'}</td><td>${e.kind==='Zählerneustart'?'Alter Endstand: '+formatNumber(e.previous)+' '+unit+' · ':''}${escapeHtml(String(e.note||''))}</td></tr>`).join(''):'<tr><td colspan="7">Keine Ereignisse im gewählten Zeitraum. Für eine Verbrauchsschätzung können trotzdem angrenzende Ablesungen berücksichtigt werden.</td></tr>';
+    }
+    function exportConsumptionAnalysisCsv(){
+      const d=analysisSelectedData(),unit=typeConfig[d.type].unit;
+      const rows=[['Datum','Ereignis','Bereich','Zählerstand','Alter Endstand bei Neustart','Verbrauch','Ø pro Tag','Kosten EUR','Notiz'],...d.events.map(e=>[e.date,e.kind,typeConfig[d.type].label,e.value,e.previous??'',e.delta??'',e.daily??'',e.cost??'',e.note||''])];
+      const csv='\uFEFF'+rows.map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+      const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+      const link=document.createElement('a');link.href=url;link.download=`verbrauch-${d.type}-${d.from||'alle'}-${d.to||'alle'}.csv`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
     }
 
     function renderConsumptionHistory() {
@@ -7911,13 +7965,18 @@ async function updateRecord(kind, id, payload) {
             const rawDays = (currentTime - prevTime) / 86400000;
             daysBetween = Math.max(1 / 24, rawDays);
 
-            const resetBetween = resetsForType.find((reset) => {
+            const resetsBetween = resetsForType.filter((reset) => {
               const resetTime = new Date(reset.date).getTime();
               return resetTime > prevTime && resetTime <= currentTime;
             });
-
-            if (resetBetween) {
-              delta = round2((resetBetween.previousMeterValue - previous.value) + (entry.value - resetBetween.newMeterStartValue));
+            if (resetsBetween.length) {
+              let lastValue = previous.value;
+              delta = 0;
+              for (const reset of resetsBetween) {
+                delta += Number(reset.previousMeterValue) - Number(lastValue);
+                lastValue = Number(reset.newMeterStartValue);
+              }
+              delta = round2(delta + Number(entry.value) - Number(lastValue));
               resetApplied = true;
             } else {
               delta = round2(entry.value - previous.value);
