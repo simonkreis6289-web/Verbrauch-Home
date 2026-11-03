@@ -1218,7 +1218,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v177</strong> · 1.3.1.207<br><small>Letzte Änderung: 30.10.2026, 09:00 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v178</strong> · 1.3.1.208<br><small>Letzte Änderung: 03.11.2026, 09:00 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -1286,7 +1286,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       <div id="pelletComparisonDashboard" class="pellet-compare-grid"></div>
     </section>
         <section class="card wide" aria-label="Monatsvergleich" data-display-key="monthlyChart">
-          <div class="dash-section-header"><div><p class="section-kicker">Entwicklung</p><h2>Monatsvergleich · Ø pro Tag</h2><small class="muted">Verbrauch zwischen zwei Ablesungen wird zeitanteilig auf die jeweiligen Monate verteilt.</small></div><div class="dash-chart-controls"><label for="dashboardChartRange">Zeitraum</label><select id="dashboardChartRange"><option value="6">6 Monate</option><option value="12" selected>12 Monate</option><option value="24">24 Monate</option><option value="60">5 Jahre</option><option value="all">Alle Daten</option></select><label for="dashboardChartMetric">Anzeigen</label><select id="dashboardChartMetric"><option value="cost">Kosten (€)</option><option value="strom">Strom (kWh)</option><option value="wasser">Wasser (m³)</option><option value="pellets">Pellets (kg)</option></select></div></div>
+          <div class="dash-section-header"><div><p class="section-kicker">Entwicklung</p><h2>Monatsvergleich · Ø pro Tag</h2><small class="muted">Verbrauch zwischen zwei Ablesungen wird zeitanteilig auf die jeweiligen Monate verteilt.</small></div><div class="dash-chart-controls"><label for="dashboardChartRange">Zeitraum</label><select id="dashboardChartRange"><option value="6">6 Monate</option><option value="12" selected>12 Monate</option><option value="24">24 Monate</option><option value="60">5 Jahre</option><option value="all">Alle Daten</option></select><label for="dashboardChartMetric">Anzeigen</label><select id="dashboardChartMetric"><option value="cost">Kosten (€)</option><option value="strom">Strom (kWh)</option><option value="wasser" selected>Wasser (m³)</option><option value="pellets">Pellets (kg)</option></select></div></div>
           <div id="dashboardMonthlyChart" class="dash-month-chart" aria-live="polite"></div>
           <div id="dashboardMonthlyChartLegend" class="dash-month-legend"></div>
         </section>
@@ -7684,10 +7684,18 @@ async function updateRecord(kind, id, payload) {
       const legend = document.getElementById("dashboardMonthlyChartLegend");
       if (!target) return;
       const monthly = buildMonthlyStats();
-      const metric = document.getElementById("dashboardChartMetric")?.value || "cost";
+      const metric = document.getElementById("dashboardChartMetric")?.value || "wasser";
       const range = document.getElementById('dashboardChartRange')?.value || '12';
       const allDates = [...new Set(["strom","wasser","pellets"].flatMap(t=>Object.keys(monthly[t])))].sort();
-      const dates = range === 'all' ? allDates : allDates.slice(-Number(range));
+      const dates = range === 'all' ? allDates : (() => {
+        const count = Number(range);
+        const now = new Date();
+        const lastMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        return Array.from({length:count}, (_,i) => {
+          const d = new Date(lastMonth.getFullYear(),lastMonth.getMonth()-(count-1-i),1);
+          return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        });
+      })();
       if (!dates.length) {
         target.innerHTML = '<div class="empty-state">Sobald Zählerstände für mindestens ein Verbrauchsintervall vorhanden sind, erscheint hier die Monatsentwicklung.</div>';
         if(legend)legend.textContent="";
@@ -8478,7 +8486,7 @@ async function updateRecord(kind, id, payload) {
       const btn=els.exportBackupBtn;
       if(btn){btn.disabled=true;btn.textContent='Sicherung wird erstellt …';}
       try{
-        const payload={format:'verbrauch-zuhause-backup',schemaVersion:2,appVersion:'v177',exportedAt:new Date().toISOString(),householdId:state.householdId||null,source:state.firebaseEnabled?'firestore':'local',collections:{},settings:null,bagSizes:structuredClone(state.bagSizes),localPreferences:{theme:document.documentElement.dataset.theme||'dark',lastBagSize:localStorage.getItem(LOCAL_KEYS.lastBagSize)}};
+        const payload={format:'verbrauch-zuhause-backup',schemaVersion:2,appVersion:'v178',exportedAt:new Date().toISOString(),householdId:state.householdId||null,source:state.firebaseEnabled?'firestore':'local',collections:{},settings:null,bagSizes:structuredClone(state.bagSizes),localPreferences:{theme:document.documentElement.dataset.theme||'dark',lastBagSize:localStorage.getItem(LOCAL_KEYS.lastBagSize)}};
         if(state.firebaseEnabled){
           if(!state.db)throw new Error('Firestore-Verbindung nicht bereit.');
           for(const key of BACKUP_COLLECTIONS_V94){const result=await getDocs(collection(state.db,`${householdBasePath()}/${key}`));payload.collections[key]=result.docs.map(mapFirestoreDoc);}
