@@ -1218,7 +1218,7 @@ html[data-theme="light"] .fuel-edit-panel{background:white}html[data-theme="ligh
       </div>
       <div class="hero-v94-meta">
         <div class="hero-v94-clock" id="headerClock" aria-label="Aktuelles Datum und Uhrzeit">Datum und Uhrzeit</div>
-        <div class="hero-v94-version">Version <strong>v179</strong> · 1.3.1.209<br><small>Letzte Änderung: 03.11.2026, 09:15 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
+        <div class="hero-v94-version">Version <strong>v180</strong> · 1.3.1.210<br><small>Letzte Änderung: 03.11.2026, 09:30 Uhr</small><div id="githubTokenHeader" class="token-header-status" aria-live="polite"><span class="token-state token-unknown">GitHub-Tokens: Datum fehlt</span></div></div>
       </div>
     </header>
 
@@ -7761,10 +7761,36 @@ async function updateRecord(kind, id, payload) {
       const events=[...readings.map(r=>({date:r.date,kind:'Ablesung',value:r.value,delta:r.delta,daily:r.dailyDelta,cost:r.cost,note:r.resetApplied?'Intervall mit Neustart':''})),...resets.map(r=>({date:r.date,kind:'Zählerneustart',value:r.newMeterStartValue,previous:r.previousMeterValue,note:r.note||''}))].sort((a,b)=>Date.parse(a.date)-Date.parse(b.date));
       return {type,events,consumption,costs,coveredDays:coveredMs/86400000,readings:readings.length,resets:resets.length,from,to};
     }
+    let resetDeleteInProgress = false;
+    async function handleResetHistoryDelete(event){
+      const button = event.target.closest('button[data-reset-delete]');
+      if (!button || resetDeleteInProgress) return;
+      const id = button.dataset.resetDelete;
+      const record = state.resets.find(r => String(r.id) === id);
+      if (!record) return showToast('Der Zählerneustart wurde nicht gefunden. Bitte neu laden.', 'error');
+      const unit = typeConfig[record.type]?.unit || '';
+      const label = typeConfig[record.type]?.label || record.type;
+      const message = `Zählerneustart wirklich dauerhaft löschen?\n\n${label} · ${formatDateTime(record.date)}\nAlter Endstand: ${formatNumber(record.previousMeterValue)} ${unit}\nNeuer Startwert: ${formatNumber(record.newMeterStartValue)} ${unit}${record.note ? '\nNotiz: '+record.note : ''}\n\nNur dieser eine Datensatz wird gelöscht. Die Verbrauchsauswertung wird danach neu berechnet.`;
+      if (!window.confirm(message)) return;
+      resetDeleteInProgress = true;
+      button.disabled = true;
+      try {
+        await deleteRecord('resets', record.id);
+        // Bei Firestore aktualisiert der bestehende Echtzeit-Listener die Ansicht.
+        showToast('Zählerneustart gelöscht. Verbrauchswerte werden aktualisiert.', 'success');
+      } catch (error) {
+        button.disabled = false;
+        console.error('Zählerneustart löschen', error);
+        showToast('Löschen fehlgeschlagen: ' + (error.message || error), 'error');
+      } finally {
+        resetDeleteInProgress = false;
+      }
+    }
+    document.getElementById('resetHistoryFull')?.addEventListener('click', handleResetHistoryDelete);
     function renderResetHistoryFull(){
       const target=document.getElementById('resetHistoryFull');if(!target)return;
       const resets=[...state.resets].sort((a,b)=>Date.parse(b.date)-Date.parse(a.date));
-      target.innerHTML=resets.length?`<div class="analysis-table-scroll"><table class="analysis-table"><thead><tr><th>Datum</th><th>Bereich</th><th>Alter Endstand</th><th>Neuer Startwert</th><th>Notiz</th></tr></thead><tbody>${resets.map(r=>`<tr><td>${formatDateTime(r.date)}</td><td>${typeConfig[r.type]?.label||r.type}</td><td>${formatNumber(r.previousMeterValue)} ${typeConfig[r.type]?.unit||''}</td><td>${formatNumber(r.newMeterStartValue)} ${typeConfig[r.type]?.unit||''}</td><td>${escapeHtml(String(r.note||''))}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-state">Noch keine Zählerneustarts gespeichert.</div>';
+      target.innerHTML=resets.length?`<div class="analysis-table-scroll"><table class="analysis-table"><thead><tr><th>Datum</th><th>Bereich</th><th>Alter Endstand</th><th>Neuer Startwert</th><th>Notiz</th><th>Aktion</th></tr></thead><tbody>${resets.map(r=>`<tr><td>${formatDateTime(r.date)}</td><td>${escapeHtml(typeConfig[r.type]?.label||r.type)}</td><td>${formatNumber(r.previousMeterValue)} ${typeConfig[r.type]?.unit||''}</td><td>${formatNumber(r.newMeterStartValue)} ${typeConfig[r.type]?.unit||''}</td><td>${escapeHtml(String(r.note||''))}</td><td><button type="button" class="btn secondary" data-reset-delete="${escapeHtml(String(r.id))}" title="Diesen Zählerneustart löschen" aria-label="Zählerneustart vom ${formatDateTime(r.date)} löschen" style="padding:7px 11px;color:#dc2626;white-space:nowrap">🗑️ Löschen</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-state">Noch keine Zählerneustarts gespeichert.</div>';
     }
     function renderConsumptionAnalysis(){
       const target=document.getElementById('analysisRows'),summary=document.getElementById('analysisSummary');if(!target||!summary)return;
@@ -8501,7 +8527,7 @@ async function updateRecord(kind, id, payload) {
       const btn=els.exportBackupBtn;
       if(btn){btn.disabled=true;btn.textContent='Sicherung wird erstellt …';}
       try{
-        const payload={format:'verbrauch-zuhause-backup',schemaVersion:2,appVersion:'v179',exportedAt:new Date().toISOString(),householdId:state.householdId||null,source:state.firebaseEnabled?'firestore':'local',collections:{},settings:null,bagSizes:structuredClone(state.bagSizes),localPreferences:{theme:document.documentElement.dataset.theme||'dark',lastBagSize:localStorage.getItem(LOCAL_KEYS.lastBagSize)}};
+        const payload={format:'verbrauch-zuhause-backup',schemaVersion:2,appVersion:'v180',exportedAt:new Date().toISOString(),householdId:state.householdId||null,source:state.firebaseEnabled?'firestore':'local',collections:{},settings:null,bagSizes:structuredClone(state.bagSizes),localPreferences:{theme:document.documentElement.dataset.theme||'dark',lastBagSize:localStorage.getItem(LOCAL_KEYS.lastBagSize)}};
         if(state.firebaseEnabled){
           if(!state.db)throw new Error('Firestore-Verbindung nicht bereit.');
           for(const key of BACKUP_COLLECTIONS_V94){const result=await getDocs(collection(state.db,`${householdBasePath()}/${key}`));payload.collections[key]=result.docs.map(mapFirestoreDoc);}
