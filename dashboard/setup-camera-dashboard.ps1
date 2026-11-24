@@ -79,11 +79,12 @@ try {
         if ($PSCommandPath -ne $updater) { Copy-Item -LiteralPath $PSCommandPath -Destination $updater -Force }
         $arguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}" -Go2rtcFolder "{1}"' -f $updater, $Go2rtcFolder
         $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $arguments -WorkingDirectory $Go2rtcFolder
-        $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(15) -RepetitionInterval (New-TimeSpan -Minutes 15)
+        $intervalMinutes = 5
+        $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes($intervalMinutes) -RepetitionInterval (New-TimeSpan -Minutes $intervalMinutes)
         $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
         $principal = New-ScheduledTaskPrincipal -UserId ([Security.Principal.WindowsIdentity]::GetCurrent().Name) -LogonType Interactive
         Register-ScheduledTask -TaskName 'Verbrauch Zuhause Dashboard Update' -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Force | Out-Null
-        Write-Host 'Automatische Dashboard-Updates alle 15 Minuten eingerichtet.'
+        Write-Host "Automatische Dashboard-Updates alle $intervalMinutes Minuten eingerichtet."
     }
 } finally {
     foreach ($path in @($stage, $temporary)) {
