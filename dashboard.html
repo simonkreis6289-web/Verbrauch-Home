@@ -15,7 +15,7 @@
   <header class="topbar">
     <a class="brand" href="index.html"><span aria-hidden="true">⌂</span> Verbrauch Zuhause</a>
     <nav aria-label="Dashboard">
-      <a href="#uebersicht">Übersicht</a><a href="#wetter">Wetter</a><a href="#verbrauch">Verbrauch</a><a href="#autos">Autos</a><a href="#preise">Preise</a>
+      <a href="#uebersicht">Übersicht</a><a href="#wetter">Wetter</a><a href="#verbrauch">Verbrauch</a><a href="#autos">Autos</a><a href="#preise">Preise</a><a href="#kalender">Kalender</a><a href="#bring">Bring!</a><a href="#kameras">Kameras</a>
     </nav>
     <div class="controls">
       <time id="clock"></time>
@@ -27,14 +27,23 @@
   <main id="uebersicht">
     <p class="notice" id="app-data-status" role="status">App-Daten werden geladen …</p>
     <p id="fullscreen-status" role="status" hidden></p>
-    <div class="overview">
-      <section class="panel weather" id="wetter" aria-labelledby="weather-title">
+    <div class="tv-grid">
+      <aside class="panel forecast" id="wetter">
+        <h2>Wettervorhersage</h2>
+        <p>Vorhersage aus der App folgt.</p>
+        <dl class="values">
+          <div><dt>Heute</dt><dd>–</dd></div>
+          <div><dt>Morgen</dt><dd>–</dd></div>
+          <div><dt>Übermorgen</dt><dd>–</dd></div>
+        </dl>
+      </aside>
+      <section class="panel weather" aria-labelledby="weather-title">
         <div class="scene">
           <h1 id="weather-title">Zuhause im Überblick</h1>
           <p class="weather-status">Wetterstationen · Anbindung folgt</p>
         </div>
       </section>
-      <div class="stack">
+      <div class="stack household-summary">
         <section class="panel" id="verbrauch">
           <h2 id="month-title">Verbrauch im aktuellen Monat</h2>
           <dl class="values" id="monthly-values">
@@ -49,25 +58,42 @@
           <p id="stock-details">Geschätzter Bestand aus der App</p>
         </section>
       </div>
-    </div>
-    <div class="lower-grid">
-    <section class="panel cars" id="autos">
-      <h2>Unsere Autos</h2>
-      <div class="car-grid" id="app-cars"><p>Fahrzeuge werden geladen …</p></div>
-      <p id="car-reminders" hidden></p>
-    </section>
-    <div class="price-grid" id="preise">
-      <section class="panel">
-        <h2>Spritpreise</h2>
-        <p>Zuletzt gespeicherter Deutschland-Durchschnitt</p>
-        <dl class="price-list" id="fuel-prices"><div><dt>Status</dt><dd>Wird geladen …</dd></div></dl>
+      <aside class="stack family-summary" aria-label="Familienorganisation">
+        <section class="panel" id="kalender">
+          <h2>Kalender</h2>
+          <p>Die nächsten drei Termine erscheinen nach der Google-Kalender-Anbindung.</p>
+        </section>
+        <section class="panel" id="bring">
+          <h2>Bring!</h2>
+          <p>Offene Artikel erscheinen nach der Anbindung der Einkaufsliste.</p>
+        </section>
+      </aside>
+      <section class="panel cars" id="autos">
+        <h2>Unsere Autos</h2>
+        <div class="car-grid" id="app-cars"><p>Fahrzeuge werden geladen …</p></div>
+        <p id="car-reminders" hidden></p>
       </section>
-      <section class="panel">
-        <h2>Energiepreise</h2>
-        <p>Manuelle Eingaben aus der App oder historische Ausgangswerte</p>
-        <dl class="price-list" id="energy-prices"><div><dt>Status</dt><dd>Wird geladen …</dd></div></dl>
+      <div class="price-grid" id="preise">
+        <section class="panel">
+          <h2>Spritpreise</h2>
+          <p>Zuletzt gespeicherter Deutschland-Durchschnitt</p>
+          <dl class="price-list" id="fuel-prices"><div><dt>Status</dt><dd>Wird geladen …</dd></div></dl>
+        </section>
+        <section class="panel">
+          <h2>Energiepreise</h2>
+          <p>Manuelle Eingaben aus der App oder historische Ausgangswerte</p>
+          <dl class="price-list" id="energy-prices"><div><dt>Status</dt><dd>Wird geladen …</dd></div></dl>
+        </section>
+      </div>
+      <section class="panel cameras" id="kameras">
+        <h2>Live-Kameras</h2>
+        <p>Die ausgewählten Livebilder erscheinen hier nebeneinander.</p>
+        <div class="camera-grid">
+          <div>Kamera 1</div>
+          <div>Kamera 2</div>
+          <div>Kamera 3</div>
+        </div>
       </section>
-    </div>
     </div>
   </main>
 </body>
