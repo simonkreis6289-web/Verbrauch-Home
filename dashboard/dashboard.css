@@ -62,7 +62,6 @@ nav a { font-weight: 600; }
 #fullscreen { font-size: 1.25rem; }
 #clock { font-size: 1.25rem; font-weight: 750; font-variant-numeric: tabular-nums; margin-right: 8px; }
 .notice { border: 1px solid var(--line); border-radius: 8px; padding: 5px 12px; margin-bottom: 12px; text-align: center; }
-.overview { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 12px; }
 .stack { display: grid; align-content: start; gap: 12px; }
 .panel { min-width: 0; padding: 15px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); box-shadow: var(--shadow); }
 .panel > p { margin-top: 6px; }
@@ -82,7 +81,6 @@ nav a { font-weight: 600; }
 .values span { color: var(--muted); }
 .stock { display: flex; align-items: center; gap: 16px; margin-top: 8px; }
 meter { flex: 1; min-width: 30px; height: 22px; }
-.cars, .price-grid { margin-top: 12px; }
 .car-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
 .car { display: grid; gap: 6px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; }
 .car h3 small { margin-left: 4px; }
@@ -95,7 +93,6 @@ meter { flex: 1; min-width: 30px; height: 22px; }
 
 @media (max-width: 900px) {
   .topbar nav { order: 1; width: 100%; }
-  .overview { grid-template-columns: 1fr; }
   .stack { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
@@ -128,8 +125,6 @@ meter { flex: 1; min-width: 30px; height: 22px; }
 
 @media (min-width: 1000px) {
   body { font-size: clamp(16px, 1.12vw, 21px); }
-  .overview { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
-  .lower-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 12px; }
   .price-grid .price-list > div { flex-direction: column; gap: 2px; }
   .price-grid .price-list dd { text-align: left; }
   .price-grid .panel { padding: 12px; }
@@ -171,3 +166,57 @@ meter { flex: 1; min-width: 30px; height: 22px; }
   cursor: pointer;
 }
 .vehicle-settings input { width: 20px; height: 20px; accent-color: var(--primary); }
+
+
+.tv-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+.tv-grid > * { min-width: 0; }
+.camera-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+.camera-grid > div {
+  display: grid;
+  place-items: center;
+  min-height: clamp(70px, 12vh, 150px);
+  background: var(--page);
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (min-width: 720px) {
+  .tv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cameras, .cars, .price-grid { grid-column: 1 / -1; }
+}
+
+@media (min-width: 1150px) {
+  .tv-grid {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 3fr) minmax(0, 1.65fr) minmax(0, 1.25fr);
+    grid-template-areas:
+      "forecast house household family"
+      "cars cars prices prices"
+      "cameras cameras cameras cameras";
+  }
+  .forecast { grid-area: forecast; }
+  .weather { grid-area: house; }
+  .household-summary { grid-area: household; }
+  .family-summary { grid-area: family; }
+  .cars { grid-area: cars; }
+  .price-grid { grid-area: prices; }
+  .cameras { grid-area: cameras; }
+  .scene { height: 100%; min-height: clamp(235px, 32vh, 390px); }
+  .price-grid .price-list > div { flex-direction: row; }
+  .price-grid .price-list dd { text-align: right; }
+  .car img { height: clamp(74px, 12vh, 135px); }
+}
+
+@media (max-width: 580px) {
+  .camera-grid { grid-template-columns: 1fr; }
+}
