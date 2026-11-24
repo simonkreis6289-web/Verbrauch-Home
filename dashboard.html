@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="dashboard/tv-layout.css">
   <script defer src="dashboard/dashboard.js"></script>
   <script defer src="dashboard/prices.js"></script>
-  <script defer src="dashboard/cameras.js"></script>
+  <script type="module" src="dashboard/cameras.js"></script>
   <script defer src="dashboard/load-data.js" data-module="./app-data.js" data-status="app-data-status"></script>
 </head>
 <body class="tv-dashboard">
@@ -89,7 +89,7 @@
       </div>
       <section class="panel cameras" id="kameras">
         <h2>Live-Kameras</h2>
-        <p id="camera-status">Öffne das Dashboard über go2rtc im Heimnetz, um die Livebilder zu sehen.</p>
+        <p id="camera-status"><a class="settings-link" href="dashboard-settings.html#kameras">Kameraverbindung einrichten</a></p>
         <div class="camera-grid" id="camera-grid">
           <div data-stream="garteneingang"><h3>Garteneingang</h3></div>
           <div data-stream="schoppen"><h3>Schoppen</h3></div>
