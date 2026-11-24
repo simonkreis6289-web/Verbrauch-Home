@@ -1,0 +1,93 @@
+@media (min-width: 900px) and (min-height: 500px) {
+  .tv-dashboard {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    font-size: clamp(12px, 1.65vh, 19px);
+  }
+
+  .tv-dashboard .topbar,
+  .tv-dashboard main {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 6px clamp(8px, 1vw, 20px);
+  }
+
+  .tv-dashboard .topbar, .tv-dashboard nav { gap: .6em 1em; }
+  .tv-dashboard .brand { font-size: 1.3em; }
+  .tv-dashboard .controls { gap: .35em; }
+  .tv-dashboard .controls button, .tv-dashboard .settings-link {
+    min-height: 2em;
+    min-width: 2em;
+    padding: .2em .45em;
+  }
+  .tv-dashboard #clock, .tv-dashboard #fullscreen { font-size: 1.1em; }
+
+  .tv-dashboard main {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .tv-dashboard .notice { margin: 0; padding: .15em .5em; }
+  .tv-dashboard #fullscreen-status { padding: 0; }
+
+  .tv-dashboard .tv-grid {
+    flex: 1;
+    min-height: 0;
+    gap: clamp(5px, 1vh, 12px);
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 3fr) minmax(0, 1.65fr) minmax(0, 1.35fr);
+    grid-template-rows: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "forecast house household family"
+      "cars cars prices prices"
+      "cameras cameras cameras cameras";
+  }
+
+  .tv-dashboard .forecast { grid-area: forecast; }
+  .tv-dashboard .weather { grid-area: house; }
+  .tv-dashboard .household-summary { grid-area: household; grid-template-rows: minmax(0, 2fr) minmax(0, 1fr); }
+  .tv-dashboard .family-summary { grid-area: family; grid-template-rows: repeat(2, minmax(0, 1fr)); }
+  .tv-dashboard .cars { grid-area: cars; }
+  .tv-dashboard .price-grid { grid-area: prices; }
+  .tv-dashboard .cameras { grid-area: cameras; }
+
+  .tv-dashboard .stack,
+  .tv-dashboard .price-grid {
+    align-content: stretch;
+    min-height: 0;
+    gap: clamp(5px, 1vh, 12px);
+  }
+  .tv-dashboard .stack { grid-template-columns: minmax(0, 1fr); }
+  .tv-dashboard .panel { padding: .45em .65em; min-height: 0; overflow: auto; }
+  .tv-dashboard .weather { padding: 0; overflow: hidden; }
+  .tv-dashboard .scene { height: 100%; min-height: 0; padding: .55em .7em; }
+  .tv-dashboard h1, .tv-dashboard h2 { font-size: 1.16em; overflow-wrap: anywhere; }
+  .tv-dashboard h3 { font-size: 1em; }
+  .tv-dashboard .values, .tv-dashboard .price-list { gap: .25em; margin-top: .3em; }
+  .tv-dashboard .values > div, .tv-dashboard .price-list > div {
+    padding: .17em .45em;
+    flex-direction: row;
+  }
+  .tv-dashboard .values strong, .tv-dashboard .stock strong, .tv-dashboard .car strong { font-size: 1.15em; }
+  .tv-dashboard .stock { margin-top: .25em; }
+  .tv-dashboard .price-list dd { text-align: right; }
+  .tv-dashboard .price-list small { font-size: .72em; }
+  .tv-dashboard .car-grid { margin-top: .35em; }
+  .tv-dashboard .car { padding: .35em .5em; gap: .2em; }
+  .tv-dashboard .car img { height: clamp(32px, 8vh, 105px); }
+
+  .tv-dashboard .cameras { display: flex; flex-direction: column; overflow: hidden; }
+  .tv-dashboard .camera-grid { flex: 1; min-height: 0; margin-top: .3em; }
+  .tv-dashboard .camera-grid > div { min-height: 0; }
+  .tv-dashboard .camera-grid > .camera-live {
+    display: grid;
+    place-items: stretch;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .tv-dashboard .camera-live h3 { padding: .2em .4em; }
+  .tv-dashboard .camera-live iframe { height: 100%; min-height: 0; }
+}
