@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Verbrauch Zuhause · Dashboard</title>
+  <link rel="icon" href="icon-192.png">
+  <script src="dashboard/theme.js"></script>
+  <link rel="stylesheet" href="dashboard/dashboard.css">
+  <script defer src="dashboard/dashboard.js"></script>
+  <script defer src="dashboard/prices.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="index.html"><span aria-hidden="true">⌂</span> Verbrauch Zuhause</a>
+    <nav aria-label="Dashboard">
+      <a href="#uebersicht">Übersicht</a><a href="#wetter">Wetter</a><a href="#verbrauch">Verbrauch</a><a href="#autos">Autos</a><a href="#preise">Preise</a>
+    </nav>
+    <div class="controls">
+      <time id="clock"></time>
+      <button id="theme" type="button">Design</button>
+      <button id="fullscreen" type="button" title="Vollbild einschalten" aria-label="Vollbild einschalten" aria-pressed="false">⛶</button>
+    </div>
+  </header>
+  <main id="uebersicht">
+    <p class="notice">Vorschau · Wetter, Verbrauch und Fahrzeuge mit Beispielwerten</p>
+    <p id="fullscreen-status" role="status" hidden></p>
+    <div class="overview">
+      <section class="panel weather" id="wetter" aria-labelledby="weather-title">
+        <div class="scene">
+          <h1 id="weather-title">Zuhause im Überblick</h1>
+          <div class="stations">
+            <article><h3>WS-01 · Innen</h3><strong>21,3 °C</strong><p>48 % Luftfeuchte</p></article>
+            <article><h3>WS-02 · Außen</h3><strong>6,8 °C</strong><p>82 % Luftfeuchte</p><p>1.018 hPa · 420 lx</p></article>
+          </div>
+        </div>
+        <figure class="chart">
+          <figcaption>Temperaturverlauf · 24 Stunden</figcaption>
+          <canvas id="temperatures" role="img" aria-label="Beispielverlauf mit rund 21 Grad innen und 6 bis 10 Grad außen"></canvas>
+          <div class="legend"><span>Innen</span><span>Außen</span></div>
+        </figure>
+      </section>
+      <div class="stack">
+        <section class="panel" id="verbrauch">
+          <h2>Verbrauch im November</h2>
+          <dl class="values">
+            <div><dt>Strom</dt><dd><strong>248 kWh</strong><span>79,40 €</span></dd></div>
+            <div><dt>Wasser</dt><dd><strong>8,4 m³</strong><span>31,90 €</span></dd></div>
+            <div><dt>Pellets</dt><dd><strong>310 kg</strong><span>108,50 €</span></dd></div>
+          </dl>
+        </section>
+        <section class="panel">
+          <h2>Pelletvorrat</h2>
+          <div class="stock"><strong>0,86 t</strong><meter min="0" max="1.3" value="0.86" aria-label="Geschätzter Pelletvorrat in Tonnen">0,86 t</meter></div>
+          <p>Sacklager 180 kg · Bunker 680 kg</p>
+        </section>
+      </div>
+    </div>
+    <section class="panel cars" id="autos">
+      <h2>Unsere Autos</h2>
+      <div class="car-grid">
+        <article class="car"><h3>Fahrzeug 1 <small>Diesel</small></h3><strong>6,4 l/100 km</strong><p>178 € diesen Monat · 128.450 km</p><p>Letztes Tanken am 18.11.</p></article>
+        <article class="car"><h3>Fahrzeug 2 <small>Benzin</small></h3><strong>7,1 l/100 km</strong><p>126 € diesen Monat · 76.820 km</p><p>Letztes Tanken am 20.11.</p></article>
+        <article class="car"><h3>Als Nächstes</h3><ul><li>Fahrzeug 1 · HU im Dezember</li><li>Fahrzeug 2 · Ölwechsel prüfen</li><li>Haus · Zählerstände erfassen</li></ul></article>
+      </div>
+    </section>
+    <div class="price-grid" id="preise">
+      <section class="panel">
+        <h2>Spritpreise</h2>
+        <p>Zuletzt gespeicherter Deutschland-Durchschnitt</p>
+        <dl class="price-list" id="fuel-prices"><div><dt>Status</dt><dd>Wird geladen …</dd></div></dl>
+      </section>
+      <section class="panel">
+        <h2>Energiepreise</h2>
+        <p>Lokale manuelle Eingaben oder historische Ausgangswerte</p>
+        <dl class="price-list" id="energy-prices"><div><dt>Status</dt><dd>Wird geladen …</dd></div></dl>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
