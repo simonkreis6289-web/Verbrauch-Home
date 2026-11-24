@@ -89,5 +89,5 @@
     grid-template-rows: auto minmax(0, 1fr);
   }
   .tv-dashboard .camera-live h3 { padding: .2em .4em; }
-  .tv-dashboard .camera-live iframe { height: 100%; min-height: 0; }
+  .tv-dashboard .camera-live iframe, .tv-dashboard .camera-player { height: 100%; min-height: 0; }
 }

@@ -8,6 +8,7 @@
   <script src="dashboard/theme.js"></script>
   <link rel="stylesheet" href="dashboard/dashboard.css">
   <script defer src="dashboard/load-data.js" data-module="./settings.js" data-status="settings-status"></script>
+  <script type="module" src="dashboard/camera-settings.js"></script>
 </head>
 <body>
   <header class="topbar">
@@ -21,6 +22,16 @@
       <p>Die Auswahl gilt für diesen Browser und wird sofort gespeichert.</p>
       <div id="vehicle-settings" class="vehicle-settings" role="group" aria-labelledby="vehicle-settings-title"></div>
       <p id="settings-status" role="status">Fahrzeuge werden geladen …</p>
+    </section>
+    <section class="panel camera-settings" id="kameras" aria-labelledby="camera-settings-title">
+      <h2 id="camera-settings-title">Kameraverbindung</h2>
+      <form id="camera-settings-form">
+        <label for="camera-server">HTTPS-Adresse des lokalen Kameraservers</label>
+        <input id="camera-server" type="url" inputmode="url" autocomplete="off" placeholder="https://kamera.example.org">
+        <button class="settings-link" type="submit">Speichern</button>
+      </form>
+      <p>Gilt für diesen Browser. Leer lassen, um die Kameraansicht ohne Server zu nutzen.</p>
+      <p id="camera-settings-status" role="status"></p>
     </section>
   </main>
 </body>
