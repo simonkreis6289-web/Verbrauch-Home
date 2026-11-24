@@ -1,4 +1,4 @@
-import { householdId } from "./source.mjs";
+import { householdId } from "./source.js";
 
 export function activeCars(cars) {
   return Array.isArray(cars) ? cars.filter(car => car?.active !== false && typeof car?.id === "string") : [];

@@ -1,5 +1,5 @@
-import { connectDashboard, householdKey, readLocalSnapshot, snapshotKey } from "./source.mjs";
-import { activeCars, carVisibilityKey, hiddenCarIds, setCarVisible } from "./vehicle-preferences.mjs";
+import { connectDashboard, householdKey, readLocalSnapshot, snapshotKey } from "./source.js";
+import { activeCars, carVisibilityKey, hiddenCarIds, setCarVisible } from "./vehicle-preferences.js";
 
 const list = document.getElementById("vehicle-settings");
 const status = document.getElementById("settings-status");

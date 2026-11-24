@@ -1,7 +1,7 @@
-import { createAppCalculations } from "./app-calculations.mjs";
+import { createAppCalculations } from "./app-calculations.js";
 
-import { connectDashboard, householdKey, readLocalSnapshot, snapshotKey } from "./source.mjs";
-import { activeCars, carVisibilityKey, hiddenCarIds } from "./vehicle-preferences.mjs";
+import { connectDashboard, householdKey, readLocalSnapshot, snapshotKey } from "./source.js";
+import { activeCars, carVisibilityKey, hiddenCarIds } from "./vehicle-preferences.js";
 
 const status = document.getElementById("app-data-status");
 const collections = ["readings", "resets", "pricePeriods", "purchases", "refills",
