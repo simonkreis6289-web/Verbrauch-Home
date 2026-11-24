@@ -10,14 +10,13 @@
   <link rel="stylesheet" href="dashboard/tv-layout.css">
   <script defer src="dashboard/dashboard.js"></script>
   <script defer src="dashboard/prices.js"></script>
-  <script type="module" src="dashboard/cameras.js"></script>
   <script defer src="dashboard/load-data.js" data-module="./app-data.js" data-status="app-data-status"></script>
 </head>
 <body class="tv-dashboard">
   <header class="topbar">
     <a class="brand" href="index.html"><span aria-hidden="true">⌂</span> Verbrauch Zuhause</a>
     <nav aria-label="Dashboard">
-      <a href="#uebersicht">Übersicht</a><a href="#wetter">Wetter</a><a href="#verbrauch">Verbrauch</a><a href="#autos">Autos</a><a href="#preise">Preise</a><a href="#kalender">Kalender</a><a href="#bring">Bring!</a><a href="#kameras">Kameras</a>
+      <a href="#uebersicht">Übersicht</a><a href="#wetter">Wetter</a><a href="#verbrauch">Verbrauch</a><a href="#heizung">Heizung</a><a href="#autos">Autos</a><a href="#preise">Preise</a><a href="#kalender">Kalender</a><a href="#bring">Bring!</a>
     </nav>
     <div class="controls">
       <time id="clock"></time>
@@ -59,6 +58,10 @@
           <div class="stock"><strong id="stock-total">–</strong><meter id="stock-bunker" min="0" max="100" value="0" aria-label="Anteil des Pelletvorrats im Bunker" hidden></meter></div>
           <p id="stock-details">Geschätzter Bestand aus der App</p>
         </section>
+        <section class="panel" id="heizung">
+          <h2>Fröling-Heizung</h2>
+          <p>Live-Daten noch nicht verbunden.</p>
+        </section>
       </div>
       <aside class="stack family-summary" aria-label="Familienorganisation">
         <section class="panel" id="kalender">
@@ -67,7 +70,7 @@
         </section>
         <section class="panel" id="bring">
           <h2>Bring!</h2>
-          <p>Offene Artikel erscheinen nach der Anbindung der Einkaufsliste.</p>
+          <p><a class="settings-link" href="https://web.getbring.com/" target="_blank" rel="noopener noreferrer">Einkaufsliste in Bring! öffnen</a></p>
         </section>
       </aside>
       <section class="panel cars" id="autos">
@@ -87,15 +90,6 @@
           <dl class="price-list" id="energy-prices"><div><dt>Status</dt><dd>Wird geladen …</dd></div></dl>
         </section>
       </div>
-      <section class="panel cameras" id="kameras">
-        <h2>Live-Kameras</h2>
-        <p id="camera-status"><a class="settings-link" href="dashboard-settings.html#kameras">Kameraverbindung einrichten</a></p>
-        <div class="camera-grid" id="camera-grid">
-          <div data-stream="garteneingang"><h3>Garteneingang</h3></div>
-          <div data-stream="schoppen"><h3>Schoppen</h3></div>
-          <div data-stream="garage"><h3>Garage</h3></div>
-        </div>
-      </section>
     </div>
   </main>
 </body>
