@@ -220,3 +220,19 @@ meter { flex: 1; min-width: 30px; height: 22px; }
 @media (max-width: 580px) {
   .camera-grid { grid-template-columns: 1fr; }
 }
+
+.camera-grid > .camera-live {
+  display: block;
+  overflow: hidden;
+  min-height: 0;
+  border-style: solid;
+  color: var(--text);
+}
+.camera-live h3 { padding: 6px 10px; }
+.camera-live iframe {
+  display: block;
+  width: 100%;
+  height: clamp(110px, 19vh, 240px);
+  border: 0;
+  background: #000;
+}
