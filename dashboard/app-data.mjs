@@ -1,0 +1,216 @@
+import { createAppCalculations } from "./app-calculations.mjs";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBrKjajSNPgmFUwjMghkox1kM8NjbCWZ_Y",
+  authDomain: "verbrauch-zuhause.firebaseapp.com",
+  projectId: "verbrauch-zuhause",
+  appId: "1:546121139332:web:b07b58184fb0388565aed1"
+};
+const householdKey = "verbrauch-household-id-v1";
+const snapshotKey = "verbrauch-local-data-v8";
+const status = document.getElementById("app-data-status");
+const collections = ["readings", "resets", "pricePeriods", "purchases", "refills",
+  "cars", "fuelEntries", "chargeEntries", "maintenanceEntries"];
+const number = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 });
+const money = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
+const shortDate = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" });
+const monthLabel = new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" });
+const units = ["kWh", "m³", "kg"];
+
+function readStorage(key) {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+
+function readLocalSnapshot() {
+  try { return JSON.parse(readStorage(snapshotKey)); } catch { return null; }
+}
+
+function quantity(value, unit) {
+  return value != null && Number.isFinite(Number(value)) ? number.format(value) + " " + unit : "–";
+}
+
+function displayDate(value) {
+  const date = new Date(value || "");
+  return Number.isFinite(date.getTime()) ? shortDate.format(date) : "–";
+}
+
+function appendText(parent, tag, value) {
+  const element = document.createElement(tag);
+  element.textContent = value;
+  parent.append(element);
+  return element;
+}
+
+function renderCars(data, calculations, currentMonth, nextMonth) {
+  const cars = data.cars.filter(car => car.active !== false);
+  const container = document.getElementById("app-cars");
+  const reminders = document.getElementById("car-reminders");
+  container.replaceChildren();
+  if (!cars.length) appendText(container, "p", "Keine aktiven Fahrzeuge vorhanden.");
+
+  const pending = [];
+  for (const car of cars) {
+    const tile = document.createElement("article");
+    tile.className = "car";
+    const name = car.name || "Fahrzeug";
+    const heading = appendText(tile, "h3", name);
+    const model = String(name).toLowerCase();
+    const photo = model.includes("tarraco") ? ["seat-tarraco", "Seat Tarraco"]
+      : model.includes("tiguan") ? ["vw-tiguan", "VW Tiguan"] : null;
+    if (photo) {
+      const img = document.createElement("img");
+      img.src = "./dashboard/" + photo[0] + ".webp";
+      img.alt = photo[1] + " in Schwarz (Modellillustration)";
+      heading.after(img);
+    }
+
+    const electric = car.fuelType === "electric";
+    const entries = electric ? data.chargeEntries.filter(entry => entry.carId === car.id)
+      .sort((a, b) => Date.parse(a.toDate || a.date) - Date.parse(b.toDate || b.date))
+      : calculations.buildComputedFuelEntriesForCar(car.id);
+    const service = data.maintenanceEntries.filter(entry => entry.carId === car.id);
+    const odometers = [...entries, ...service]
+      .filter(entry => entry.mileage != null && entry.mileage !== "" && Number.isFinite(Number(entry.mileage)))
+      .map(entry => Number(entry.mileage));
+    const mileage = odometers.length ? Math.max(...odometers) : null;
+    const lastEntry = entries.at(-1);
+    const lastConsumption = [...entries].reverse().find(entry => Number.isFinite(entry.litersPer100km));
+    const thisMonth = entries.filter(entry => {
+      const time = Date.parse(entry.toDate || entry.date);
+      return time >= currentMonth.getTime() && time < nextMonth.getTime() && time <= Date.now();
+    });
+    const costs = thisMonth.map(entry => entry.totalPrice)
+      .filter(cost => cost != null && cost !== "" && Number.isFinite(Number(cost)));
+    appendText(tile, "strong", electric ? quantity(lastEntry?.kwh, "kWh zuletzt geladen")
+      : quantity(lastConsumption?.litersPer100km, "l/100 km"));
+    appendText(tile, "p", [quantity(mileage, "km"), costs.length
+      ? money.format(costs.reduce((total, cost) => total + Number(cost), 0)) + " diesen Monat" : null].filter(Boolean).join(" · "));
+    appendText(tile, "p", (electric ? "Zuletzt geladen · " : "Zuletzt getankt · ") + displayDate(lastEntry?.toDate || lastEntry?.date));
+    container.append(tile);
+
+    for (const entry of service) {
+      if (!entry.remind || (!entry.nextDate && entry.nextMileage == null)) continue;
+      if (service.some(other => other.category === entry.category && String(other.date) > String(entry.date))) continue;
+      const due = [entry.nextDate ? displayDate(entry.nextDate) : null,
+        entry.nextMileage != null ? quantity(entry.nextMileage, "km") : null].filter(Boolean).join(" / ");
+      pending.push({ date: Date.parse(entry.nextDate) || Infinity, text: name + " · " + (entry.title || "Wartung") + " · " + due });
+    }
+  }
+  pending.sort((a, b) => a.date - b.date);
+  reminders.hidden = pending.length === 0;
+  reminders.textContent = pending.length ? "Als Nächstes: " + pending[0].text : "";
+}
+
+function renderAppData(raw) {
+  const data = { settings: raw.settings };
+  for (const key of collections) data[key] = Array.isArray(raw[key]) ? raw[key] : [];
+
+  const now = new Date();
+  const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const monthKey = currentMonth.getFullYear() + "-" + String(currentMonth.getMonth() + 1).padStart(2, "0");
+  const calculations = createAppCalculations(data);
+  const monthly = calculations.buildMonthlyStats();
+  document.getElementById("month-title").textContent = "Verbrauch · " + monthLabel.format(currentMonth);
+  document.querySelectorAll("#monthly-values dd").forEach((cell, index) => {
+    const type = ["strom", "wasser", "pellets"][index];
+    const item = monthly[type][monthKey];
+    cell.querySelector("strong").textContent = quantity(item?.total, units[index]);
+    cell.querySelector("span").textContent = item?.cost != null ? money.format(item.cost) : "–";
+  });
+
+  const balance = calculations.pelletBalanceModel();
+  const split = calculations.pelletStockSplit(balance);
+  document.getElementById("stock-total").textContent = quantity(balance.stock, "kg");
+  document.getElementById("stock-details").textContent = split
+    ? "Sacklager " + quantity(Math.max(0, split.bags), "kg") + " · Bunker " + quantity(Math.max(0, split.bunker), "kg")
+    : "Kein Pelletbestand ermittelbar.";
+  const meter = document.getElementById("stock-bunker");
+  meter.hidden = !split || !(balance.stock > 0);
+  if (!meter.hidden) meter.value = Math.max(0, Math.min(100, split.bunker / balance.stock * 100));
+  renderCars(data, calculations, currentMonth, nextMonth);
+}
+
+function renderLocalFallback() {
+  const local = readLocalSnapshot();
+  renderAppData(local || {});
+  status.textContent = local ? "Lokaler App-Stand · Live-Sync wird geprüft" : "App-Daten werden geladen …";
+  return Boolean(local);
+}
+
+function normalize(value) {
+  if (typeof value?.toDate === "function") return value.toDate().toISOString();
+  if (Array.isArray(value)) return value.map(normalize);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, normalize(item)]));
+  }
+  return value;
+}
+
+let remoteSnapshot;
+let remoteStarted = false;
+const hasLocalData = renderLocalFallback();
+const noSync = () => {
+  status.textContent = remoteStarted ? "Live-Sync unterbrochen · letzter geladener App-Stand"
+    : hasLocalData ? "Lokaler App-Stand · Live-Sync nicht verfügbar"
+      : "App-Daten konnten nicht geladen werden.";
+};
+const initialWait = setTimeout(noSync, 12000);
+
+try {
+  const [firebase, firestore] = await Promise.all([
+    import("https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js"),
+    import("https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js")
+  ]);
+  const db = firestore.getFirestore(firebase.initializeApp(firebaseConfig));
+  const household = readStorage(householdKey) || "zuhause-haupt";
+  const base = "households/" + household;
+  const pending = new Set([...collections, "settings"]);
+  const data = {};
+  const cached = new Set();
+  const update = (key, value, fromCache) => {
+    data[key] = value;
+    pending.delete(key);
+    if (fromCache) cached.add(key);
+    else cached.delete(key);
+    if (pending.size || cached.size) {
+      if (remoteStarted) noSync();
+      return;
+    }
+    clearTimeout(initialWait);
+    renderAppData(data);
+    remoteStarted = true;
+    remoteSnapshot = data;
+    status.textContent = "App-Daten · live";
+  };
+  const options = { includeMetadataChanges: true };
+  for (const key of collections) {
+    firestore.onSnapshot(firestore.collection(db, base + "/" + key), options,
+      snapshot => update(key, snapshot.docs.map(doc => ({ id: doc.id, ...normalize(doc.data()) })), snapshot.metadata.fromCache),
+      noSync);
+  }
+  firestore.onSnapshot(firestore.doc(db, base + "/settings/main"), options,
+    snapshot => update("settings", normalize(snapshot.data()), snapshot.metadata.fromCache),
+    noSync);
+  firestore.onSnapshot(firestore.collection(db, base + "/marketQuotes"), options,
+    snapshot => {
+      if (!snapshot.metadata.fromCache) void window.renderDashboardEnergyPrices(snapshot.docs.map(doc => normalize(doc.data())));
+    }, () => {});
+} catch {
+  clearTimeout(initialWait);
+  noSync();
+}
+
+// Refresh month-dependent figures on a TV left running across midnight.
+let lastDay = new Date().toDateString();
+setInterval(() => {
+  const day = new Date().toDateString();
+  if (day === lastDay) return;
+  lastDay = day;
+  renderAppData(remoteSnapshot || readLocalSnapshot() || {});
+}, 60000);
+
+window.addEventListener("storage", event => {
+  if (event.key === householdKey) window.location.reload();
+  if (event.key === snapshotKey && !remoteStarted) renderAppData(readLocalSnapshot() || {});
+});
