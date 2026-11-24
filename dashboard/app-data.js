@@ -9,6 +9,7 @@ const collections = ["readings", "resets", "pricePeriods", "purchases", "refills
 const number = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 });
 const money = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
 const shortDate = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" });
+const updateTime = new Intl.DateTimeFormat("de-DE", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Berlin" });
 const monthLabel = new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" });
 const units = ["kWh", "m³", "kg"];
 
@@ -102,9 +103,21 @@ function renderAppData(raw) {
   const calculations = createAppCalculations(data);
   const monthly = calculations.buildMonthlyStats();
   document.getElementById("month-title").textContent = "Verbrauch · " + monthLabel.format(currentMonth);
-  document.querySelectorAll("#monthly-values dd").forEach((cell, index) => {
+  const latest = new Map();
+  for (const reading of data.readings) {
+    const time = Date.parse(reading?.date);
+    if (!Number.isFinite(time) || time > now.getTime()) continue;
+    if (!latest.has(reading.type) || time > latest.get(reading.type).time) {
+      latest.set(reading.type, { time, reading });
+    }
+  }
+  document.querySelectorAll("#monthly-values > div").forEach((row, index) => {
+    const cell = row.querySelector("dd");
     const type = ["strom", "wasser", "pellets"][index];
     const item = monthly[type][monthKey];
+    const reading = latest.get(type)?.reading;
+    row.querySelector(".meter-reading").textContent = reading
+      ? "Zähler " + quantity(reading.value, units[index]) + " · " + displayDate(reading.date) : "";
     cell.querySelector("strong").textContent = quantity(item?.total, units[index]);
     cell.querySelector("span").textContent = item?.cost != null ? money.format(item.cost) : "–";
   });
@@ -165,7 +178,7 @@ try {
     renderAppData(data);
     remoteStarted = true;
     remoteSnapshot = data;
-    status.textContent = "App-Daten · live";
+    status.textContent = "App-Daten · live verbunden · bestätigt " + updateTime.format(new Date()) + " Uhr";
   };
   const options = { includeMetadataChanges: true };
   for (const key of collections) {

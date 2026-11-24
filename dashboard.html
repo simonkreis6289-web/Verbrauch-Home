@@ -9,7 +9,9 @@
   <link rel="stylesheet" href="dashboard/dashboard.css">
   <link rel="stylesheet" href="dashboard/tv-layout.css">
   <script defer src="dashboard/dashboard.js"></script>
+  <script defer src="dashboard/public-data.js"></script>
   <script defer src="dashboard/prices.js"></script>
+  <script defer src="dashboard/forecast.js"></script>
   <script defer src="dashboard/load-data.js" data-module="./app-data.js" data-status="app-data-status"></script>
 </head>
 <body class="tv-dashboard">
@@ -31,26 +33,22 @@
     <div class="tv-grid">
       <aside class="panel forecast" id="wetter">
         <h2>Wettervorhersage</h2>
-        <p>Vorhersage aus der App folgt.</p>
-        <dl class="values">
-          <div><dt>Heute</dt><dd>–</dd></div>
-          <div><dt>Morgen</dt><dd>–</dd></div>
-          <div><dt>Übermorgen</dt><dd>–</dd></div>
-        </dl>
+        <p id="forecast-status">Vorhersage wird geladen …</p>
+        <dl class="values forecast-days" id="forecast-days"></dl>
       </aside>
       <section class="panel weather" aria-labelledby="weather-title">
         <div class="scene">
           <h1 id="weather-title">Zuhause im Überblick</h1>
-          <p class="weather-status">Wetterstationen · Anbindung folgt</p>
+          <p class="weather-status" id="forecast-current" hidden></p>
         </div>
       </section>
       <div class="stack household-summary">
         <section class="panel" id="verbrauch">
           <h2 id="month-title">Verbrauch im aktuellen Monat</h2>
           <dl class="values" id="monthly-values">
-            <div><dt>Strom</dt><dd><strong>–</strong><span>–</span></dd></div>
-            <div><dt>Wasser</dt><dd><strong>–</strong><span>–</span></dd></div>
-            <div><dt>Pellets</dt><dd><strong>–</strong><span>–</span></dd></div>
+            <div><dt>Strom<small class="meter-reading"></small></dt><dd><strong>–</strong><span>–</span></dd></div>
+            <div><dt>Wasser<small class="meter-reading"></small></dt><dd><strong>–</strong><span>–</span></dd></div>
+            <div><dt>Pellets<small class="meter-reading"></small></dt><dd><strong>–</strong><span>–</span></dd></div>
           </dl>
         </section>
         <section class="panel">
@@ -81,12 +79,12 @@
       <div class="price-grid" id="preise">
         <section class="panel">
           <h2>Spritpreise</h2>
-          <p>Zuletzt gespeicherter Deutschland-Durchschnitt</p>
+          <p id="fuel-status">Deutschland-Durchschnitt wird geladen …</p>
           <dl class="price-list" id="fuel-prices"><div><dt>Status</dt><dd>Wird geladen …</dd></div></dl>
         </section>
         <section class="panel">
           <h2>Energiepreise</h2>
-          <p>Manuelle Eingaben aus der App oder historische Ausgangswerte</p>
+          <p>Manuell erfasst · Datum je Preis</p>
           <dl class="price-list" id="energy-prices"><div><dt>Status</dt><dd>Wird geladen …</dd></div></dl>
         </section>
       </div>
