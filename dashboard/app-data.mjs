@@ -1,13 +1,8 @@
 import { createAppCalculations } from "./app-calculations.mjs";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyBrKjajSNPgmFUwjMghkox1kM8NjbCWZ_Y",
-  authDomain: "verbrauch-zuhause.firebaseapp.com",
-  projectId: "verbrauch-zuhause",
-  appId: "1:546121139332:web:b07b58184fb0388565aed1"
-};
-const householdKey = "verbrauch-household-id-v1";
-const snapshotKey = "verbrauch-local-data-v8";
+import { connectDashboard, householdKey, readLocalSnapshot, snapshotKey } from "./source.mjs";
+import { activeCars, carVisibilityKey, hiddenCarIds } from "./vehicle-preferences.mjs";
+
 const status = document.getElementById("app-data-status");
 const collections = ["readings", "resets", "pricePeriods", "purchases", "refills",
   "cars", "fuelEntries", "chargeEntries", "maintenanceEntries"];
@@ -16,14 +11,6 @@ const money = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR
 const shortDate = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" });
 const monthLabel = new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" });
 const units = ["kWh", "m³", "kg"];
-
-function readStorage(key) {
-  try { return localStorage.getItem(key); } catch { return null; }
-}
-
-function readLocalSnapshot() {
-  try { return JSON.parse(readStorage(snapshotKey)); } catch { return null; }
-}
 
 function quantity(value, unit) {
   return value != null && Number.isFinite(Number(value)) ? number.format(value) + " " + unit : "–";
@@ -42,11 +29,14 @@ function appendText(parent, tag, value) {
 }
 
 function renderCars(data, calculations, currentMonth, nextMonth) {
-  const cars = data.cars.filter(car => car.active !== false);
+  const active = activeCars(data.cars);
+  const hidden = hiddenCarIds();
+  const cars = active.filter(car => !hidden.has(car.id));
   const container = document.getElementById("app-cars");
   const reminders = document.getElementById("car-reminders");
   container.replaceChildren();
-  if (!cars.length) appendText(container, "p", "Keine aktiven Fahrzeuge vorhanden.");
+  if (!cars.length) appendText(container, "p", active.length
+    ? "Keine Fahrzeuge zur Anzeige ausgewählt." : "Keine aktiven Fahrzeuge vorhanden.");
 
   const pending = [];
   for (const car of cars) {
@@ -158,13 +148,7 @@ const noSync = () => {
 const initialWait = setTimeout(noSync, 12000);
 
 try {
-  const [firebase, firestore] = await Promise.all([
-    import("https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js"),
-    import("https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js")
-  ]);
-  const db = firestore.getFirestore(firebase.initializeApp(firebaseConfig));
-  const household = readStorage(householdKey) || "zuhause-haupt";
-  const base = "households/" + household;
+  const { firestore, db, base } = await connectDashboard();
   const pending = new Set([...collections, "settings"]);
   const data = {};
   const cached = new Set();
@@ -212,5 +196,10 @@ setInterval(() => {
 
 window.addEventListener("storage", event => {
   if (event.key === householdKey) window.location.reload();
+  if (event.key === carVisibilityKey()) renderAppData(remoteSnapshot || readLocalSnapshot() || {});
   if (event.key === snapshotKey && !remoteStarted) renderAppData(readLocalSnapshot() || {});
+});
+
+window.addEventListener("pageshow", event => {
+  if (event.persisted) renderAppData(remoteSnapshot || readLocalSnapshot() || {});
 });

@@ -147,3 +147,27 @@ meter { flex: 1; min-width: 30px; height: 22px; }
 @media (max-width: 580px) {
   .car-grid { grid-template-columns: 1fr; }
 }
+
+.settings-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+}
+.dashboard-settings { max-width: 760px; }
+.dashboard-settings h1 { margin-bottom: 12px; }
+.vehicle-settings { display: grid; gap: 8px; margin-top: 16px; }
+.vehicle-settings label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 50px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.vehicle-settings input { width: 20px; height: 20px; accent-color: var(--primary); }
