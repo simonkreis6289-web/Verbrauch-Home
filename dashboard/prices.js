@@ -54,7 +54,7 @@ function renderPrices(id, definitions, digits, selectPrice) {
     const meta = document.createElement("small");
     name.textContent = label;
     price.textContent = validPrice(value) ? format.format(value) + " " + unit : "Nicht verfügbar";
-    if (validPrice(value)) {
+    if (validPrice(value) && source) {
       meta.textContent = source + " · " + displayDate(date);
       price.append(meta);
     }
@@ -64,13 +64,29 @@ function renderPrices(id, definitions, digits, selectPrice) {
   document.getElementById(id).replaceChildren(...rows);
 }
 
-// Read the repository snapshots only. Opening the dashboard never calls a market-price provider.
-readPriceFile("./fuel-prices.json").then(data => {
-  renderPrices("fuel-prices", priceDefinitions.fuel, 3, key => ({
-    value: data?.prices?.[key],
-    date: data?.source_date || data?.fetched_at,
-    source: "Gespeicherter Stand"
-  }));
+let lastFuelRecord;
+let fuelFallback;
+const fuelStatus = document.getElementById("fuel-status");
+
+refreshDashboardData(async () => {
+  let source = "App-Datenstand";
+  try {
+    const data = await readDashboardJson(dashboardDataUrl + "/fuel-national/latest");
+    if (!priceDefinitions.fuel.some(([key]) => validPrice(data?.prices?.[key]))) {
+      throw new Error("Keine gültigen Spritpreise");
+    }
+    lastFuelRecord = data;
+  } catch {
+    if (!lastFuelRecord) fuelFallback ||= readPriceFile("./fuel-prices.json");
+    source = lastFuelRecord ? "Letzter verfügbarer Stand" : "Archivstand";
+  }
+  const data = lastFuelRecord || await fuelFallback;
+  const date = data?.source_date || data?.fetched_at;
+  const old = Date.now() - Date.parse(date) > 12 * 60 * 60 * 1000;
+  const qualifier = !date ? "Nicht verfügbar" : old && source === "App-Datenstand" ? "Älterer App-Stand" : source;
+  fuelStatus.textContent = "Deutschland-Durchschnitt · " + qualifier +
+    (Number.isFinite(Date.parse(date)) ? " · " + dashboardBerlinTime.format(new Date(date)) : "");
+  renderPrices("fuel-prices", priceDefinitions.fuel, 3, key => ({ value: data?.prices?.[key] }));
 });
 
 const dashboardMarketFile = readPriceFile("./market-prices.json");
@@ -88,3 +104,14 @@ async function renderDashboardEnergyPrices(records = readManualEnergyPrices()) {
 }
 
 void renderDashboardEnergyPrices();
+let liveEnergyPrices = false;
+const renderManualEnergyPrices = window.renderDashboardEnergyPrices;
+window.renderDashboardEnergyPrices = records => {
+  liveEnergyPrices = true;
+  return renderManualEnergyPrices(records);
+};
+window.addEventListener("storage", event => {
+  if (event.key === "verbrauch-manual-market-v1" && !liveEnergyPrices) {
+    void renderManualEnergyPrices();
+  }
+});

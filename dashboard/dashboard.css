@@ -197,3 +197,9 @@ meter { flex: 1; min-width: 30px; height: 22px; }
   .price-grid .price-list dd { text-align: right; }
   .car img { height: clamp(74px, 12vh, 135px); }
 }
+
+.meter-reading { display: block; font-size: .8em; font-weight: 400; }
+.meter-reading:empty { display: none; }
+.forecast-days > div { align-items: start; }
+.forecast-days dd { display: grid; gap: 2px; text-align: right; }
+.weather-status[hidden] { display: none; }
