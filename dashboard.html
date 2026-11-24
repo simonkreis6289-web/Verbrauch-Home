@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="dashboard/dashboard.css">
   <script defer src="dashboard/dashboard.js"></script>
   <script defer src="dashboard/prices.js"></script>
+  <script type="module" src="dashboard/app-data.mjs"></script>
 </head>
 <body>
   <header class="topbar">
@@ -23,46 +24,36 @@
     </div>
   </header>
   <main id="uebersicht">
-    <p class="notice">Vorschau · Wetter, Verbrauch und Fahrzeuge mit Beispielwerten</p>
+    <p class="notice" id="app-data-status" role="status">App-Daten werden geladen …</p>
     <p id="fullscreen-status" role="status" hidden></p>
     <div class="overview">
       <section class="panel weather" id="wetter" aria-labelledby="weather-title">
         <div class="scene">
           <h1 id="weather-title">Zuhause im Überblick</h1>
-          <div class="stations">
-            <article><h3>WS-01 · Innen</h3><strong>21,3 °C</strong><p>48 % Luftfeuchte</p></article>
-            <article><h3>WS-02 · Außen</h3><strong>6,8 °C</strong><p>82 % Luftfeuchte</p><p>1.018 hPa · 420 lx</p></article>
-          </div>
+          <p class="weather-status">Wetterstationen · Anbindung folgt</p>
         </div>
-        <figure class="chart">
-          <figcaption>Temperaturverlauf · 24 Stunden</figcaption>
-          <canvas id="temperatures" role="img" aria-label="Beispielverlauf mit rund 21 Grad innen und 6 bis 10 Grad außen"></canvas>
-          <div class="legend"><span>Innen</span><span>Außen</span></div>
-        </figure>
       </section>
       <div class="stack">
         <section class="panel" id="verbrauch">
-          <h2>Verbrauch im November</h2>
-          <dl class="values">
-            <div><dt>Strom</dt><dd><strong>248 kWh</strong><span>79,40 €</span></dd></div>
-            <div><dt>Wasser</dt><dd><strong>8,4 m³</strong><span>31,90 €</span></dd></div>
-            <div><dt>Pellets</dt><dd><strong>310 kg</strong><span>108,50 €</span></dd></div>
+          <h2 id="month-title">Verbrauch im aktuellen Monat</h2>
+          <dl class="values" id="monthly-values">
+            <div><dt>Strom</dt><dd><strong>–</strong><span>–</span></dd></div>
+            <div><dt>Wasser</dt><dd><strong>–</strong><span>–</span></dd></div>
+            <div><dt>Pellets</dt><dd><strong>–</strong><span>–</span></dd></div>
           </dl>
         </section>
         <section class="panel">
           <h2>Pelletvorrat</h2>
-          <div class="stock"><strong>0,86 t</strong><meter min="0" max="1.3" value="0.86" aria-label="Geschätzter Pelletvorrat in Tonnen">0,86 t</meter></div>
-          <p>Sacklager 180 kg · Bunker 680 kg</p>
+          <div class="stock"><strong id="stock-total">–</strong><meter id="stock-bunker" min="0" max="100" value="0" aria-label="Anteil des Pelletvorrats im Bunker" hidden></meter></div>
+          <p id="stock-details">Geschätzter Bestand aus der App</p>
         </section>
       </div>
     </div>
+    <div class="lower-grid">
     <section class="panel cars" id="autos">
       <h2>Unsere Autos</h2>
-      <div class="car-grid">
-        <article class="car"><h3>Fahrzeug 1 <small>Diesel</small></h3><strong>6,4 l/100 km</strong><p>178 € diesen Monat · 128.450 km</p><p>Letztes Tanken am 18.11.</p></article>
-        <article class="car"><h3>Fahrzeug 2 <small>Benzin</small></h3><strong>7,1 l/100 km</strong><p>126 € diesen Monat · 76.820 km</p><p>Letztes Tanken am 20.11.</p></article>
-        <article class="car"><h3>Als Nächstes</h3><ul><li>Fahrzeug 1 · HU im Dezember</li><li>Fahrzeug 2 · Ölwechsel prüfen</li><li>Haus · Zählerstände erfassen</li></ul></article>
-      </div>
+      <div class="car-grid" id="app-cars"><p>Fahrzeuge werden geladen …</p></div>
+      <p id="car-reminders" hidden></p>
     </section>
     <div class="price-grid" id="preise">
       <section class="panel">
@@ -72,9 +63,10 @@
       </section>
       <section class="panel">
         <h2>Energiepreise</h2>
-        <p>Lokale manuelle Eingaben oder historische Ausgangswerte</p>
+        <p>Manuelle Eingaben aus der App oder historische Ausgangswerte</p>
         <dl class="price-list" id="energy-prices"><div><dt>Status</dt><dd>Wird geladen …</dd></div></dl>
       </section>
+    </div>
     </div>
   </main>
 </body>

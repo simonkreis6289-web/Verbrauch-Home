@@ -73,15 +73,7 @@ nav a { font-weight: 600; }
   background: linear-gradient(#07101dbb, transparent 58%), url("house.webp") center 50% / cover #142742;
   color: #e5eefc;
 }
-.stations { display: flex; justify-content: space-between; gap: 10px; margin-top: 14px; }
-.stations article { padding: 10px 14px; border: 1px solid #7dd3fc; border-radius: 10px; background: #0f2338e8; }
-.stations p { color: #c7deee; }
-.stations strong, .stock strong { font-size: clamp(1.55rem, 3vw, 2.5rem); }
-.chart { padding: 12px 15px; }
-.chart canvas { display: block; width: 100%; height: 112px; }
-.legend { display: flex; gap: 16px; justify-content: center; font-size: .8rem; }
-.legend span::before { content: ""; display: inline-block; width: 14px; height: 3px; margin: 0 5px 3px 0; background: var(--warm); }
-.legend span + span::before { background: var(--primary); }
+.stock strong { font-size: clamp(1.55rem, 3vw, 2.5rem); }
 .values, .price-list { display: grid; gap: 7px; margin-top: 10px; }
 .values > div, .price-list > div { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; border: 1px solid var(--line); border-radius: 8px; padding: 9px; }
 .values dd { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px 14px; }
@@ -109,6 +101,49 @@ meter { flex: 1; min-width: 30px; height: 22px; }
 
 @media (max-width: 580px) {
   .stack, .car-grid, .price-grid { grid-template-columns: 1fr; }
-  .stations article { padding: 8px; }
-  .stations p { font-size: .78rem; }
+}
+
+.weather-status {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 7px 11px;
+  background: #102338eb;
+  border: 1px solid #7dd3fc;
+  border-radius: 8px;
+  color: #e5eefc;
+}
+.car-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.car img {
+  display: block;
+  width: 100%;
+  height: clamp(80px, 8vw, 145px);
+  object-fit: contain;
+  background: #aebfd3;
+  border-radius: 7px;
+}
+.car h3 { font-size: 1.1rem; }
+.car p { line-height: 1.35; }
+#car-reminders { margin-top: 10px; }
+#stock-bunker[hidden] { display: none; }
+
+@media (min-width: 1000px) {
+  body { font-size: clamp(16px, 1.12vw, 21px); }
+  .overview { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
+  .lower-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 12px; }
+  .price-grid .price-list > div { flex-direction: column; gap: 2px; }
+  .price-grid .price-list dd { text-align: left; }
+  .price-grid .panel { padding: 12px; }
+  .scene { min-height: clamp(245px, 39vh, 460px); }
+}
+
+@media (min-width: 1000px) and (max-height: 800px) {
+  .scene { min-height: 240px; }
+  .panel { padding: 11px; }
+  .weather { padding: 0; }
+  .price-grid .price-list > div { padding: 5px 8px; }
+  .car img { height: 98px; }
+}
+
+@media (max-width: 580px) {
+  .car-grid { grid-template-columns: 1fr; }
 }

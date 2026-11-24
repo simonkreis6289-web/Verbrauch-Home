@@ -73,12 +73,18 @@ readPriceFile("./fuel-prices.json").then(data => {
   }));
 });
 
-readPriceFile("./market-prices.json").then(data => {
-  const manual = readManualEnergyPrices();
+const dashboardMarketFile = readPriceFile("./market-prices.json");
+
+async function renderDashboardEnergyPrices(records = readManualEnergyPrices()) {
+  const data = await dashboardMarketFile;
+  const manual = records.filter(record => /^\d{4}-\d{2}-\d{2}$/.test(record?.date))
+    .sort((a, b) => b.date.localeCompare(a.date));
   renderPrices("energy-prices", priceDefinitions.energy, 2, key => {
     const record = manual.find(item => validPrice(item.prices?.[key]));
     if (record) return { value: record.prices[key], date: record.date, source: "Manuell erfasst" };
     const item = data?.prices?.[key];
     return { value: item?.price, date: item?.checked_at, source: "Historischer Ausgangswert" };
   });
-});
+}
+
+void renderDashboardEnergyPrices();
