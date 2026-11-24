@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Verbrauch Zuhause · Dashboard-Einstellungen</title>
+  <link rel="icon" href="icon-192.png">
+  <script src="dashboard/theme.js"></script>
+  <link rel="stylesheet" href="dashboard/dashboard.css">
+  <script type="module" src="dashboard/settings.mjs"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="dashboard.html"><span aria-hidden="true">⌂</span> Verbrauch Zuhause</a>
+    <a class="settings-link" href="dashboard.html">Zum Dashboard</a>
+  </header>
+  <main class="dashboard-settings">
+    <h1>Dashboard-Einstellungen</h1>
+    <section class="panel" aria-labelledby="vehicle-settings-title">
+      <h2 id="vehicle-settings-title">Fahrzeuge anzeigen</h2>
+      <p>Die Auswahl gilt für diesen Browser und wird sofort gespeichert.</p>
+      <div id="vehicle-settings" class="vehicle-settings" role="group" aria-labelledby="vehicle-settings-title"></div>
+      <p id="settings-status" role="status">Fahrzeuge werden geladen …</p>
+    </section>
+  </main>
+</body>
+</html>
