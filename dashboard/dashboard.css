@@ -174,26 +174,9 @@ meter { flex: 1; min-width: 30px; height: 22px; }
   gap: 12px;
 }
 .tv-grid > * { min-width: 0; }
-.camera-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 10px;
-}
-.camera-grid > div {
-  display: grid;
-  place-items: center;
-  min-height: clamp(70px, 12vh, 150px);
-  background: var(--page);
-  border: 1px dashed var(--line);
-  border-radius: 8px;
-  color: var(--muted);
-  text-align: center;
-}
-
 @media (min-width: 720px) {
   .tv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .cameras, .cars, .price-grid { grid-column: 1 / -1; }
+  .cars, .price-grid { grid-column: 1 / -1; }
 }
 
 @media (min-width: 1150px) {
@@ -201,8 +184,7 @@ meter { flex: 1; min-width: 30px; height: 22px; }
     grid-template-columns: minmax(0, 1.05fr) minmax(0, 3fr) minmax(0, 1.65fr) minmax(0, 1.25fr);
     grid-template-areas:
       "forecast house household family"
-      "cars cars prices prices"
-      "cameras cameras cameras cameras";
+      "cars cars prices prices";
   }
   .forecast { grid-area: forecast; }
   .weather { grid-area: house; }
@@ -210,57 +192,8 @@ meter { flex: 1; min-width: 30px; height: 22px; }
   .family-summary { grid-area: family; }
   .cars { grid-area: cars; }
   .price-grid { grid-area: prices; }
-  .cameras { grid-area: cameras; }
   .scene { height: 100%; min-height: clamp(235px, 32vh, 390px); }
   .price-grid .price-list > div { flex-direction: row; }
   .price-grid .price-list dd { text-align: right; }
   .car img { height: clamp(74px, 12vh, 135px); }
 }
-
-@media (max-width: 580px) {
-  .camera-grid { grid-template-columns: 1fr; }
-}
-
-.camera-grid > .camera-live {
-  display: block;
-  overflow: hidden;
-  min-height: 0;
-  border-style: solid;
-  color: var(--text);
-}
-.camera-live h3 { padding: 6px 10px; }
-.camera-live iframe {
-  display: block;
-  width: 100%;
-  height: clamp(110px, 19vh, 240px);
-  border: 0;
-  background: #000;
-}
-
-.camera-settings { margin-top: 12px; }
-.camera-settings form { display: grid; gap: 8px; margin-top: 10px; justify-items: start; }
-.camera-settings input {
-  width: 100%;
-  padding: 8px;
-  color: var(--text);
-  background: var(--page);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-}
-.camera-settings button { color: var(--text); cursor: pointer; }
-
-.camera-player {
-  position: relative;
-  height: clamp(110px, 19vh, 240px);
-  min-height: 0;
-  background: #000;
-}
-.camera-player video { display: block; width: 100%; height: 100%; object-fit: contain; }
-.camera-feedback {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  color: #e5eefc;
-}
-.camera-feedback[hidden] { display: none; }
