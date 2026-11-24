@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="dashboard/dashboard.css">
   <script defer src="dashboard/dashboard.js"></script>
   <script defer src="dashboard/prices.js"></script>
+  <script defer src="dashboard/cameras.js"></script>
   <script type="module" src="dashboard/app-data.mjs"></script>
 </head>
 <body>
@@ -87,11 +88,11 @@
       </div>
       <section class="panel cameras" id="kameras">
         <h2>Live-Kameras</h2>
-        <p>Die ausgewählten Livebilder erscheinen hier nebeneinander.</p>
-        <div class="camera-grid">
-          <div>Kamera 1</div>
-          <div>Kamera 2</div>
-          <div>Kamera 3</div>
+        <p id="camera-status">Öffne das Dashboard über go2rtc im Heimnetz, um die Livebilder zu sehen.</p>
+        <div class="camera-grid" id="camera-grid">
+          <div data-stream="garteneingang"><h3>Garteneingang</h3></div>
+          <div data-stream="schoppen"><h3>Schoppen</h3></div>
+          <div data-stream="garage"><h3>Garage</h3></div>
         </div>
       </section>
     </div>
