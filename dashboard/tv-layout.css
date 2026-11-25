@@ -40,21 +40,19 @@
     min-height: 0;
     gap: clamp(5px, 1vh, 12px);
     grid-template-columns: repeat(12, minmax(0, 1fr));
-    grid-template-rows: minmax(0, 1.8fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1.7fr) minmax(0, 1fr);
     grid-template-areas:
-      "forecast forecast forecast forecast house house house house house household household household"
-      "cars cars cars cars cars prices prices prices prices prices family family";
+      "forecast forecast forecast house house house house house house household household household"
+      "cars cars cars cars cars cars cars cars cars family family family";
   }
 
   .tv-dashboard .forecast { grid-area: forecast; }
   .tv-dashboard .weather { grid-area: house; }
-  .tv-dashboard .household-summary { grid-area: household; grid-template-rows: minmax(0, 1fr) auto; }
+  .tv-dashboard .household-summary { grid-area: household; grid-template-rows: repeat(2, minmax(0, 1fr)); }
   .tv-dashboard .family-summary { grid-area: family; grid-template-rows: repeat(2, minmax(0, 1fr)); }
   .tv-dashboard .cars { grid-area: cars; }
-  .tv-dashboard .price-grid { grid-area: prices; }
 
-  .tv-dashboard .stack,
-  .tv-dashboard .price-grid {
+  .tv-dashboard .stack {
     align-content: stretch;
     min-height: 0;
     gap: clamp(5px, 1vh, 12px);
@@ -70,8 +68,7 @@
     padding: .17em .45em;
     flex-direction: row;
   }
-  .tv-dashboard .values strong, .tv-dashboard .stock strong, .tv-dashboard .car strong { font-size: 1.15em; }
-  .tv-dashboard .stock { margin-top: .25em; }
+  .tv-dashboard .values strong, .tv-dashboard .car strong { font-size: 1.15em; }
   .tv-dashboard .price-list dd { text-align: right; }
   .tv-dashboard .price-list small { font-size: .72em; }
   .tv-dashboard .car-grid { margin-top: .35em; }

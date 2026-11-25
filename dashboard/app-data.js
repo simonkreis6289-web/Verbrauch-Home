@@ -142,12 +142,25 @@ function renderAppData(raw) {
   const balance = calculations.pelletBalanceModel();
   const split = calculations.pelletStockSplit(balance);
   document.getElementById("stock-total").textContent = quantity(balance.stock, "kg");
-  document.getElementById("stock-details").textContent = split
-    ? "Sacklager " + quantity(Math.max(0, split.bags), "kg") + " · Bunker " + quantity(Math.max(0, split.bunker), "kg")
-    : "Kein Pelletbestand ermittelbar.";
-  const meter = document.getElementById("stock-bunker");
-  meter.hidden = !split || !(balance.stock > 0);
-  if (!meter.hidden) meter.value = Math.max(0, Math.min(100, split.bunker / balance.stock * 100));
+  const bunker = split ? Math.max(0, split.bunker) : null;
+  const bags = split ? Math.max(0, split.bags) : null;
+  document.getElementById("stock-bunker").textContent = quantity(bunker, "kg");
+  document.getElementById("stock-bags").textContent = quantity(bags, "kg");
+
+  // Purchases enter the sack store. Refills only move pellets into the bunker.
+  const lastDelivery = data.purchases.reduce((latest, entry) => {
+    const date = Date.parse(entry?.date);
+    return Number.isFinite(date) && date <= now.getTime() && Number(entry.totalKg) > 0 &&
+      (!latest || date > Date.parse(latest.date)) ? entry : latest;
+  }, null);
+  const kgPerBag = Number(lastDelivery?.kgPerBag) ||
+    Number(lastDelivery?.totalKg) / Number(lastDelivery?.bags);
+  const bagCount = document.getElementById("stock-bag-count");
+  const count = bags !== null && Number.isFinite(kgPerBag) && kgPerBag > 0 ? bags / kgPerBag : null;
+  bagCount.hidden = !Number.isFinite(count);
+  bagCount.textContent = bagCount.hidden ? "" :
+    (Math.abs(count - Math.round(count)) > 0.001 ? "ca. " : "") +
+    number.format(count) + (count === 1 ? " Sack à " : " Säcke à ") + quantity(kgPerBag, "kg");
   renderCars(data, now);
 }
 

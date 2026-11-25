@@ -67,20 +67,18 @@ nav a { font-weight: 600; }
 .panel > p { margin-top: 6px; }
 .weather { overflow: hidden; padding: 0; }
 .scene {
+  position: relative;
   min-height: clamp(220px, 27vw, 395px);
   padding: 15px;
-  background: linear-gradient(#07101dbb, transparent 58%), url("house.webp") center 50% / cover #142742;
+  background: linear-gradient(#07101dbb, transparent 58%), url("house.webp") center bottom / cover #142742;
   color: #e5eefc;
 }
-.stock strong { font-size: clamp(1.55rem, 3vw, 2.5rem); }
 .values, .price-list { display: grid; gap: 7px; margin-top: 10px; }
 .values > div, .price-list > div { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; border: 1px solid var(--line); border-radius: 8px; padding: 9px; }
 .values dd { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px 14px; }
 .values dt { font-weight: 700; color: var(--primary); }
 .values strong { font-size: clamp(1rem, 1.6vw, 1.35rem); }
 .values span { color: var(--muted); }
-.stock { display: flex; align-items: center; gap: 16px; margin-top: 8px; }
-meter { flex: 1; min-width: 30px; height: 22px; }
 .car-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
 .car { display: grid; gap: 6px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; }
 .car h3 small { margin-left: 4px; }
@@ -121,7 +119,6 @@ meter { flex: 1; min-width: 30px; height: 22px; }
 .car h3 { font-size: 1.1rem; }
 .car p { line-height: 1.35; }
 #car-reminders { margin-top: 10px; }
-#stock-bunker[hidden] { display: none; }
 
 @media (min-width: 1000px) {
   body { font-size: clamp(16px, 1.12vw, 21px); }
@@ -176,22 +173,21 @@ meter { flex: 1; min-width: 30px; height: 22px; }
 .tv-grid > * { min-width: 0; }
 @media (min-width: 720px) {
   .tv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .cars, .price-grid { grid-column: 1 / -1; }
+  .cars { grid-column: 1 / -1; }
 }
 
 @media (min-width: 1150px) {
   .tv-grid {
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 3fr) minmax(0, 1.65fr) minmax(0, 1.25fr);
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 3.2fr) minmax(0, 1.65fr);
     grid-template-areas:
-      "forecast house household family"
-      "cars cars prices prices";
+      "forecast house household"
+      "cars cars family";
   }
   .forecast { grid-area: forecast; }
   .weather { grid-area: house; }
   .household-summary { grid-area: household; }
   .family-summary { grid-area: family; }
   .cars { grid-area: cars; }
-  .price-grid { grid-area: prices; }
   .scene { height: 100%; min-height: clamp(235px, 32vh, 390px); }
   .price-grid .price-list > div { flex-direction: row; }
   .price-grid .price-list dd { text-align: right; }
