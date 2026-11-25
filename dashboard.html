@@ -6,15 +6,15 @@
   <title>Verbrauch Zuhause · Dashboard</title>
   <link rel="icon" href="icon-192.png">
   <script src="dashboard/theme.js"></script>
-  <link rel="stylesheet" href="dashboard/dashboard.css">
-  <link rel="stylesheet" href="dashboard/tv-layout.css?v=5">
-  <link rel="stylesheet" href="dashboard/weather-view.css?v=3">
-  <link rel="stylesheet" href="dashboard/metrics.css?v=2">
+  <link rel="stylesheet" href="dashboard/dashboard.css?v=2">
+  <link rel="stylesheet" href="dashboard/tv-layout.css?v=6">
+  <link rel="stylesheet" href="dashboard/weather-view.css?v=4">
+  <link rel="stylesheet" href="dashboard/metrics.css?v=3">
   <script defer src="dashboard/dashboard.js"></script>
   <script defer src="dashboard/public-data.js"></script>
   <script defer src="dashboard/prices.js?v=2"></script>
   <script defer src="dashboard/forecast.js"></script>
-  <script defer src="dashboard/load-data.js" data-module="./app-data.js?v=4" data-status="app-data-status"></script>
+  <script defer src="dashboard/load-data.js" data-module="./app-data.js?v=5" data-status="app-data-status"></script>
 </head>
 <body class="tv-dashboard">
   <header class="topbar">
@@ -73,8 +73,15 @@
         <div class="scene">
           <h1 id="weather-title">Zuhause im Überblick</h1>
           <p class="weather-status" id="forecast-current" hidden></p>
+          <section class="house-stock" aria-label="Pelletvorrat">
+            <dl>
+              <div class="house-stock-primary"><dt>Bunker aktuell</dt><dd id="stock-bunker">–</dd></div>
+              <div><dt>Gesamtvorrat</dt><dd id="stock-total">–</dd></div>
+              <div><dt>Sacklager</dt><dd id="stock-bags">–</dd></div>
+            </dl>
+            <p id="stock-bag-count" hidden></p>
+          </section>
         </div>
-
       </section>
       <div class="stack household-summary">
         <section class="panel" id="verbrauch">
@@ -85,10 +92,10 @@
             <div data-meter-type="pellets"><dt>Pellets<small class="meter-reading"></small></dt><dd><strong>–</strong><small class="reading-interval"></small></dd></div>
           </dl>
         </section>
-        <section class="panel">
-          <h2>Pelletvorrat</h2>
-          <div class="stock"><strong id="stock-total">–</strong><meter id="stock-bunker" min="0" max="100" value="0" aria-label="Anteil des Pelletvorrats im Bunker" hidden></meter></div>
-          <p id="stock-details">Geschätzter Bestand aus der App</p>
+        <section class="panel price-panel price-energy" id="preise">
+          <h2>Energiepreise</h2>
+          <p>Manuell erfasst · Datum je Preis</p>
+          <dl class="price-list" id="energy-prices"><div><dt>Status</dt><dd>Wird geladen …</dd></div></dl>
         </section>
       </div>
       <aside class="stack family-summary" aria-label="Familienorganisation">
@@ -105,19 +112,12 @@
         <h2>Unsere Autos <span id="car-month"></span></h2>
         <div class="car-grid" id="app-cars"><p>Fahrzeuge werden geladen …</p></div>
         <p id="car-reminders" hidden></p>
-      </section>
-      <div class="price-grid" id="preise">
-        <section class="panel price-panel price-fuel">
-          <h2>Spritpreise</h2>
+        <section class="price-panel price-fuel" aria-labelledby="fuel-title">
+          <h3 id="fuel-title">Spritpreise</h3>
           <p id="fuel-status">Deutschland-Durchschnitt wird geladen …</p>
           <dl class="price-list" id="fuel-prices"><div><dt>Status</dt><dd>Wird geladen …</dd></div></dl>
         </section>
-        <section class="panel price-panel price-energy">
-          <h2>Energiepreise</h2>
-          <p>Manuell erfasst · Datum je Preis</p>
-          <dl class="price-list" id="energy-prices"><div><dt>Status</dt><dd>Wird geladen …</dd></div></dl>
-        </section>
-      </div>
+      </section>
     </div>
   </main>
   <dialog id="weather-view" class="weather-view" aria-labelledby="weather-view-title">
