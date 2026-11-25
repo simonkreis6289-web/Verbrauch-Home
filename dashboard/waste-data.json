@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "location": "Alperscheid",
+  "municipality": "Drolshagen",
+  "timeZone": "Europe/Berlin",
+  "updatedAt": "2026-11-25",
+  "validFrom": "2026-11-01",
+  "validThrough": "2026-12-31",
+  "sourceUrl": "https://drolshagen.abfuhrtermine.info/dates/calendar/2026/november/1",
+  "sources": [
+    "https://drolshagen.abfuhrtermine.info/dates/calendar/2026/november/1",
+    "https://drolshagen.abfuhrtermine.info/dates/calendar/2026/december/1"
+  ],
+  "events": [
+    { "date": "2026-11-04", "type": "hazardous", "label": "Schadstoffmobil", "collection": false },
+    { "date": "2026-11-06", "type": "residual" },
+    { "date": "2026-11-12", "type": "bio" },
+    { "date": "2026-11-20", "type": "paper" },
+    { "date": "2026-11-26", "type": "bio" },
+    { "date": "2026-11-26", "type": "packaging" },
+    { "date": "2026-11-27", "type": "wood", "label": "Altholz", "registrationRequired": true },
+    { "date": "2026-12-04", "type": "residual" },
+    { "date": "2026-12-04", "type": "electrical", "label": "Elektro-/Metallschrott", "registrationRequired": true },
+    { "date": "2026-12-10", "type": "bio" },
+    { "date": "2026-12-11", "type": "bulky", "label": "Sperrmüll", "registrationRequired": true },
+    { "date": "2026-12-18", "type": "paper" },
+    { "date": "2026-12-23", "type": "bio" },
+    { "date": "2026-12-23", "type": "packaging" }
+  ]
+}

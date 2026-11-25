@@ -8,19 +8,26 @@
   <script src="dashboard/theme.js"></script>
   <link rel="stylesheet" href="dashboard/dashboard.css?v=3">
   <link rel="stylesheet" href="dashboard/tv-layout.css?v=7">
-  <link rel="stylesheet" href="dashboard/weather-view.css?v=4">
+  <link rel="stylesheet" href="dashboard/weather-view.css?v=5">
   <link rel="stylesheet" href="dashboard/metrics.css?v=9">
+  <link rel="stylesheet" href="dashboard/waste.css?v=1">
+  <link rel="stylesheet" href="dashboard/fit-panels.css?v=1">
   <script defer src="dashboard/dashboard.js?v=2"></script>
   <script defer src="dashboard/public-data.js"></script>
   <script defer src="dashboard/prices.js?v=4"></script>
-  <script defer src="dashboard/forecast.js"></script>
-  <script defer src="dashboard/load-data.js" data-module="./app-data.js?v=12" data-status="app-data-status"></script>
+  <script defer src="dashboard/vendor/suncalc-1.9.0.js"></script>
+  <script defer src="dashboard/sky.js?v=1"></script>
+  <script defer src="dashboard/forecast.js?v=2"></script>
+  <script defer src="dashboard/waste-calendar.js?v=1"></script>
+  <script defer src="dashboard/waste.js?v=1"></script>
+  <script defer src="dashboard/fit-panels.js?v=1"></script>
+  <script defer src="dashboard/load-data.js" data-module="./app-data.js?v=13" data-status="app-data-status"></script>
 </head>
 <body class="tv-dashboard">
   <header class="topbar">
     <a class="brand" href="index.html"><span aria-hidden="true">⌂</span> Verbrauch Zuhause</a>
     <nav aria-label="Dashboard">
-      <a href="#uebersicht">Übersicht</a><a href="#wetter" data-open-weather>Wetter</a><a href="#verbrauch">Verbrauch</a><a href="#autos">Autos</a><a href="#preise">Preise</a><a href="#kalender">Kalender</a>
+      <a href="#uebersicht">Übersicht</a><a href="#wetter" data-open-weather>Wetter</a><a href="#verbrauch">Verbrauch</a><a href="#autos">Autos</a><a href="#preise">Preise</a><a href="#abfall">Abfall</a>
     </nav>
     <div class="controls">
       <time id="clock"></time>
@@ -40,16 +47,16 @@
         <button class="settings-link weather-detail-button" type="button" data-open-weather>48-Stunden-Vorhersage</button>
         <div class="sky-overview">
           <section class="sky-card">
-            <h3>Sonnenverlauf · heute</h3>
+            <h3 id="sky-title">Sonnenverlauf · heute</h3>
             <figure class="sun-figure">
               <div class="sun-track" aria-hidden="true">
                 <div class="sun-path"></div>
-                <span class="sun-marker" id="sun-marker" hidden>☀️</span>
+                <span class="sun-marker" id="sun-marker" role="img" aria-label="Sonne" hidden>☀️</span>
               </div>
               <figcaption class="sun-times">
-                <span>Aufgang <strong id="sun-rise">–</strong></span>
-                <span>Höchststand ca. <strong id="sun-noon">–</strong></span>
-                <span>Untergang <strong id="sun-set">–</strong></span>
+                <span>Aufgang<strong id="sun-rise">–</strong></span>
+                <span>Höchststand<strong id="sun-noon">–</strong></span>
+                <span>Untergang<strong id="sun-set">–</strong></span>
               </figcaption>
             </figure>
             <p id="sun-state"></p>
@@ -57,14 +64,18 @@
           <section class="sky-card">
             <h3>Mondphase aktuell</h3>
             <div class="moon-layout">
-              <div class="moon-diagram" role="img" aria-label="Schematische Mondbahn mit der Erde in der Mitte und der Sonne rechts">
-                <div class="moon-orbit" aria-hidden="true">
-                  <span class="moon-earth">🌍</span>
-                  <span class="moon-marker" id="moon-marker"></span>
-                </div>
-                <span class="moon-sun" aria-hidden="true">☀️<small>Sonne</small></span>
-              </div>
-              <p><strong id="moon-phase"></strong><br><span id="moon-light"></span><br><small>Umlauf schematisch</small></p>
+              <p><strong id="moon-phase"></strong><br><span id="moon-light"></span></p>
+              <svg class="moon-phase-symbol" id="moon-phase-symbol" viewBox="0 0 100 100" role="img" aria-label="Aktuelle Mondphase">
+                <defs>
+                  <radialGradient id="moon-surface" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#fff9df"/><stop offset=".6" stop-color="#d6dded"/><stop offset="1" stop-color="#8090aa"/></radialGradient>
+                  <clipPath id="moon-lit-clip"><path id="moon-lit-path" d=""/></clipPath>
+                </defs>
+                <circle cx="50" cy="50" r="44" fill="#15213a" stroke="#8594b4" stroke-width="1"/>
+                <g clip-path="url(#moon-lit-clip)">
+                  <circle cx="50" cy="50" r="44" fill="url(#moon-surface)"/>
+                  <g fill="#7f8da8" opacity=".26"><circle cx="34" cy="31" r="10"/><circle cx="62" cy="25" r="6"/><circle cx="69" cy="58" r="12"/><circle cx="38" cy="67" r="8"/><circle cx="26" cy="48" r="4"/></g>
+                </g>
+              </svg>
             </div>
           </section>
         </div>
@@ -89,7 +100,7 @@
           <dl class="values" id="reading-values">
             <div data-meter-type="strom"><dt><span class="meter-icon" aria-hidden="true">⚡</span><div>Strom<small class="meter-reading"></small></div></dt><dd><strong>–</strong><small class="reading-interval"></small><small class="reading-trend"></small></dd></div>
             <div data-meter-type="wasser"><dt><span class="meter-icon" aria-hidden="true">💧</span><div>Wasser<small class="meter-reading"></small></div></dt><dd><strong>–</strong><small class="reading-interval"></small><small class="reading-trend"></small></dd></div>
-            <div data-meter-type="pellets"><dt><span class="meter-icon" aria-hidden="true">🪵</span><div>Pellets<small class="meter-reading"></small></div></dt><dd><strong>–</strong><small class="reading-interval"></small><small class="reading-trend"></small></dd></div>
+            <div data-meter-type="pellets"><dt><span class="meter-icon" aria-hidden="true"><img src="dashboard/loose-pellets.svg" alt=""></span><div>Pellets<small class="meter-reading"></small></div></dt><dd><strong>–</strong><small class="reading-interval"></small><small class="reading-trend"></small></dd></div>
           </dl>
         </section>
         <section class="panel price-panel price-energy" id="preise">
@@ -98,9 +109,13 @@
           <dl class="price-list" id="energy-prices"><div><dt>Status</dt><dd>Wird geladen …</dd></div></dl>
         </section>
       </div>
-      <aside class="panel family-summary" id="kalender" aria-labelledby="calendar-title">
-        <h2 id="calendar-title">Kalender</h2>
-        <p>Die nächsten drei Termine erscheinen nach der Google-Kalender-Anbindung.</p>
+      <aside class="panel family-summary" id="abfall" aria-labelledby="waste-title">
+        <section class="waste-summary" aria-labelledby="waste-title">
+          <div class="waste-heading"><h2 id="waste-title">Nächste Abfuhr</h2><small id="waste-place">Alperscheid</small></div>
+          <div class="waste-bins" id="waste-bins"></div>
+          <ul class="waste-specials" id="waste-specials" hidden></ul>
+          <p class="waste-status" id="waste-status" role="status">Abfuhrtermine werden geladen …</p>
+        </section>
       </aside>
       <section class="panel cars" id="autos">
         <h2>Unsere Autos <span id="car-month"></span></h2>

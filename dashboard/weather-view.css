@@ -130,6 +130,11 @@
 .moon-sun { display: grid; justify-items: center; line-height: 1.1; }
 .moon-sun small { font-size: .7em; }
 .moon-layout p { flex: 1 1 85px; font-size: .9em; }
+.moon-phase-symbol { flex: none; width: clamp(54px, 5vw, 88px); height: auto; filter: drop-shadow(0 0 8px #b6c7f733); }
+.moon-layout { flex-wrap: nowrap; }
+.sky-card.is-night .sun-path { border-color: #aabef3; background: linear-gradient(180deg, #829fef26, transparent); }
+.sky-card.is-night .sun-marker { filter: drop-shadow(0 0 5px #b5c9ff88); }
+.meter-icon img { display: block; width: 1.25em; height: 1.25em; }
 .sky-overview .sun-marker,
 .sky-overview .moon-marker,
 .sky-overview .moon-earth { font-size: clamp(13px, 1.5vw, 23px); }

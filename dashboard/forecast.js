@@ -11,11 +11,6 @@
   const clock = new Intl.DateTimeFormat("de-DE", {
     hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "Europe/Berlin"
   });
-  const phases = [
-    ["🌑", "Neumond"], ["🌒", "Zunehmende Sichel"], ["🌓", "Erstes Viertel"],
-    ["🌔", "Zunehmender Mond"], ["🌕", "Vollmond"], ["🌖", "Abnehmender Mond"],
-    ["🌗", "Letztes Viertel"], ["🌘", "Abnehmende Sichel"]
-  ];
   const weatherCodes = [
     [0, "☀️", "Sonnig"], [2, "🌤️", "Teilweise bewölkt"], [3, "☁️", "Bewölkt"],
     [48, "🌫️", "Nebel"], [57, "🌦️", "Nieselregen"], [67, "🌧️", "Regen"],
@@ -50,11 +45,6 @@
   }
 
   const formatDay = date => dayFormat.format(new Date(date + "T12:00:00Z"));
-  const minutes = time => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
-  const timeLabel = value => {
-    const rounded = Math.round(value);
-    return String(Math.floor(rounded / 60)).padStart(2, "0") + ":" + String(rounded % 60).padStart(2, "0") + " Uhr";
-  };
 
   function dayCard(daily, index, today) {
     const date = daily.time[index];
@@ -95,37 +85,36 @@
     }));
   }
 
-  function renderSky(daily, index, now) {
-    const clockTime = clock.format(now);
-    const rise = daily?.sunrise?.[index]?.slice(11, 16);
-    const set = daily?.sunset?.[index]?.slice(11, 16);
-    const daylight = /^\d\d:\d\d$/;
-    const available = daylight.test(rise || "") && daylight.test(set || "") && minutes(set) > minutes(rise);
-    const sun = byId("sun-marker");
-    sun.hidden = !available;
-    if (available) {
-      const start = minutes(rise), end = minutes(set), current = minutes(clockTime);
-      const fraction = Math.max(0, Math.min(1, (current - start) / (end - start)));
-      sun.style.left = (50 - 50 * Math.cos(Math.PI * fraction)) + "%";
-      sun.style.top = (100 - 100 * Math.sin(Math.PI * fraction)) + "%";
-      byId("sun-rise").textContent = timeLabel(start);
-      byId("sun-noon").textContent = timeLabel((start + end) / 2);
-      byId("sun-set").textContent = timeLabel(end);
-      byId("sun-state").textContent = current < start ? "Vor Sonnenaufgang" :
-        current >= end ? "Nach Sonnenuntergang" : "Jetzt · " + clockTime + " Uhr · Sonnenhöhe schematisch";
-    } else {
-      for (const id of ["sun-rise", "sun-noon", "sun-set"]) byId(id).textContent = "–";
-      byId("sun-state").textContent = "Auf- und Untergang für heute nicht verfügbar.";
+  function renderSky(now) {
+    const latitude = Number.isFinite(latest?.latitude) ? latest.latitude : 51.042840;
+    const longitude = Number.isFinite(latest?.longitude) ? latest.longitude : 7.819017;
+    const sky = window.DashboardSky.calculate(now, latitude, longitude);
+    const night = sky.mode === "moon";
+    const title = night ? "Mondverlauf · diese Nacht" : "Sonnenverlauf · heute";
+    const marker = byId("sun-marker");
+    const track = marker.closest(".sky-card");
+    track.classList.toggle("is-night", night);
+    byId("sky-title").textContent = title;
+    marker.hidden = !sky.visible;
+    marker.textContent = night ? sky.moon.symbol : "☀️";
+    marker.setAttribute("aria-label", night ? "Mond" : "Sonne");
+    marker.style.left = (50 - 50 * Math.cos(Math.PI * sky.fraction)) + "%";
+    marker.style.top = (100 - 100 * Math.sin(Math.PI * sky.fraction)) + "%";
+    const day = dayKey.format(now);
+    function eventTime(date) {
+      if (!date || !Number.isFinite(date.getTime())) return "–";
+      return clock.format(date) + (dayKey.format(date) !== day ? " · " + dayFormat.format(date) : " Uhr");
     }
-    // The same mean synodic cycle used in the app's moon display.
-    const cycle = (((now.getTime() / 86400000 + 2440587.5 - 2451550.1) / 29.530588853) % 1 + 1) % 1;
-    const [symbol, name] = phases[Math.round(cycle * 8) % 8];
-    const moon = byId("moon-marker");
-    moon.textContent = symbol;
-    moon.style.left = (50 + 50 * Math.cos(cycle * 2 * Math.PI)) + "%";
-    moon.style.top = (50 - 50 * Math.sin(cycle * 2 * Math.PI)) + "%";
-    byId("moon-phase").textContent = name;
-    byId("moon-light").textContent = "Ca. " + Math.round((1 - Math.cos(2 * Math.PI * cycle)) * 50) + " % beleuchtet";
+    byId("sun-rise").textContent = eventTime(sky.rise);
+    byId("sun-noon").textContent = eventTime(sky.peak);
+    byId("sun-set").textContent = eventTime(sky.set);
+    byId("sun-state").textContent = night && !sky.visible
+      ? "Mond unter dem Horizont · nächster Mondaufgang siehe oben"
+      : "Jetzt · " + clock.format(now) + " Uhr · Verlauf schematisch";
+    byId("moon-phase").textContent = sky.moon.name;
+    byId("moon-light").textContent = Math.round(sky.moon.fraction * 100) + " % beleuchtet";
+    byId("moon-lit-path").setAttribute("d", sky.moon.path);
+    byId("moon-phase-symbol").setAttribute("aria-label", sky.moon.name + " · " + Math.round(sky.moon.fraction * 100) + " Prozent beleuchtet");
   }
 
   function render(record, offline) {
@@ -145,7 +134,7 @@
     label.hidden = offline || old || !Number.isFinite(outside?.temperature_2m);
     label.replaceChildren(iconFor(outside?.weather_code), el("span", "Außen laut Vorhersage · " +
       formatValue(outside?.temperature_2m, "°C") + " · " + formatValue(outside?.relative_humidity_2m, "% Luftfeuchte")));
-    renderSky(daily, daily.time.indexOf(today), now);
+    renderSky(now);
     renderHours(record.data.hourly, today + "T" + clock.format(now));
   }
 
@@ -170,11 +159,10 @@
     close.focus();
   }));
 
-  renderSky(null, -1, new Date());
+  renderSky(new Date());
   setInterval(() => {
     const now = new Date();
-    const daily = latest?.data.daily;
-    renderSky(daily, daily?.time.indexOf(dayKey.format(now)) ?? -1, now);
+    renderSky(now);
   }, 60000);
   refreshDashboardData(async () => {
     try {
