@@ -9,8 +9,8 @@ const selectedHousehold = householdId();
 const collections = ["readings", "resets", "pricePeriods", "purchases", "refills",
   "cars", "fuelEntries", "chargeEntries", "maintenanceEntries"];
 const number = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 });
-const dailyNumber = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 4 });
-const percent = new Intl.NumberFormat("de-DE", { style: "percent", maximumFractionDigits: 1 });
+const dailyNumber = new Intl.NumberFormat("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const percent = new Intl.NumberFormat("de-DE", { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const money = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
 const shortDate = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeZone: "Europe/Berlin" });
 const updateTime = new Intl.DateTimeFormat("de-DE", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Berlin" });

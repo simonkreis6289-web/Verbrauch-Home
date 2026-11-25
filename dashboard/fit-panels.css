@@ -1,0 +1,10 @@
+/* Panels expand naturally on phones. On TV, fit-panels.js measures and scales
+   the complete content to the available space, including after live updates. */
+.tv-dashboard .tv-grid .panel { overflow: hidden; }
+.panel-fit-content { display: flow-root; min-width: 0; transform-origin: left top; }
+.panel > .panel-fit-content > p { margin-top: 6px; }
+.price-panel > .panel-fit-content > h2 { border-left: 3px solid var(--metric-accent); padding-left: .45em; }
+.price-panel > .panel-fit-content > p { font-size: .84em; }
+@media (max-width: 899px), (max-height: 499px) {
+  .panel-fit-content { width: auto !important; transform: none !important; }
+}
