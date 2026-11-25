@@ -8,6 +8,7 @@
   <script src="dashboard/theme.js"></script>
   <link rel="stylesheet" href="dashboard/dashboard.css">
   <link rel="stylesheet" href="dashboard/tv-layout.css">
+  <link rel="stylesheet" href="dashboard/weather-view.css">
   <script defer src="dashboard/dashboard.js"></script>
   <script defer src="dashboard/public-data.js"></script>
   <script defer src="dashboard/prices.js"></script>
@@ -18,7 +19,7 @@
   <header class="topbar">
     <a class="brand" href="index.html"><span aria-hidden="true">⌂</span> Verbrauch Zuhause</a>
     <nav aria-label="Dashboard">
-      <a href="#uebersicht">Übersicht</a><a href="#wetter">Wetter</a><a href="#verbrauch">Verbrauch</a><a href="#heizung">Heizung</a><a href="#autos">Autos</a><a href="#preise">Preise</a><a href="#kalender">Kalender</a><a href="#bring">Bring!</a>
+      <a href="#uebersicht">Übersicht</a><a href="#wetter" data-open-weather>Wetter</a><a href="#verbrauch">Verbrauch</a><a href="#heizung">Heizung</a><a href="#autos">Autos</a><a href="#preise">Preise</a><a href="#kalender">Kalender</a><a href="#bring">Bring!</a>
     </nav>
     <div class="controls">
       <time id="clock"></time>
@@ -34,7 +35,8 @@
       <aside class="panel forecast" id="wetter">
         <h2>Wettervorhersage</h2>
         <p id="forecast-status">Vorhersage wird geladen …</p>
-        <dl class="values forecast-days" id="forecast-days"></dl>
+        <div class="forecast-days" id="forecast-days"></div>
+        <button class="settings-link weather-detail-button" type="button" data-open-weather>48 Stunden · Sonne und Mond</button>
       </aside>
       <section class="panel weather" aria-labelledby="weather-title">
         <div class="scene">
@@ -90,5 +92,47 @@
       </div>
     </div>
   </main>
+  <dialog id="weather-view" class="weather-view" aria-labelledby="weather-view-title">
+    <div class="weather-view-header">
+      <div>
+        <h2 id="weather-view-title">Wettervorhersage</h2>
+        <p id="weather-view-status" role="status"></p>
+      </div>
+      <button class="settings-link" id="weather-close" type="button">Zur Übersicht</button>
+    </div>
+    <div class="forecast-overview" id="forecast-overview"></div>
+    <div class="weather-sky">
+      <section class="panel">
+        <h3>Sonnenverlauf · heute</h3>
+        <figure class="sun-figure">
+          <div class="sun-track" aria-hidden="true">
+            <div class="sun-path"></div>
+            <span class="sun-marker" id="sun-marker" hidden>☀️</span>
+          </div>
+          <figcaption class="sun-times">
+            <span>Aufgang <strong id="sun-rise">–</strong></span>
+            <span>Höchststand ca. <strong id="sun-noon">–</strong></span>
+            <span>Untergang <strong id="sun-set">–</strong></span>
+          </figcaption>
+        </figure>
+        <p id="sun-state"></p>
+      </section>
+      <section class="panel">
+        <h3>Mondphase</h3>
+        <div class="moon-layout">
+          <div class="moon-orbit" aria-hidden="true">
+            <span class="moon-earth">🌍</span>
+            <span class="moon-marker" id="moon-marker"></span>
+          </div>
+          <p><strong id="moon-phase"></strong><br><span id="moon-light"></span><br><small>Schematische Umlaufdarstellung nach Mondphase.</small></p>
+        </div>
+      </section>
+    </div>
+    <section class="panel forecast-hours-panel">
+      <h3>48-Stunden-Vorhersage · alle zwei Stunden</h3>
+      <div id="forecast-hours"></div>
+    </section>
+    <p class="weather-source">Wetterdaten: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a></p>
+  </dialog>
 </body>
 </html>
