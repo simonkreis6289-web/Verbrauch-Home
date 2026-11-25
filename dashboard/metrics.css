@@ -72,22 +72,24 @@
 #reading-values > div { gap: .25em .6em; padding: .18em .45em; }
 .house-stock {
   position: absolute;
-  left: clamp(.6em, calc(39% - 5.5em), calc(100% - 12em));
-  bottom: 6%;
-  padding: .48em .65em;
-  width: min(11em, calc(100% - 1.2em));
+  inset: auto auto 6% 33%;
+  width: 33%;
+  max-height: 17%;
+  overflow: hidden;
+  padding: .22em .4em;
   border: 1px solid #ffffff50;
-  border-radius: 9px;
+  border-radius: 6px;
   background: #0c172bef;
   color: #f0f6ff;
-  line-height: 1.2;
+  font-size: 10px;
+  line-height: 1.15;
 }
-.house-stock dl { display: grid; gap: .25em; }
-.house-stock dl > div { display: flex; justify-content: space-between; gap: .35em; font-size: .78em; }
+.house-stock dl { display: grid; gap: .08em; }
+.house-stock dl > div { display: flex; justify-content: space-between; gap: .25em; font-size: .78em; }
 .house-stock dd { font-weight: 750; text-align: right; white-space: nowrap; }
-.house-stock dl > .house-stock-primary { display: grid; font-size: 1em; gap: .12em; }
-.house-stock-primary dd { text-align: left; font-size: 1.42em; }
-#stock-bag-count { margin-top: .23em; color: #c9d9ed; font-size: .73em; }
+.house-stock dl > .house-stock-primary { align-items: baseline; font-size: .9em; }
+.house-stock-primary dd { font-size: 1.25em; }
+#stock-bag-count { margin-top: .08em; color: #c9d9ed; font-size: .73em; text-align: right; }
 @media (max-width: 600px) {
   .tv-dashboard .price-fuel .price-list > .price-metric { grid-template-columns: minmax(0, 1fr); align-content: center; }
   .price-fuel .price-metric dd { text-align: left; }
