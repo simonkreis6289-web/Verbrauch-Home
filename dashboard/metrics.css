@@ -69,6 +69,9 @@
   background: var(--card);
 }
 .car-metrics dt { color: var(--muted); font-size: .75em; }
+@media (min-width: 1200px) {
+  .car-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 .car-metrics dd { font-weight: 750; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .car .car-last { margin: 0; font-size: .78em; line-height: 1.23; overflow-wrap: anywhere; }
 

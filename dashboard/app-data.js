@@ -1,7 +1,7 @@
 import { createAppCalculations } from "./app-calculations.js?v=2";
 
 import { connectDashboard, dashboardHouseholdKey, householdId, householdKey, readLocalSnapshot, snapshotKey } from "./source.js?v=2";
-import { carMonthTotals, previousCarMonth } from "./car-month.js";
+import { carMonthTotals, carRunningCosts, nextInspection, previousCarMonth } from "./car-month.js?v=2";
 import { activeCars, carVisibilityKey, hiddenCarIds } from "./vehicle-preferences.js?v=2";
 
 const status = document.getElementById("app-data-status");
@@ -73,18 +73,24 @@ function renderCars(data, now) {
     const fuel = electric ? [] : data.fuelEntries.filter(entry => entry.carId === car.id);
     const charges = takesCharge ? data.chargeEntries.filter(entry => entry.carId === car.id) : [];
     const service = data.maintenanceEntries.filter(entry => entry.carId === car.id);
-    const entries = [...fuel, ...charges];
-    const totals = carMonthTotals(entries, [...entries, ...service], period, now);
-    const metricLabel = electric ? "Ladekosten" : takesCharge ? "Tank- und Ladekosten" : "Tankkosten";
+    const totals = carMonthTotals([...fuel, ...charges, ...service], period, now);
+    const running = carRunningCosts(electric ? charges : fuel, electric, period, now);
+    const projected = totals.distance !== null && running.costPer100km !== null
+      ? totals.distance * running.costPer100km / 100 : null;
+    const costLabel = electric ? "Ladekosten" : "Tankkosten";
     const distanceLabel = totals.partial ? "Kilometer · Teilzeitraum" : "Kilometer im Monat";
+    const distance = totals.distance === null ? "–"
+      : (totals.isEstimate ? "ca. " : "") + quantity(Math.round(totals.distance), "km");
     const metrics = document.createElement("dl");
     metrics.className = "car-metrics";
     const metricRows = [
-      [distanceLabel, (totals.isEstimate ? "ca. " : "") + quantity(totals.distance, "km")],
-      [metricLabel, totals.cost === null ? "–" : money.format(totals.cost)],
       ["Letzter Kilometerstand", quantity(totals.mileage, "km")],
-      [electric ? "Ladevorgänge" : takesCharge ? "Tank- und Ladevorgänge" : "Tankvorgänge",
-        totals.bookingCount ? number.format(totals.bookingCount) : "–"]
+      [distanceLabel, distance],
+      ["Nächste HU", displayDate(nextInspection(service, now))],
+      [takesCharge && !electric ? "Spritverbrauch" : "Verbrauch",
+        quantity(running.consumption, electric ? "kWh/100 km" : "l/100 km")],
+      [costLabel + " pro 100 km", running.costPer100km === null ? "–" : money.format(running.costPer100km)],
+      [costLabel + " geschätzt", projected === null ? "–" : "ca. " + money.format(projected)]
     ];
     for (const [label, value] of metricRows) {
       const metric = document.createElement("div");
@@ -93,10 +99,19 @@ function renderCars(data, now) {
       metrics.append(metric);
     }
     tile.append(metrics);
+    const lastLabel = electric ? "Letzte Ladung" : "Zuletzt getankt";
+    const last = running.last;
+    const booking = last ? [
+      displayDate(last.time),
+      last.amount !== null ? quantity(last.amount, electric ? "kWh" : "l") : null,
+      last.cost !== null ? money.format(last.cost) : null
+    ].filter(Boolean).join(" · ") : "–";
+    appendText(tile, "p", lastLabel + " · " + booking).className = "car-last";
     const notes = [];
-    if (totals.partial) notes.push(totals.coverage + " % des Monats mit Kilometerständen abgedeckt");
+    if (totals.partial) notes.push(totals.coverage + " % des Monats abgedeckt");
     else if (totals.distance === null) notes.push("Zu wenige Kilometerstände für den Monat");
-    if (totals.pricedCount < totals.bookingCount) notes.push("Kosten teilweise erfasst");
+    if (running.basedOnRecentIntervals) notes.push("Verbrauch aus letzten erfassten Strecken");
+    if (running.costPer100km !== null) notes.push("Preise aus jüngsten Buchungen");
     if (notes.length) appendText(tile, "p", notes.join(" · ")).className = "car-last";
     container.append(tile);
 
@@ -213,7 +228,7 @@ try {
     status.textContent = "Haushalt „" + selectedHousehold + "“ · Live-Sync · " + updateTime.format(new Date()) + " Uhr";
     if (!hasReadings) {
       status.append(" · Keine Zählerstände · ");
-      appendText(status, "a", "Haushalt prüfen").href = "dashboard-settings.html?tv=20";
+      appendText(status, "a", "Haushalt prüfen").href = "dashboard-settings.html?tv=21";
     }
   };
   const options = { includeMetadataChanges: true };
