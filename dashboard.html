@@ -7,8 +7,8 @@
   <link rel="icon" href="icon-192.png">
   <script src="dashboard/theme.js"></script>
   <link rel="stylesheet" href="dashboard/dashboard.css">
-  <link rel="stylesheet" href="dashboard/tv-layout.css">
-  <link rel="stylesheet" href="dashboard/weather-view.css">
+  <link rel="stylesheet" href="dashboard/tv-layout.css?v=2">
+  <link rel="stylesheet" href="dashboard/weather-view.css?v=2">
   <script defer src="dashboard/dashboard.js"></script>
   <script defer src="dashboard/public-data.js"></script>
   <script defer src="dashboard/prices.js"></script>
@@ -36,12 +36,42 @@
         <h2>Wettervorhersage</h2>
         <p id="forecast-status">Vorhersage wird geladen …</p>
         <div class="forecast-days" id="forecast-days"></div>
-        <button class="settings-link weather-detail-button" type="button" data-open-weather>48 Stunden · Sonne und Mond</button>
+        <button class="settings-link weather-detail-button" type="button" data-open-weather>48-Stunden-Vorhersage</button>
       </aside>
       <section class="panel weather" aria-labelledby="weather-title">
         <div class="scene">
           <h1 id="weather-title">Zuhause im Überblick</h1>
           <p class="weather-status" id="forecast-current" hidden></p>
+        </div>
+        <div class="sky-overview">
+          <section class="sky-card">
+            <h3>Sonnenverlauf · heute</h3>
+            <figure class="sun-figure">
+              <div class="sun-track" aria-hidden="true">
+                <div class="sun-path"></div>
+                <span class="sun-marker" id="sun-marker" hidden>☀️</span>
+              </div>
+              <figcaption class="sun-times">
+                <span>Aufgang <strong id="sun-rise">–</strong></span>
+                <span>Höchststand ca. <strong id="sun-noon">–</strong></span>
+                <span>Untergang <strong id="sun-set">–</strong></span>
+              </figcaption>
+            </figure>
+            <p id="sun-state"></p>
+          </section>
+          <section class="sky-card">
+            <h3>Mondphase aktuell</h3>
+            <div class="moon-layout">
+              <div class="moon-diagram" role="img" aria-label="Schematische Mondbahn mit der Erde in der Mitte und der Sonne rechts">
+                <div class="moon-orbit" aria-hidden="true">
+                  <span class="moon-earth">🌍</span>
+                  <span class="moon-marker" id="moon-marker"></span>
+                </div>
+                <span class="moon-sun" aria-hidden="true">☀️<small>Sonne</small></span>
+              </div>
+              <p><strong id="moon-phase"></strong><br><span id="moon-light"></span><br><small>Umlauf schematisch</small></p>
+            </div>
+          </section>
         </div>
       </section>
       <div class="stack household-summary">
@@ -101,33 +131,6 @@
       <button class="settings-link" id="weather-close" type="button">Zur Übersicht</button>
     </div>
     <div class="forecast-overview" id="forecast-overview"></div>
-    <div class="weather-sky">
-      <section class="panel">
-        <h3>Sonnenverlauf · heute</h3>
-        <figure class="sun-figure">
-          <div class="sun-track" aria-hidden="true">
-            <div class="sun-path"></div>
-            <span class="sun-marker" id="sun-marker" hidden>☀️</span>
-          </div>
-          <figcaption class="sun-times">
-            <span>Aufgang <strong id="sun-rise">–</strong></span>
-            <span>Höchststand ca. <strong id="sun-noon">–</strong></span>
-            <span>Untergang <strong id="sun-set">–</strong></span>
-          </figcaption>
-        </figure>
-        <p id="sun-state"></p>
-      </section>
-      <section class="panel">
-        <h3>Mondphase</h3>
-        <div class="moon-layout">
-          <div class="moon-orbit" aria-hidden="true">
-            <span class="moon-earth">🌍</span>
-            <span class="moon-marker" id="moon-marker"></span>
-          </div>
-          <p><strong id="moon-phase"></strong><br><span id="moon-light"></span><br><small>Schematische Umlaufdarstellung nach Mondphase.</small></p>
-        </div>
-      </section>
-    </div>
     <section class="panel forecast-hours-panel">
       <h3>48-Stunden-Vorhersage · alle zwei Stunden</h3>
       <div id="forecast-hours"></div>
