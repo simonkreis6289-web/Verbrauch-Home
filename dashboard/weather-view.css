@@ -1,0 +1,147 @@
+.forecast-days {
+  display: grid;
+  gap: .4em;
+  margin: .55em 0;
+}
+.forecast-day-card {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: .2em .5em;
+  padding: .45em .55em;
+  background: var(--page-end);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.forecast-day-card strong { color: var(--primary); }
+.forecast-day-card small { display: block; }
+.forecast-days .forecast-day-card {
+  grid-template-columns: auto minmax(0, 1fr);
+  justify-items: start;
+}
+.forecast-days .forecast-day-card h3 { grid-column: 1 / -1; }
+.forecast-days .forecast-day-card small { grid-column: 1 / -1; }
+.forecast-icon { display: inline-block; line-height: 1.1; }
+.forecast-days .forecast-icon { font-size: 1.25em; }
+.weather-status .forecast-icon { margin-right: .35em; }
+
+.weather-detail-button,
+.weather-view button {
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.weather-view {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(1170px, calc(100% - 24px));
+  max-height: 94vh;
+  padding: clamp(12px, 2vw, 22px);
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--page);
+  color: var(--text);
+}
+.weather-view:not([open]) { display: none; }
+.weather-view::backdrop { background: #07101dc9; }
+.weather-dialog-fallback { z-index: 5; box-shadow: 0 0 0 100vmax #07101dc9; }
+.weather-view-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.forecast-overview,
+.weather-sky {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+.forecast-overview { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.forecast-overview .forecast-day-card { justify-items: center; text-align: center; }
+.forecast-overview .forecast-icon { font-size: clamp(1.65rem, 4vw, 2.6rem); }
+.weather-sky { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+.weather-sky .panel { padding: 14px; }
+
+.sun-figure { margin: 1.25em auto .5em; max-width: 420px; }
+.sun-track {
+  position: relative;
+  margin: 0 1em;
+  height: clamp(54px, 14vh, 130px);
+  border-bottom: 1px solid var(--line);
+}
+.sun-path {
+  height: 100%;
+  border: 2px dashed var(--warm);
+  border-bottom: 0;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  background: linear-gradient(180deg, #f59e0b26, transparent);
+}
+.sun-marker, .moon-marker, .moon-earth {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: clamp(1.15rem, 3vw, 1.9rem);
+  line-height: 1;
+}
+.sun-marker { filter: drop-shadow(0 0 5px #f59e0b88); }
+.sun-times {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 10px;
+  text-align: center;
+  color: var(--muted);
+  font-size: .9em;
+}
+.sun-times strong { display: block; color: var(--text); }
+#sun-state { text-align: center; font-size: .88em; }
+.moon-layout {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin: 12px 5px 4px;
+}
+.moon-orbit {
+  position: relative;
+  margin: 10px;
+  width: clamp(82px, 12vw, 130px);
+  aspect-ratio: 1.35;
+  border: 1px dashed var(--muted);
+  border-radius: 50%;
+}
+.moon-earth { left: 50%; top: 50%; }
+.moon-layout p { flex: 1 1 125px; }
+.moon-layout strong { color: var(--text); }
+.forecast-hours-panel { margin-top: 12px; }
+.forecast-hours-panel h4 { margin: .65em 0 .4em; }
+.forecast-hour-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(103px, 1fr)); gap: 6px; }
+.forecast-hour-card {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 6px 3px;
+  text-align: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.forecast-hour-card .forecast-icon { font-size: 1.25em; }
+.weather-source { margin-top: 10px; font-size: .85em; }
+.weather-source a { color: var(--primary); }
+
+@media (min-width: 900px) and (min-height: 500px) {
+  .forecast-days .forecast-day-card { grid-template-columns: auto minmax(0, 1fr); }
+  .forecast-days .forecast-day-card h3 { grid-column: auto; }
+  .forecast-days .forecast-icon { grid-column: 1; grid-row: 2 / 4; align-self: center; }
+  .forecast-days .forecast-day-card strong { grid-column: 2; }
+  .forecast-days .forecast-day-card small { grid-column: 2; }
+}
+@media (max-width: 580px) {
+  .weather-sky { grid-template-columns: 1fr; }
+  .forecast-overview { gap: 5px; }
+  .forecast-overview .forecast-day-card { padding: .35em .2em; font-size: .85em; }
+}
