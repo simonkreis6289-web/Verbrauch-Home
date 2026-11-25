@@ -83,7 +83,34 @@
 .price-fuel .price-metric { min-width: 0; }
 .price-fuel .price-metric dd { text-align: right; }
 
-#reading-values > div { gap: .25em .6em; padding: .18em .45em; }
+#reading-values > div {
+  align-items: center;
+  gap: .2em .55em;
+  padding: .3em .45em;
+  border-left: 3px solid var(--meter-accent);
+  background: var(--page-end);
+}
+#reading-values [data-meter-type="strom"] { --meter-accent: var(--warm); }
+#reading-values [data-meter-type="wasser"] { --meter-accent: var(--primary); }
+#reading-values [data-meter-type="pellets"] { --meter-accent: #a87355; }
+#reading-values dt {
+  display: flex;
+  align-items: center;
+  gap: .45em;
+  color: var(--text);
+}
+#reading-values .meter-icon {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 1.6em;
+  height: 1.6em;
+  border: 1px solid var(--line);
+  border-radius: .4em;
+  background: var(--card);
+  font-size: 1.1em;
+}
+#reading-values dd strong { font-variant-numeric: tabular-nums; }
 .house-stock {
   position: absolute;
   inset: auto auto 6% 33%;
