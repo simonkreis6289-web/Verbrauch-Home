@@ -6,7 +6,7 @@ const priceDefinitions = {
   ],
   energy: [
     ["heating_oil", "Heizöl", "€/100 l", "🔥"],
-    ["pellets_loose", "Pellets lose", "€/1.000 kg", "🪵"],
+    ["pellets_loose", "Pellets lose", "€/1.000 kg", "./dashboard/loose-pellets.svg"],
     ["pellets_bag", "Pellets Sackware", "€/1.000 kg", "📦"]
   ]
 };
@@ -91,7 +91,16 @@ function renderPrices(id, definitions, digits, selectPrice) {
     const symbol = document.createElement("span");
     symbol.className = "price-symbol";
     symbol.setAttribute("aria-hidden", "true");
-    symbol.textContent = icon;
+    if (icon.endsWith(".svg")) {
+      const image = document.createElement("img");
+      image.src = icon;
+      image.alt = "";
+      image.width = 24;
+      image.height = 24;
+      symbol.append(image);
+    } else {
+      symbol.textContent = icon;
+    }
     const labelNode = document.createElement("span");
     labelNode.textContent = label;
     name.append(symbol, labelNode);

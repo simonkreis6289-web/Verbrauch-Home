@@ -15,6 +15,7 @@
 }
 .price-metric dt { display: flex; align-items: center; gap: .35em; font-weight: 650; }
 .price-symbol { color: var(--metric-accent); }
+.price-symbol img { display: block; width: 1.2em; height: 1.2em; }
 .price-metric dd { white-space: nowrap; }
 .price-metric dd strong {
   color: var(--metric-accent);

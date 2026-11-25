@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24">
+  <defs>
+    <g id="pellet">
+      <path d="M2 0h7c2.7 0 2.7 5 0 5H2z" fill="#bf8150"/>
+      <path d="M3 1h6.2M3.7 3.6h5.5" stroke="#875639" stroke-width=".65" stroke-linecap="round"/>
+      <ellipse cx="2" cy="2.5" rx="2" ry="2.5" fill="#f1c18a" stroke="#a66d44" stroke-width=".5"/>
+      <circle cx="1.9" cy="2.5" r=".5" fill="#bf8150"/>
+    </g>
+  </defs>
+  <use xlink:href="#pellet" transform="translate(9 2) rotate(26)"/>
+  <use xlink:href="#pellet" transform="translate(4 13) rotate(-28)"/>
+  <use xlink:href="#pellet" transform="translate(12 11) rotate(12)"/>
+  <use xlink:href="#pellet" transform="translate(2 16) rotate(13)"/>
+  <use xlink:href="#pellet" transform="translate(11 19) rotate(-23)"/>
+</svg>
