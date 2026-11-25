@@ -268,52 +268,6 @@ export function createAppCalculations(data) {
     return Math.max(1 / 24, (end - start) / 86400000);
   }
 
-  function buildMonthlyStats() {
-    // Messintervalle werden nach tatsächlicher Zeitdauer auf Kalendermonate verteilt.
-    // So erscheinen 14 Tage und zwei Monate im Diagramm als vergleichbare Tagesmittelwerte.
-    // Da keine täglichen Messwerte vorliegen, ist die Verteilung innerhalb eines
-    // Ableseintervalls eine lineare Schätzung, keine gemessene Tageslast.
-    const computed = buildComputedReadings().filter((entry) =>
-      entry.previousDate && Number.isFinite(entry.delta)
-    );
-    const result = { strom: {}, wasser: {}, pellets: {} };
-    const dayMs = 86400000;
-
-    computed.forEach((entry) => {
-      const start = new Date(entry.previousDate).getTime();
-      const end = new Date(entry.date).getTime();
-      if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return;
-      const intervalDays = (end - start) / dayMs;
-      let cursor = start;
-
-      while (cursor < end) {
-        const date = new Date(cursor);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-        const nextMonth = new Date(date.getFullYear(), date.getMonth() + 1, 1).getTime();
-        const sliceEnd = Math.min(end, nextMonth);
-        const partDays = (sliceEnd - cursor) / dayMs;
-        const fraction = partDays / intervalDays;
-        if (!(partDays > 0)) break;
-
-        if (!result[entry.type][monthKey]) {
-          result[entry.type][monthKey] = { total: 0, cost: 0, costComplete: true };
-        }
-        const month = result[entry.type][monthKey];
-        month.total += Math.max(0, entry.delta) * fraction;
-        if (Number.isFinite(entry.cost)) month.cost += Math.max(0, entry.cost) * fraction;
-        else month.costComplete = false;
-        cursor = sliceEnd;
-      }
-    });
-
-    Object.keys(result).forEach((type) => Object.keys(result[type]).forEach((monthKey) => {
-      const item = result[type][monthKey];
-      item.total = round2(item.total);
-      item.cost = item.costComplete ? round2(item.cost) : null;
-    }));
-    return result;
-  }
-
   function pelletBaselineDate(){
     const purchases=state.purchases.filter(p=>Number(p.totalKg)>0&&Number.isFinite(Date.parse(p.date))).sort((a,b)=>Date.parse(a.date)-Date.parse(b.date));
     return purchases.length?new Date(purchases[0].date):null;
@@ -505,5 +459,5 @@ export function createAppCalculations(data) {
     });
   }
 
-  return { buildMonthlyStats, pelletBalanceModel, pelletStockSplit, buildComputedFuelEntriesForCar };
+  return { buildComputedReadings, pelletBalanceModel, pelletStockSplit, buildComputedFuelEntriesForCar };
 }

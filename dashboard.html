@@ -7,19 +7,19 @@
   <link rel="icon" href="icon-192.png">
   <script src="dashboard/theme.js"></script>
   <link rel="stylesheet" href="dashboard/dashboard.css">
-  <link rel="stylesheet" href="dashboard/tv-layout.css?v=2">
+  <link rel="stylesheet" href="dashboard/tv-layout.css?v=3">
   <link rel="stylesheet" href="dashboard/weather-view.css?v=2">
   <script defer src="dashboard/dashboard.js"></script>
   <script defer src="dashboard/public-data.js"></script>
   <script defer src="dashboard/prices.js"></script>
   <script defer src="dashboard/forecast.js"></script>
-  <script defer src="dashboard/load-data.js" data-module="./app-data.js" data-status="app-data-status"></script>
+  <script defer src="dashboard/load-data.js" data-module="./app-data.js?v=2" data-status="app-data-status"></script>
 </head>
 <body class="tv-dashboard">
   <header class="topbar">
     <a class="brand" href="index.html"><span aria-hidden="true">⌂</span> Verbrauch Zuhause</a>
     <nav aria-label="Dashboard">
-      <a href="#uebersicht">Übersicht</a><a href="#wetter" data-open-weather>Wetter</a><a href="#verbrauch">Verbrauch</a><a href="#heizung">Heizung</a><a href="#autos">Autos</a><a href="#preise">Preise</a><a href="#kalender">Kalender</a><a href="#bring">Bring!</a>
+      <a href="#uebersicht">Übersicht</a><a href="#wetter" data-open-weather>Wetter</a><a href="#verbrauch">Verbrauch</a><a href="#autos">Autos</a><a href="#preise">Preise</a><a href="#kalender">Kalender</a><a href="#bring">Bring!</a>
     </nav>
     <div class="controls">
       <time id="clock"></time>
@@ -76,21 +76,17 @@
       </section>
       <div class="stack household-summary">
         <section class="panel" id="verbrauch">
-          <h2 id="month-title">Verbrauch im aktuellen Monat</h2>
-          <dl class="values" id="monthly-values">
-            <div><dt>Strom<small class="meter-reading"></small></dt><dd><strong>–</strong><span>–</span></dd></div>
-            <div><dt>Wasser<small class="meter-reading"></small></dt><dd><strong>–</strong><span>–</span></dd></div>
-            <div><dt>Pellets<small class="meter-reading"></small></dt><dd><strong>–</strong><span>–</span></dd></div>
+          <h2>Verbrauch und Zählerstände</h2>
+          <dl class="values" id="reading-values">
+            <div data-meter-type="strom"><dt>Strom<small class="meter-reading"></small></dt><dd><strong>–</strong><small class="reading-interval"></small></dd></div>
+            <div data-meter-type="wasser"><dt>Wasser<small class="meter-reading"></small></dt><dd><strong>–</strong><small class="reading-interval"></small></dd></div>
+            <div data-meter-type="pellets"><dt>Pellets<small class="meter-reading"></small></dt><dd><strong>–</strong><small class="reading-interval"></small></dd></div>
           </dl>
         </section>
         <section class="panel">
           <h2>Pelletvorrat</h2>
           <div class="stock"><strong id="stock-total">–</strong><meter id="stock-bunker" min="0" max="100" value="0" aria-label="Anteil des Pelletvorrats im Bunker" hidden></meter></div>
           <p id="stock-details">Geschätzter Bestand aus der App</p>
-        </section>
-        <section class="panel" id="heizung">
-          <h2>Fröling-Heizung</h2>
-          <p>Live-Daten noch nicht verbunden.</p>
         </section>
       </div>
       <aside class="stack family-summary" aria-label="Familienorganisation">

@@ -1,4 +1,4 @@
-import { createAppCalculations } from "./app-calculations.js";
+import { createAppCalculations } from "./app-calculations.js?v=2";
 
 import { connectDashboard, householdKey, readLocalSnapshot, snapshotKey } from "./source.js";
 import { activeCars, carVisibilityKey, hiddenCarIds } from "./vehicle-preferences.js";
@@ -8,10 +8,9 @@ const collections = ["readings", "resets", "pricePeriods", "purchases", "refills
   "cars", "fuelEntries", "chargeEntries", "maintenanceEntries"];
 const number = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 });
 const money = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
-const shortDate = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" });
+const shortDate = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeZone: "Europe/Berlin" });
 const updateTime = new Intl.DateTimeFormat("de-DE", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Berlin" });
-const monthLabel = new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" });
-const units = ["kWh", "m³", "kg"];
+const units = { strom: "kWh", wasser: "m³", pellets: "kg" };
 
 function quantity(value, unit) {
   return value != null && Number.isFinite(Number(value)) ? number.format(value) + " " + unit : "–";
@@ -99,27 +98,26 @@ function renderAppData(raw) {
   const now = new Date();
   const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  const monthKey = currentMonth.getFullYear() + "-" + String(currentMonth.getMonth() + 1).padStart(2, "0");
-  const calculations = createAppCalculations(data);
-  const monthly = calculations.buildMonthlyStats();
-  document.getElementById("month-title").textContent = "Verbrauch · " + monthLabel.format(currentMonth);
-  const latest = new Map();
-  for (const reading of data.readings) {
+  data.readings = data.readings.filter(reading => {
     const time = Date.parse(reading?.date);
-    if (!Number.isFinite(time) || time > now.getTime()) continue;
-    if (!latest.has(reading.type) || time > latest.get(reading.type).time) {
-      latest.set(reading.type, { time, reading });
-    }
-  }
-  document.querySelectorAll("#monthly-values > div").forEach((row, index) => {
-    const cell = row.querySelector("dd");
-    const type = ["strom", "wasser", "pellets"][index];
-    const item = monthly[type][monthKey];
-    const reading = latest.get(type)?.reading;
+    return Number.isFinite(time) && time <= now.getTime() &&
+      reading.value != null && reading.value !== "" && Number.isFinite(Number(reading.value));
+  });
+  const calculations = createAppCalculations(data);
+  const readings = calculations.buildComputedReadings();
+  document.querySelectorAll("#reading-values [data-meter-type]").forEach(row => {
+    const type = row.dataset.meterType;
+    const reading = readings.find(item => item.type === type);
+    const unit = units[type];
+    const validInterval = reading && Number.isFinite(reading.delta) &&
+      Date.parse(reading.previousDate) < Date.parse(reading.date) &&
+      (reading.resetApplied || Number(reading.value) >= Number(reading.previousValue));
     row.querySelector(".meter-reading").textContent = reading
-      ? "Zähler " + quantity(reading.value, units[index]) + " · " + displayDate(reading.date) : "";
-    cell.querySelector("strong").textContent = quantity(item?.total, units[index]);
-    cell.querySelector("span").textContent = item?.cost != null ? money.format(item.cost) : "–";
+      ? "Zähler " + quantity(reading.value, unit) + " · " + displayDate(reading.date) : "";
+    row.querySelector("dd strong").textContent = validInterval ? quantity(reading.delta, unit) : "–";
+    row.querySelector(".reading-interval").textContent = validInterval
+      ? displayDate(reading.previousDate) + " – " + displayDate(reading.date)
+      : reading ? "Kein ablesbarer Zeitraum" : "Kein Zählerstand";
   });
 
   const balance = calculations.pelletBalanceModel();

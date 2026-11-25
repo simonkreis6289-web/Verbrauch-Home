@@ -48,7 +48,7 @@
 
   .tv-dashboard .forecast { grid-area: forecast; }
   .tv-dashboard .weather { grid-area: house; }
-  .tv-dashboard .household-summary { grid-area: household; grid-template-rows: minmax(0, 1fr) auto auto; }
+  .tv-dashboard .household-summary { grid-area: household; grid-template-rows: minmax(0, 1fr) auto; }
   .tv-dashboard .family-summary { grid-area: family; grid-template-rows: repeat(2, minmax(0, 1fr)); }
   .tv-dashboard .cars { grid-area: cars; }
   .tv-dashboard .price-grid { grid-area: prices; }
