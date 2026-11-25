@@ -203,3 +203,6 @@ meter { flex: 1; min-width: 30px; height: 22px; }
 .forecast-days > div { align-items: start; }
 .forecast-days dd { display: grid; gap: 2px; text-align: right; }
 .weather-status[hidden] { display: none; }
+
+#reading-values dd { display: grid; gap: 2px; text-align: right; }
+.reading-interval { font-size: .8em; }
