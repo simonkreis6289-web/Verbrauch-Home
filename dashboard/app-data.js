@@ -9,6 +9,8 @@ const selectedHousehold = householdId();
 const collections = ["readings", "resets", "pricePeriods", "purchases", "refills",
   "cars", "fuelEntries", "chargeEntries", "maintenanceEntries"];
 const number = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 });
+const dailyNumber = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 4 });
+const percent = new Intl.NumberFormat("de-DE", { style: "percent", maximumFractionDigits: 1 });
 const money = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
 const shortDate = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeZone: "Europe/Berlin" });
 const updateTime = new Intl.DateTimeFormat("de-DE", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Berlin" });
@@ -127,6 +129,29 @@ function renderCars(data, now) {
   reminders.textContent = pending.length ? "Als Nächstes: " + pending[0].text : "";
 }
 
+function hasReadingInterval(reading) {
+  return Boolean(reading && Number.isFinite(reading.delta) &&
+    Date.parse(reading.previousDate) < Date.parse(reading.date) &&
+    (reading.resetApplied || Number(reading.value) >= Number(reading.previousValue)));
+}
+
+function renderReadingTrend(element, current, previous, unit) {
+  element.classList.remove("up", "down");
+  if (!hasReadingInterval(current) || !hasReadingInterval(previous) ||
+      !Number.isFinite(current.dailyDelta) || !Number.isFinite(previous.dailyDelta)) {
+    element.textContent = "Kein Tagesvergleich";
+    return;
+  }
+
+  const difference = current.dailyDelta - previous.dailyDelta;
+  const arrow = difference > 0 ? "↗" : difference < 0 ? "↘" : "→";
+  if (difference) element.classList.add(difference > 0 ? "up" : "down");
+  const sign = difference > 0 ? "+" : difference < 0 ? "−" : "";
+  const amount = Math.abs(difference);
+  const relative = previous.dailyDelta > 0 ? " (" + sign + percent.format(amount / previous.dailyDelta) + ")" : "";
+  element.textContent = "Ø " + arrow + " " + sign + dailyNumber.format(amount) + " " + unit + "/Tag" + relative;
+}
+
 function renderAppData(raw) {
   const data = { settings: raw.settings };
   for (const key of collections) data[key] = Array.isArray(raw[key]) ? raw[key] : [];
@@ -143,15 +168,17 @@ function renderAppData(raw) {
     const type = row.dataset.meterType;
     const reading = readings.find(item => item.type === type);
     const unit = units[type];
-    const validInterval = reading && Number.isFinite(reading.delta) &&
-      Date.parse(reading.previousDate) < Date.parse(reading.date) &&
-      (reading.resetApplied || Number(reading.value) >= Number(reading.previousValue));
+    const validInterval = hasReadingInterval(reading);
+    const previous = validInterval
+      ? readings.find(item => item.type === type && item.date === reading.previousDate)
+      : null;
     row.querySelector(".meter-reading").textContent = reading
       ? "Zähler " + quantity(reading.value, unit) + " · " + displayDate(reading.date) : "";
     row.querySelector("dd strong").textContent = validInterval ? quantity(reading.delta, unit) : "–";
     row.querySelector(".reading-interval").textContent = validInterval
       ? displayDate(reading.previousDate) + " – " + displayDate(reading.date)
       : reading ? "Kein ablesbarer Zeitraum" : "Kein Zählerstand";
+    renderReadingTrend(row.querySelector(".reading-trend"), reading, previous, unit);
   });
 
   const balance = calculations.pelletBalanceModel();
@@ -227,7 +254,7 @@ try {
     status.textContent = "Haushalt „" + selectedHousehold + "“ · Live-Sync · " + updateTime.format(new Date()) + " Uhr";
     if (!hasReadings) {
       status.append(" · Keine Zählerstände · ");
-      appendText(status, "a", "Haushalt prüfen").href = "dashboard-settings.html?tv=23";
+      appendText(status, "a", "Haushalt prüfen").href = "dashboard-settings.html?tv=24";
     }
   };
   const options = { includeMetadataChanges: true };

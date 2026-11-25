@@ -9,12 +9,12 @@
   <link rel="stylesheet" href="dashboard/dashboard.css?v=3">
   <link rel="stylesheet" href="dashboard/tv-layout.css?v=7">
   <link rel="stylesheet" href="dashboard/weather-view.css?v=4">
-  <link rel="stylesheet" href="dashboard/metrics.css?v=8">
+  <link rel="stylesheet" href="dashboard/metrics.css?v=9">
   <script defer src="dashboard/dashboard.js?v=2"></script>
   <script defer src="dashboard/public-data.js"></script>
   <script defer src="dashboard/prices.js?v=4"></script>
   <script defer src="dashboard/forecast.js"></script>
-  <script defer src="dashboard/load-data.js" data-module="./app-data.js?v=11" data-status="app-data-status"></script>
+  <script defer src="dashboard/load-data.js" data-module="./app-data.js?v=12" data-status="app-data-status"></script>
 </head>
 <body class="tv-dashboard">
   <header class="topbar">
@@ -25,7 +25,7 @@
     <div class="controls">
       <time id="clock"></time>
       <button id="theme" type="button">Design</button>
-      <a class="settings-link" href="dashboard-settings.html?tv=23">Einstellungen</a>
+      <a class="settings-link" href="dashboard-settings.html?tv=24">Einstellungen</a>
       <button id="fullscreen" type="button" title="Vollbild einschalten" aria-label="Vollbild einschalten" aria-pressed="false">⛶</button>
     </div>
   </header>
@@ -87,9 +87,9 @@
         <section class="panel" id="verbrauch">
           <h2>Verbrauch und Zählerstände</h2>
           <dl class="values" id="reading-values">
-            <div data-meter-type="strom"><dt><span class="meter-icon" aria-hidden="true">⚡</span><div>Strom<small class="meter-reading"></small></div></dt><dd><strong>–</strong><small class="reading-interval"></small></dd></div>
-            <div data-meter-type="wasser"><dt><span class="meter-icon" aria-hidden="true">💧</span><div>Wasser<small class="meter-reading"></small></div></dt><dd><strong>–</strong><small class="reading-interval"></small></dd></div>
-            <div data-meter-type="pellets"><dt><span class="meter-icon" aria-hidden="true">🪵</span><div>Pellets<small class="meter-reading"></small></div></dt><dd><strong>–</strong><small class="reading-interval"></small></dd></div>
+            <div data-meter-type="strom"><dt><span class="meter-icon" aria-hidden="true">⚡</span><div>Strom<small class="meter-reading"></small></div></dt><dd><strong>–</strong><small class="reading-interval"></small><small class="reading-trend"></small></dd></div>
+            <div data-meter-type="wasser"><dt><span class="meter-icon" aria-hidden="true">💧</span><div>Wasser<small class="meter-reading"></small></div></dt><dd><strong>–</strong><small class="reading-interval"></small><small class="reading-trend"></small></dd></div>
+            <div data-meter-type="pellets"><dt><span class="meter-icon" aria-hidden="true">🪵</span><div>Pellets<small class="meter-reading"></small></div></dt><dd><strong>–</strong><small class="reading-interval"></small><small class="reading-trend"></small></dd></div>
           </dl>
         </section>
         <section class="panel price-panel price-energy" id="preise">
