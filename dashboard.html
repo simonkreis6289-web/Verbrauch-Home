@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="dashboard/dashboard.css?v=3">
   <link rel="stylesheet" href="dashboard/tv-layout.css?v=7">
   <link rel="stylesheet" href="dashboard/weather-view.css?v=4">
-  <link rel="stylesheet" href="dashboard/metrics.css?v=6">
+  <link rel="stylesheet" href="dashboard/metrics.css?v=7">
   <script defer src="dashboard/dashboard.js?v=2"></script>
   <script defer src="dashboard/public-data.js"></script>
   <script defer src="dashboard/prices.js?v=3"></script>
@@ -87,9 +87,9 @@
         <section class="panel" id="verbrauch">
           <h2>Verbrauch und Zählerstände</h2>
           <dl class="values" id="reading-values">
-            <div data-meter-type="strom"><dt>Strom<small class="meter-reading"></small></dt><dd><strong>–</strong><small class="reading-interval"></small></dd></div>
-            <div data-meter-type="wasser"><dt>Wasser<small class="meter-reading"></small></dt><dd><strong>–</strong><small class="reading-interval"></small></dd></div>
-            <div data-meter-type="pellets"><dt>Pellets<small class="meter-reading"></small></dt><dd><strong>–</strong><small class="reading-interval"></small></dd></div>
+            <div data-meter-type="strom"><dt><span class="meter-icon" aria-hidden="true">⚡</span><div>Strom<small class="meter-reading"></small></div></dt><dd><strong>–</strong><small class="reading-interval"></small></dd></div>
+            <div data-meter-type="wasser"><dt><span class="meter-icon" aria-hidden="true">💧</span><div>Wasser<small class="meter-reading"></small></div></dt><dd><strong>–</strong><small class="reading-interval"></small></dd></div>
+            <div data-meter-type="pellets"><dt><span class="meter-icon" aria-hidden="true">🪵</span><div>Pellets<small class="meter-reading"></small></div></dt><dd><strong>–</strong><small class="reading-interval"></small></dd></div>
           </dl>
         </section>
         <section class="panel price-panel price-energy" id="preise">
