@@ -213,7 +213,7 @@ try {
     status.textContent = "Haushalt „" + selectedHousehold + "“ · Live-Sync · " + updateTime.format(new Date()) + " Uhr";
     if (!hasReadings) {
       status.append(" · Keine Zählerstände · ");
-      appendText(status, "a", "Haushalt prüfen").href = "dashboard-settings.html";
+      appendText(status, "a", "Haushalt prüfen").href = "dashboard-settings.html?tv=19";
     }
   };
   const options = { includeMetadataChanges: true };
