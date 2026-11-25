@@ -43,15 +43,25 @@ function renderCars(data, calculations, currentMonth, nextMonth) {
     const tile = document.createElement("article");
     tile.className = "car";
     const name = car.name || "Fahrzeug";
-    const heading = appendText(tile, "h3", name);
-    const model = String(name).toLowerCase();
+    const header = document.createElement("header");
+    header.className = "car-summary";
+    tile.append(header);
+    const identity = document.createElement("div");
+    header.append(identity);
+    appendText(identity, "h3", name);
+    const fuelNames = {
+      diesel: "Diesel", gasoline: "Benzin", petrol: "Benzin", electric: "Elektro",
+      plug_in_hybrid: "Plug-in-Hybrid", hybrid: "Hybrid", lpg: "Autogas", cng: "Erdgas"
+    };
+    if (fuelNames[car.fuelType]) appendText(identity, "small", fuelNames[car.fuelType]);
+    const model = name.toLowerCase();
     const photo = model.includes("tarraco") ? ["seat-tarraco", "Seat Tarraco"]
       : model.includes("tiguan") ? ["vw-tiguan", "VW Tiguan"] : null;
     if (photo) {
       const img = document.createElement("img");
       img.src = "./dashboard/" + photo[0] + ".webp";
       img.alt = photo[1] + " in Schwarz (Modellillustration)";
-      heading.after(img);
+      header.append(img);
     }
 
     const electric = car.fuelType === "electric";
@@ -62,20 +72,55 @@ function renderCars(data, calculations, currentMonth, nextMonth) {
     const odometers = [...entries, ...service]
       .filter(entry => entry.mileage != null && entry.mileage !== "" && Number.isFinite(Number(entry.mileage)))
       .map(entry => Number(entry.mileage));
-    const mileage = odometers.length ? Math.max(...odometers) : null;
+    const mileage = odometers.length ? odometers.reduce((highest, value) => Math.max(highest, value), 0) : null;
     const lastEntry = entries.at(-1);
-    const lastConsumption = [...entries].reverse().find(entry => Number.isFinite(entry.litersPer100km));
+    const lastConsumption = [...entries].reverse().find(entry =>
+      Number.isFinite(entry.litersPer100km) && entry.litersPer100km > 0);
     const thisMonth = entries.filter(entry => {
       const time = Date.parse(entry.toDate || entry.date);
       return time >= currentMonth.getTime() && time < nextMonth.getTime() && time <= Date.now();
     });
     const costs = thisMonth.map(entry => entry.totalPrice)
       .filter(cost => cost != null && cost !== "" && Number.isFinite(Number(cost)));
-    appendText(tile, "strong", electric ? quantity(lastEntry?.kwh, "kWh zuletzt geladen")
-      : quantity(lastConsumption?.litersPer100km, "l/100 km"));
-    appendText(tile, "p", [quantity(mileage, "km"), costs.length
-      ? money.format(costs.reduce((total, cost) => total + Number(cost), 0)) + " diesen Monat" : null].filter(Boolean).join(" · "));
-    appendText(tile, "p", (electric ? "Zuletzt geladen · " : "Zuletzt getankt · ") + displayDate(lastEntry?.toDate || lastEntry?.date));
+    const volumeKey = electric ? "kwh" : "liters";
+    const volumeUnit = electric ? "kWh" : "l";
+    const volume = thisMonth.reduce((sum, entry) => sum + (Number(entry[volumeKey]) || 0), 0);
+    const metrics = document.createElement("dl");
+    metrics.className = "car-metrics";
+    const metricRows = [
+      ["Kilometerstand", quantity(mileage, "km")],
+      [electric ? "Letzte Ladung" : "Verbrauch · letzte Etappe",
+        electric ? quantity(lastEntry?.kwh, "kWh") : quantity(lastConsumption?.litersPer100km, "l/100 km")],
+      [electric ? "Ladekosten · Monat" : "Tankkosten · Monat",
+        costs.length ? money.format(costs.reduce((sum, value) => sum + Number(value), 0)) : "–"],
+      [electric ? "Geladen · Monat" : "Getankt · Monat", thisMonth.length ? quantity(volume, volumeUnit) : "–"]
+    ];
+    for (const [label, value] of metricRows) {
+      const metric = document.createElement("div");
+      appendText(metric, "dt", label);
+      appendText(metric, "dd", value);
+      metrics.append(metric);
+    }
+    tile.append(metrics);
+    if (lastEntry) {
+      const lastDate = displayDate(lastEntry.toDate || lastEntry.date);
+      const lastAmount = quantity(lastEntry[volumeKey], volumeUnit);
+      const lastPaid = lastEntry.totalPrice != null && lastEntry.totalPrice !== "" && Number.isFinite(Number(lastEntry.totalPrice))
+        ? money.format(lastEntry.totalPrice) : null;
+      const last = appendText(tile, "p", [
+        (electric ? "Geladen" : "Getankt") + " am " + lastDate, lastAmount, lastPaid
+      ].filter(Boolean).join(" · "));
+      last.className = "car-last";
+    }
+    if (lastConsumption) {
+      const cost = lastConsumption.totalPrice != null && lastConsumption.totalPrice !== "" &&
+        Number.isFinite(lastConsumption.costPer100km)
+        ? money.format(lastConsumption.costPer100km) + "/100 km" : null;
+      const interval = appendText(tile, "p", [
+        "Letzte Etappe mit Verbrauch", quantity(lastConsumption.distanceKm, "km"), cost
+      ].filter(Boolean).join(" · "));
+      interval.className = "car-last";
+    }
     container.append(tile);
 
     for (const entry of service) {

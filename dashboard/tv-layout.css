@@ -40,7 +40,7 @@
     min-height: 0;
     gap: clamp(5px, 1vh, 12px);
     grid-template-columns: repeat(12, minmax(0, 1fr));
-    grid-template-rows: minmax(0, 1.65fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1.55fr) minmax(0, 1.12fr);
     grid-template-areas:
       "forecast forecast house house house house house house household household household household"
       "cars cars cars cars cars prices prices prices prices prices family family";

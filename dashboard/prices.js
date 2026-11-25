@@ -1,13 +1,13 @@
 const priceDefinitions = {
   fuel: [
-    ["super", "Super E5", "€/l"],
-    ["e10", "Super E10", "€/l"],
-    ["diesel", "Diesel", "€/l"]
+    ["super", "Super E5", "€/l", "⛽"],
+    ["e10", "Super E10", "€/l", "⛽"],
+    ["diesel", "Diesel", "€/l", "⛽"]
   ],
   energy: [
-    ["heating_oil", "Heizöl", "€/100 l"],
-    ["pellets_loose", "Pellets · lose Ware", "€/1.000 kg"],
-    ["pellets_bag", "Pellets · Sackware", "€/1.000 kg"]
+    ["heating_oil", "Heizöl", "€/100 l", "🔥"],
+    ["pellets_loose", "Pellets lose", "€/1.000 kg", "🪵"],
+    ["pellets_bag", "Pellets Sackware", "€/1.000 kg", "📦"]
   ]
 };
 const priceDate = new Intl.DateTimeFormat("de-DE", {
@@ -46,16 +46,31 @@ function renderPrices(id, definitions, digits, selectPrice) {
   const format = new Intl.NumberFormat("de-DE", {
     minimumFractionDigits: digits, maximumFractionDigits: digits
   });
-  const rows = definitions.map(([key, label, unit]) => {
+  const rows = definitions.map(([key, label, unit, icon]) => {
     const { value, date, source } = selectPrice(key);
     const row = document.createElement("div");
+    row.className = "price-metric";
+    row.dataset.priceType = key;
     const name = document.createElement("dt");
+    const symbol = document.createElement("span");
+    symbol.className = "price-symbol";
+    symbol.setAttribute("aria-hidden", "true");
+    symbol.textContent = icon;
+    const labelNode = document.createElement("span");
+    labelNode.textContent = label;
+    name.append(symbol, labelNode);
     const price = document.createElement("dd");
-    const meta = document.createElement("small");
-    name.textContent = label;
-    price.textContent = validPrice(value) ? format.format(value) + " " + unit : "Nicht verfügbar";
+    const amount = document.createElement("strong");
+    amount.textContent = validPrice(value) ? format.format(value) : "–";
+    const unitNode = document.createElement("span");
+    unitNode.className = "price-unit";
+    unitNode.textContent = validPrice(value) ? unit : "";
+    price.append(amount, unitNode);
     if (validPrice(value) && source) {
-      meta.textContent = source + " · " + displayDate(date);
+      const meta = document.createElement("small");
+      meta.className = "price-meta";
+      meta.textContent = (source === "Historischer Ausgangswert" ? "Archiv · " : "") + displayDate(date);
+      meta.title = source;
       price.append(meta);
     }
     row.append(name, price);
