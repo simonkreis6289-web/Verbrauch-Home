@@ -1,0 +1,62 @@
+.price-panel { --metric-accent: var(--primary); }
+.price-energy { --metric-accent: var(--warm); }
+.price-panel > h2 { border-left: 3px solid var(--metric-accent); padding-left: .45em; }
+.price-panel > p { font-size: .84em; }
+.price-panel .price-list { gap: .35em; margin-top: .55em; }
+.tv-dashboard .price-panel .price-list > .price-metric,
+.price-panel .price-list > .price-metric {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 2.5em;
+  padding: .25em .4em;
+  background: var(--page-end);
+  gap: .25em .5em;
+}
+.price-metric dt { display: flex; align-items: center; gap: .35em; font-weight: 650; }
+.price-symbol { color: var(--metric-accent); }
+.price-metric dd { white-space: nowrap; }
+.price-metric dd strong {
+  color: var(--metric-accent);
+  font-size: 1.19em;
+  font-variant-numeric: tabular-nums;
+}
+.price-unit { color: var(--muted); font-size: .75em; margin-left: .28em; }
+.price-meta { line-height: 1.1; }
+
+#app-cars { align-items: stretch; }
+.tv-dashboard #app-cars .car {
+  padding: .45em .55em;
+  align-content: start;
+  gap: .32em;
+  background: var(--page-end);
+}
+.car-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .4em;
+}
+.car-summary h3 { overflow-wrap: anywhere; }
+.car-summary small { display: block; margin: 0; }
+.tv-dashboard .car-summary img {
+  width: clamp(66px, 7vw, 150px);
+  height: clamp(26px, 5.4vh, 62px);
+  object-fit: contain;
+  background: transparent;
+}
+.car-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .24em .4em;
+}
+.car-metrics > div {
+  min-width: 0;
+  padding: .2em .4em;
+  border-radius: 5px;
+  border-left: 2px solid var(--primary);
+  background: var(--card);
+}
+.car-metrics dt { color: var(--muted); font-size: .75em; }
+.car-metrics dd { font-weight: 750; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.car .car-last { margin: 0; font-size: .78em; line-height: 1.23; overflow-wrap: anywhere; }
