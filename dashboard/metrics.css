@@ -23,6 +23,17 @@
 }
 .price-unit { color: var(--muted); font-size: .75em; margin-left: .28em; }
 .price-meta { line-height: 1.1; }
+.price-change {
+  margin-top: .15em;
+  line-height: 1.2;
+  white-space: normal;
+  font-variant-numeric: tabular-nums;
+}
+.price-change.up, .price-change.down { font-weight: 700; }
+.price-change.up { color: #fda4af; }
+.price-change.down { color: #86efac; }
+[data-theme="light"] .price-change.up { color: #b91c1c; }
+[data-theme="light"] .price-change.down { color: #166534; }
 
 #app-cars { align-items: stretch; }
 .tv-dashboard #app-cars .car {
