@@ -7,25 +7,25 @@
   <link rel="icon" href="icon-192.png">
   <script src="dashboard/theme.js"></script>
   <link rel="stylesheet" href="dashboard/dashboard.css?v=3">
-  <link rel="stylesheet" href="dashboard/tv-layout.css?v=6">
+  <link rel="stylesheet" href="dashboard/tv-layout.css?v=7">
   <link rel="stylesheet" href="dashboard/weather-view.css?v=4">
   <link rel="stylesheet" href="dashboard/metrics.css?v=6">
   <script defer src="dashboard/dashboard.js?v=2"></script>
   <script defer src="dashboard/public-data.js"></script>
   <script defer src="dashboard/prices.js?v=3"></script>
   <script defer src="dashboard/forecast.js"></script>
-  <script defer src="dashboard/load-data.js" data-module="./app-data.js?v=9" data-status="app-data-status"></script>
+  <script defer src="dashboard/load-data.js" data-module="./app-data.js?v=10" data-status="app-data-status"></script>
 </head>
 <body class="tv-dashboard">
   <header class="topbar">
     <a class="brand" href="index.html"><span aria-hidden="true">⌂</span> Verbrauch Zuhause</a>
     <nav aria-label="Dashboard">
-      <a href="#uebersicht">Übersicht</a><a href="#wetter" data-open-weather>Wetter</a><a href="#verbrauch">Verbrauch</a><a href="#autos">Autos</a><a href="#preise">Preise</a><a href="#kalender">Kalender</a><a href="#bring">Bring!</a>
+      <a href="#uebersicht">Übersicht</a><a href="#wetter" data-open-weather>Wetter</a><a href="#verbrauch">Verbrauch</a><a href="#autos">Autos</a><a href="#preise">Preise</a><a href="#kalender">Kalender</a>
     </nav>
     <div class="controls">
       <time id="clock"></time>
       <button id="theme" type="button">Design</button>
-      <a class="settings-link" href="dashboard-settings.html?tv=21">Einstellungen</a>
+      <a class="settings-link" href="dashboard-settings.html?tv=22">Einstellungen</a>
       <button id="fullscreen" type="button" title="Vollbild einschalten" aria-label="Vollbild einschalten" aria-pressed="false">⛶</button>
     </div>
   </header>
@@ -98,15 +98,9 @@
           <dl class="price-list" id="energy-prices"><div><dt>Status</dt><dd>Wird geladen …</dd></div></dl>
         </section>
       </div>
-      <aside class="stack family-summary" aria-label="Familienorganisation">
-        <section class="panel" id="kalender">
-          <h2>Kalender</h2>
-          <p>Die nächsten drei Termine erscheinen nach der Google-Kalender-Anbindung.</p>
-        </section>
-        <section class="panel" id="bring">
-          <h2>Bring!</h2>
-          <p><a class="settings-link" href="https://web.getbring.com/" target="_blank" rel="noopener noreferrer">Einkaufsliste in Bring! öffnen</a></p>
-        </section>
+      <aside class="panel family-summary" id="kalender" aria-labelledby="calendar-title">
+        <h2 id="calendar-title">Kalender</h2>
+        <p>Die nächsten drei Termine erscheinen nach der Google-Kalender-Anbindung.</p>
       </aside>
       <section class="panel cars" id="autos">
         <h2>Unsere Autos <span id="car-month"></span></h2>
