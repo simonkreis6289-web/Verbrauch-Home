@@ -14,6 +14,25 @@ const priceDate = new Intl.DateTimeFormat("de-DE", {
   dateStyle: "medium", timeZone: "Europe/Berlin"
 });
 
+const marketDayFormat = new Intl.DateTimeFormat("de-DE", {
+  year: "numeric", month: "2-digit", day: "2-digit", timeZone: "Europe/Berlin"
+});
+
+function marketDay(timestamp) {
+  const date = new Date(timestamp ?? "");
+  if (!Number.isFinite(date.getTime())) return "";
+  const parts = Object.fromEntries(marketDayFormat.formatToParts(date).map(part => [part.type, part.value]));
+  return parts.year + "-" + parts.month + "-" + parts.day;
+}
+
+function previousMarketDay(day) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return "";
+  const date = new Date(day + "T12:00:00Z");
+  if (!Number.isFinite(date.getTime())) return "";
+  date.setUTCDate(date.getUTCDate() - 1);
+  return date.toISOString().slice(0, 10);
+}
+
 function displayDate(value) {
   const date = new Date(value ?? "");
   return Number.isFinite(date.getTime()) ? priceDate.format(date) : "Datum unbekannt";
@@ -42,12 +61,29 @@ function readManualEnergyPrices() {
   }
 }
 
+function renderPriceChange(change, format) {
+  const trend = document.createElement("small");
+  trend.className = "price-change";
+  if (!change) {
+    trend.textContent = "Kein Vortageswert";
+    return trend;
+  }
+  const { amount, percent } = change;
+  const variant = amount > 0 ? "up" : amount < 0 ? "down" : "flat";
+  trend.classList.add(variant);
+  const arrow = amount > 0 ? "↗" : amount < 0 ? "↘" : "→";
+  const sign = amount > 0 ? "+" : amount < 0 ? "−" : "";
+  trend.textContent = arrow + " " + sign + format.format(Math.abs(amount)) + " € (" +
+    sign + format.format(Math.abs(percent)) + " %)";
+  return trend;
+}
+
 function renderPrices(id, definitions, digits, selectPrice) {
   const format = new Intl.NumberFormat("de-DE", {
     minimumFractionDigits: digits, maximumFractionDigits: digits
   });
   const rows = definitions.map(([key, label, unit, icon]) => {
-    const { value, date, source } = selectPrice(key);
+    const { value, date, source, change } = selectPrice(key);
     const row = document.createElement("div");
     row.className = "price-metric";
     row.dataset.priceType = key;
@@ -72,6 +108,7 @@ function renderPrices(id, definitions, digits, selectPrice) {
       meta.textContent = (source === "Historischer Ausgangswert" ? "Archiv · " : "") + displayDate(date);
       meta.title = source;
       price.append(meta);
+      if (change !== undefined) price.append(renderPriceChange(change, format));
     }
     row.append(name, price);
     return row;
@@ -105,16 +142,35 @@ refreshDashboardData(async () => {
 });
 
 const dashboardMarketFile = readPriceFile("./market-prices.json");
+const dashboardMarketHistory = readPriceFile("./market-price-history.json");
+
+function energyPriceChange(history, key, day, current) {
+  const previous = history.get(previousMarketDay(day))?.[key];
+  if (!validPrice(current) || !validPrice(previous)) return null;
+  const amount = current - previous;
+  return { amount, percent: amount / previous * 100 };
+}
 
 async function renderDashboardEnergyPrices(records = readManualEnergyPrices()) {
-  const data = await dashboardMarketFile;
+  const [data, archive] = await Promise.all([dashboardMarketFile, dashboardMarketHistory]);
   const manual = records.filter(record => /^\d{4}-\d{2}-\d{2}$/.test(record?.date))
     .sort((a, b) => b.date.localeCompare(a.date));
+  const history = new Map();
+  const archivedRecords = Array.isArray(archive?.records) ? archive.records : [];
+  for (const record of [...archivedRecords, ...manual]) {
+    const day = record?.date;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) continue;
+    history.set(day, { ...history.get(day), ...record.prices });
+  }
+
   renderPrices("energy-prices", priceDefinitions.energy, 2, key => {
     const record = manual.find(item => validPrice(item.prices?.[key]));
-    if (record) return { value: record.prices[key], date: record.date, source: "Manuell erfasst" };
     const item = data?.prices?.[key];
-    return { value: item?.price, date: item?.checked_at, source: "Historischer Ausgangswert" };
+    const value = record ? record.prices[key] : item?.price;
+    const date = record?.date || item?.checked_at;
+    const day = record?.date || marketDay(date);
+    const source = record ? "Manuell erfasst" : "Historischer Ausgangswert";
+    return { value, date, source, change: energyPriceChange(history, key, day, value) };
   });
 }
 

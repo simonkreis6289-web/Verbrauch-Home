@@ -19,7 +19,7 @@ householdForm.addEventListener("submit", event => {
     householdStatus.textContent = "Dieser Browser konnte den Haushalt nicht speichern.";
     return;
   }
-  window.location.replace("dashboard.html?tv=19");
+  window.location.replace("dashboard.html?tv=20");
 });
 
 const list = document.getElementById("vehicle-settings");

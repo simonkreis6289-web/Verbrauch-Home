@@ -9,12 +9,12 @@
   <link rel="stylesheet" href="dashboard/dashboard.css?v=3">
   <link rel="stylesheet" href="dashboard/tv-layout.css?v=6">
   <link rel="stylesheet" href="dashboard/weather-view.css?v=4">
-  <link rel="stylesheet" href="dashboard/metrics.css?v=4">
+  <link rel="stylesheet" href="dashboard/metrics.css?v=5">
   <script defer src="dashboard/dashboard.js?v=2"></script>
   <script defer src="dashboard/public-data.js"></script>
-  <script defer src="dashboard/prices.js?v=2"></script>
+  <script defer src="dashboard/prices.js?v=3"></script>
   <script defer src="dashboard/forecast.js"></script>
-  <script defer src="dashboard/load-data.js" data-module="./app-data.js?v=7" data-status="app-data-status"></script>
+  <script defer src="dashboard/load-data.js" data-module="./app-data.js?v=8" data-status="app-data-status"></script>
 </head>
 <body class="tv-dashboard">
   <header class="topbar">
@@ -25,7 +25,7 @@
     <div class="controls">
       <time id="clock"></time>
       <button id="theme" type="button">Design</button>
-      <a class="settings-link" href="dashboard-settings.html?tv=19">Einstellungen</a>
+      <a class="settings-link" href="dashboard-settings.html?tv=20">Einstellungen</a>
       <button id="fullscreen" type="button" title="Vollbild einschalten" aria-label="Vollbild einschalten" aria-pressed="false">⛶</button>
     </div>
   </header>
@@ -94,7 +94,7 @@
         </section>
         <section class="panel price-panel price-energy" id="preise">
           <h2>Energiepreise</h2>
-          <p>Manuell erfasst · Datum je Preis</p>
+          <p>Datum je Preis · Vergleich zum Vortag</p>
           <dl class="price-list" id="energy-prices"><div><dt>Status</dt><dd>Wird geladen …</dd></div></dl>
         </section>
       </div>
