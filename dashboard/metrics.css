@@ -60,3 +60,5 @@
 .car-metrics dt { color: var(--muted); font-size: .75em; }
 .car-metrics dd { font-weight: 750; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .car .car-last { margin: 0; font-size: .78em; line-height: 1.23; overflow-wrap: anywhere; }
+
+#car-month { color: var(--muted); font-size: .82em; font-weight: 500; }

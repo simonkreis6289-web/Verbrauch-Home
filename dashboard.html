@@ -7,14 +7,14 @@
   <link rel="icon" href="icon-192.png">
   <script src="dashboard/theme.js"></script>
   <link rel="stylesheet" href="dashboard/dashboard.css">
-  <link rel="stylesheet" href="dashboard/tv-layout.css?v=4">
-  <link rel="stylesheet" href="dashboard/weather-view.css?v=2">
-  <link rel="stylesheet" href="dashboard/metrics.css">
+  <link rel="stylesheet" href="dashboard/tv-layout.css?v=5">
+  <link rel="stylesheet" href="dashboard/weather-view.css?v=3">
+  <link rel="stylesheet" href="dashboard/metrics.css?v=2">
   <script defer src="dashboard/dashboard.js"></script>
   <script defer src="dashboard/public-data.js"></script>
   <script defer src="dashboard/prices.js?v=2"></script>
   <script defer src="dashboard/forecast.js"></script>
-  <script defer src="dashboard/load-data.js" data-module="./app-data.js?v=3" data-status="app-data-status"></script>
+  <script defer src="dashboard/load-data.js" data-module="./app-data.js?v=4" data-status="app-data-status"></script>
 </head>
 <body class="tv-dashboard">
   <header class="topbar">
@@ -38,12 +38,6 @@
         <p id="forecast-status">Vorhersage wird geladen …</p>
         <div class="forecast-days" id="forecast-days"></div>
         <button class="settings-link weather-detail-button" type="button" data-open-weather>48-Stunden-Vorhersage</button>
-      </aside>
-      <section class="panel weather" aria-labelledby="weather-title">
-        <div class="scene">
-          <h1 id="weather-title">Zuhause im Überblick</h1>
-          <p class="weather-status" id="forecast-current" hidden></p>
-        </div>
         <div class="sky-overview">
           <section class="sky-card">
             <h3>Sonnenverlauf · heute</h3>
@@ -74,6 +68,13 @@
             </div>
           </section>
         </div>
+      </aside>
+      <section class="panel weather" aria-labelledby="weather-title">
+        <div class="scene">
+          <h1 id="weather-title">Zuhause im Überblick</h1>
+          <p class="weather-status" id="forecast-current" hidden></p>
+        </div>
+
       </section>
       <div class="stack household-summary">
         <section class="panel" id="verbrauch">
@@ -101,7 +102,7 @@
         </section>
       </aside>
       <section class="panel cars" id="autos">
-        <h2>Unsere Autos</h2>
+        <h2>Unsere Autos <span id="car-month"></span></h2>
         <div class="car-grid" id="app-cars"><p>Fahrzeuge werden geladen …</p></div>
         <p id="car-reminders" hidden></p>
       </section>

@@ -1,6 +1,7 @@
 import { createAppCalculations } from "./app-calculations.js?v=2";
 
 import { connectDashboard, householdKey, readLocalSnapshot, snapshotKey } from "./source.js";
+import { carMonthTotals, previousCarMonth } from "./car-month.js";
 import { activeCars, carVisibilityKey, hiddenCarIds } from "./vehicle-preferences.js";
 
 const status = document.getElementById("app-data-status");
@@ -28,7 +29,9 @@ function appendText(parent, tag, value) {
   return element;
 }
 
-function renderCars(data, calculations, currentMonth, nextMonth) {
+function renderCars(data, now) {
+  const period = previousCarMonth(now);
+  document.getElementById("car-month").textContent = "· " + period.label;
   const active = activeCars(data.cars);
   const hidden = hiddenCarIds();
   const cars = active.filter(car => !hidden.has(car.id));
@@ -65,35 +68,22 @@ function renderCars(data, calculations, currentMonth, nextMonth) {
     }
 
     const electric = car.fuelType === "electric";
-    const entries = electric ? data.chargeEntries.filter(entry => entry.carId === car.id)
-      .sort((a, b) => Date.parse(a.toDate || a.date) - Date.parse(b.toDate || b.date))
-      : calculations.buildComputedFuelEntriesForCar(car.id);
+    const takesCharge = electric || car.fuelType === "plug_in_hybrid";
+    const fuel = electric ? [] : data.fuelEntries.filter(entry => entry.carId === car.id);
+    const charges = takesCharge ? data.chargeEntries.filter(entry => entry.carId === car.id) : [];
     const service = data.maintenanceEntries.filter(entry => entry.carId === car.id);
-    const odometers = [...entries, ...service]
-      .filter(entry => entry.mileage != null && entry.mileage !== "" && Number.isFinite(Number(entry.mileage)))
-      .map(entry => Number(entry.mileage));
-    const mileage = odometers.length ? odometers.reduce((highest, value) => Math.max(highest, value), 0) : null;
-    const lastEntry = entries.at(-1);
-    const lastConsumption = [...entries].reverse().find(entry =>
-      Number.isFinite(entry.litersPer100km) && entry.litersPer100km > 0);
-    const thisMonth = entries.filter(entry => {
-      const time = Date.parse(entry.toDate || entry.date);
-      return time >= currentMonth.getTime() && time < nextMonth.getTime() && time <= Date.now();
-    });
-    const costs = thisMonth.map(entry => entry.totalPrice)
-      .filter(cost => cost != null && cost !== "" && Number.isFinite(Number(cost)));
-    const volumeKey = electric ? "kwh" : "liters";
-    const volumeUnit = electric ? "kWh" : "l";
-    const volume = thisMonth.reduce((sum, entry) => sum + (Number(entry[volumeKey]) || 0), 0);
+    const entries = [...fuel, ...charges];
+    const totals = carMonthTotals(entries, [...entries, ...service], period, now);
+    const metricLabel = electric ? "Ladekosten" : takesCharge ? "Tank- und Ladekosten" : "Tankkosten";
+    const distanceLabel = totals.partial ? "Kilometer · Teilzeitraum" : "Kilometer im Monat";
     const metrics = document.createElement("dl");
     metrics.className = "car-metrics";
     const metricRows = [
-      ["Kilometerstand", quantity(mileage, "km")],
-      [electric ? "Letzte Ladung" : "Verbrauch · letzte Etappe",
-        electric ? quantity(lastEntry?.kwh, "kWh") : quantity(lastConsumption?.litersPer100km, "l/100 km")],
-      [electric ? "Ladekosten · Monat" : "Tankkosten · Monat",
-        costs.length ? money.format(costs.reduce((sum, value) => sum + Number(value), 0)) : "–"],
-      [electric ? "Geladen · Monat" : "Getankt · Monat", thisMonth.length ? quantity(volume, volumeUnit) : "–"]
+      [distanceLabel, (totals.isEstimate ? "ca. " : "") + quantity(totals.distance, "km")],
+      [metricLabel, totals.cost === null ? "–" : money.format(totals.cost)],
+      ["Letzter Kilometerstand", quantity(totals.mileage, "km")],
+      [electric ? "Ladevorgänge" : takesCharge ? "Tank- und Ladevorgänge" : "Tankvorgänge",
+        totals.bookingCount ? number.format(totals.bookingCount) : "–"]
     ];
     for (const [label, value] of metricRows) {
       const metric = document.createElement("div");
@@ -102,25 +92,11 @@ function renderCars(data, calculations, currentMonth, nextMonth) {
       metrics.append(metric);
     }
     tile.append(metrics);
-    if (lastEntry) {
-      const lastDate = displayDate(lastEntry.toDate || lastEntry.date);
-      const lastAmount = quantity(lastEntry[volumeKey], volumeUnit);
-      const lastPaid = lastEntry.totalPrice != null && lastEntry.totalPrice !== "" && Number.isFinite(Number(lastEntry.totalPrice))
-        ? money.format(lastEntry.totalPrice) : null;
-      const last = appendText(tile, "p", [
-        (electric ? "Geladen" : "Getankt") + " am " + lastDate, lastAmount, lastPaid
-      ].filter(Boolean).join(" · "));
-      last.className = "car-last";
-    }
-    if (lastConsumption) {
-      const cost = lastConsumption.totalPrice != null && lastConsumption.totalPrice !== "" &&
-        Number.isFinite(lastConsumption.costPer100km)
-        ? money.format(lastConsumption.costPer100km) + "/100 km" : null;
-      const interval = appendText(tile, "p", [
-        "Letzte Etappe mit Verbrauch", quantity(lastConsumption.distanceKm, "km"), cost
-      ].filter(Boolean).join(" · "));
-      interval.className = "car-last";
-    }
+    const notes = [];
+    if (totals.partial) notes.push(totals.coverage + " % des Monats mit Kilometerständen abgedeckt");
+    else if (totals.distance === null) notes.push("Zu wenige Kilometerstände für den Monat");
+    if (totals.pricedCount < totals.bookingCount) notes.push("Kosten teilweise erfasst");
+    if (notes.length) appendText(tile, "p", notes.join(" · ")).className = "car-last";
     container.append(tile);
 
     for (const entry of service) {
@@ -141,8 +117,6 @@ function renderAppData(raw) {
   for (const key of collections) data[key] = Array.isArray(raw[key]) ? raw[key] : [];
 
   const now = new Date();
-  const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   data.readings = data.readings.filter(reading => {
     const time = Date.parse(reading?.date);
     return Number.isFinite(time) && time <= now.getTime() &&
@@ -174,7 +148,7 @@ function renderAppData(raw) {
   const meter = document.getElementById("stock-bunker");
   meter.hidden = !split || !(balance.stock > 0);
   if (!meter.hidden) meter.value = Math.max(0, Math.min(100, split.bunker / balance.stock * 100));
-  renderCars(data, calculations, currentMonth, nextMonth);
+  renderCars(data, now);
 }
 
 function renderLocalFallback() {

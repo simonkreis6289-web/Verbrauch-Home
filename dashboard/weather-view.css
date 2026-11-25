@@ -63,20 +63,20 @@
 .forecast-overview { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .forecast-overview .forecast-day-card { justify-items: center; text-align: center; }
 .forecast-overview .forecast-icon { font-size: clamp(1.65rem, 4vw, 2.6rem); }
-/* Keep the two sky cards on the overview, directly below the house image. */
-.weather { display: flex; flex-direction: column; }
-.weather .scene { flex: 1; }
 .sky-overview {
   display: grid;
-  flex: 0 0 auto;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-  background: var(--card);
-  border-top: 1px solid var(--line);
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: .4em;
+  margin-top: .55em;
 }
-.sky-card { min-width: 0; padding: .55em .7em; }
-.sky-card + .sky-card { border-left: 1px solid var(--line); }
+.sky-card {
+  min-width: 0;
+  padding: .4em .5em;
+  background: var(--page-end);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
 .sky-card h3 { color: var(--text); }
-.tv-dashboard .weather .scene { height: auto; }
 
 .sun-figure { margin: .75em auto .2em; max-width: 420px; }
 .sun-track {
@@ -151,15 +151,15 @@
 .weather-source a { color: var(--primary); }
 
 @media (min-width: 900px) and (min-height: 500px) {
-  .forecast-days .forecast-day-card { grid-template-columns: auto minmax(0, 1fr); }
-  .forecast-days .forecast-day-card h3 { grid-column: auto; }
-  .forecast-days .forecast-icon { grid-column: 1; grid-row: 2 / 4; align-self: center; }
-  .forecast-days .forecast-day-card strong { grid-column: 2; }
-  .forecast-days .forecast-day-card small { grid-column: 2; }
+  .forecast-days { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .forecast-days .forecast-day-card { grid-template-columns: minmax(0, 1fr); }
+  .forecast-days .forecast-day-card h3,
+  .forecast-days .forecast-day-card small { grid-column: auto; }
+  .sky-overview .sun-times { font-size: .76em; }
+  .sky-overview .moon-orbit { width: clamp(45px, 4.8vw, 80px); }
 }
 @media (max-width: 580px) {
   .sky-overview { grid-template-columns: 1fr; }
-  .sky-card + .sky-card { border-left: 0; border-top: 1px solid var(--line); }
   .forecast-overview { gap: 5px; }
   .forecast-overview .forecast-day-card { padding: .35em .2em; font-size: .85em; }
 }
