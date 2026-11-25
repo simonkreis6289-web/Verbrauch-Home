@@ -24,17 +24,17 @@
 }
 .price-unit { color: var(--muted); font-size: .75em; margin-left: .28em; }
 .price-meta { line-height: 1.1; }
-.price-change {
+.price-change, .reading-trend {
   margin-top: .15em;
   line-height: 1.2;
   white-space: normal;
   font-variant-numeric: tabular-nums;
 }
-.price-change.up, .price-change.down { font-weight: 700; }
-.price-change.up { color: #fda4af; }
-.price-change.down { color: #86efac; }
-[data-theme="light"] .price-change.up { color: #b91c1c; }
-[data-theme="light"] .price-change.down { color: #166534; }
+.price-change.up, .price-change.down, .reading-trend.up, .reading-trend.down { font-weight: 700; }
+.price-change.up, .reading-trend.up { color: #fda4af; }
+.price-change.down, .reading-trend.down { color: #86efac; }
+[data-theme="light"] .price-change.up, [data-theme="light"] .reading-trend.up { color: #b91c1c; }
+[data-theme="light"] .price-change.down, [data-theme="light"] .reading-trend.down { color: #166534; }
 
 #app-cars { align-items: stretch; }
 .tv-dashboard #app-cars .car {
@@ -111,6 +111,7 @@
   background: var(--card);
   font-size: 1.1em;
 }
+.reading-trend { font-size: .8em; }
 #reading-values dd strong { font-variant-numeric: tabular-nums; }
 .house-stock {
   position: absolute;
