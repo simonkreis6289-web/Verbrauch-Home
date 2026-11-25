@@ -1,5 +1,26 @@
-import { connectDashboard, householdKey, readLocalSnapshot, snapshotKey } from "./source.js";
-import { activeCars, carVisibilityKey, hiddenCarIds, setCarVisible } from "./vehicle-preferences.js";
+import { connectDashboard, dashboardHouseholdKey, householdId, householdKey, readLocalSnapshot, snapshotKey } from "./source.js?v=2";
+import { activeCars, carVisibilityKey, hiddenCarIds, setCarVisible } from "./vehicle-preferences.js?v=2";
+
+const householdForm = document.getElementById("dashboard-household-form");
+const householdInput = document.getElementById("dashboard-household");
+const householdStatus = document.getElementById("dashboard-household-status");
+householdInput.value = householdId();
+
+householdForm.addEventListener("submit", event => {
+  event.preventDefault();
+  const id = householdInput.value.trim();
+  if (!id || id.includes("/") || id === "." || id === "..") {
+    householdStatus.textContent = "Bitte gib die Haushalts-ID aus der App ein.";
+    return;
+  }
+  try {
+    localStorage.setItem(dashboardHouseholdKey, id);
+  } catch {
+    householdStatus.textContent = "Dieser Browser konnte den Haushalt nicht speichern.";
+    return;
+  }
+  window.location.replace("dashboard.html");
+});
 
 const list = document.getElementById("vehicle-settings");
 const status = document.getElementById("settings-status");
@@ -37,7 +58,7 @@ list.addEventListener("change", event => {
 });
 
 window.addEventListener("storage", event => {
-  if (event.key === householdKey) window.location.reload();
+  if (event.key === householdKey || event.key === dashboardHouseholdKey || event.key === null) window.location.reload();
   if (event.key === snapshotKey && !live) {
     cars = readLocalSnapshot()?.cars;
     render();

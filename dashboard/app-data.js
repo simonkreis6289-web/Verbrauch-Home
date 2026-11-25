@@ -1,10 +1,11 @@
 import { createAppCalculations } from "./app-calculations.js?v=2";
 
-import { connectDashboard, householdKey, readLocalSnapshot, snapshotKey } from "./source.js";
+import { connectDashboard, dashboardHouseholdKey, householdId, householdKey, readLocalSnapshot, snapshotKey } from "./source.js?v=2";
 import { carMonthTotals, previousCarMonth } from "./car-month.js";
-import { activeCars, carVisibilityKey, hiddenCarIds } from "./vehicle-preferences.js";
+import { activeCars, carVisibilityKey, hiddenCarIds } from "./vehicle-preferences.js?v=2";
 
 const status = document.getElementById("app-data-status");
+const selectedHousehold = householdId();
 const collections = ["readings", "resets", "pricePeriods", "purchases", "refills",
   "cars", "fuelEntries", "chargeEntries", "maintenanceEntries"];
 const number = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 });
@@ -162,6 +163,7 @@ function renderAppData(raw) {
     (Math.abs(count - Math.round(count)) > 0.001 ? "ca. " : "") +
     number.format(count) + (count === 1 ? " Sack à " : " Säcke à ") + quantity(kgPerBag, "kg");
   renderCars(data, now);
+  return readings.length > 0;
 }
 
 function renderLocalFallback() {
@@ -205,10 +207,14 @@ try {
       return;
     }
     clearTimeout(initialWait);
-    renderAppData(data);
+    const hasReadings = renderAppData(data);
     remoteStarted = true;
     remoteSnapshot = data;
-    status.textContent = "App-Daten · live verbunden · bestätigt " + updateTime.format(new Date()) + " Uhr";
+    status.textContent = "Haushalt „" + selectedHousehold + "“ · Live-Sync · " + updateTime.format(new Date()) + " Uhr";
+    if (!hasReadings) {
+      status.append(" · Keine Zählerstände · ");
+      appendText(status, "a", "Haushalt prüfen").href = "dashboard-settings.html";
+    }
   };
   const options = { includeMetadataChanges: true };
   for (const key of collections) {
@@ -238,11 +244,16 @@ setInterval(() => {
 }, 60000);
 
 window.addEventListener("storage", event => {
-  if (event.key === householdKey) window.location.reload();
+  if (event.key === householdKey || event.key === dashboardHouseholdKey || event.key === null) window.location.reload();
   if (event.key === carVisibilityKey()) renderAppData(remoteSnapshot || readLocalSnapshot() || {});
   if (event.key === snapshotKey && !remoteStarted) renderAppData(readLocalSnapshot() || {});
 });
 
 window.addEventListener("pageshow", event => {
-  if (event.persisted) renderAppData(remoteSnapshot || readLocalSnapshot() || {});
+  if (!event.persisted) return;
+  if (householdId() !== selectedHousehold) {
+    window.location.reload();
+    return;
+  }
+  renderAppData(remoteSnapshot || readLocalSnapshot() || {});
 });
