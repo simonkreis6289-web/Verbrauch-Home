@@ -111,7 +111,6 @@ function renderCars(data, now) {
     if (totals.partial) notes.push(totals.coverage + " % des Monats abgedeckt");
     else if (totals.distance === null) notes.push("Zu wenige Kilometerstände für den Monat");
     if (running.basedOnRecentIntervals) notes.push("Verbrauch aus letzten erfassten Strecken");
-    if (running.costPer100km !== null) notes.push("Preise aus jüngsten Buchungen");
     if (notes.length) appendText(tile, "p", notes.join(" · ")).className = "car-last";
     container.append(tile);
 
@@ -228,7 +227,7 @@ try {
     status.textContent = "Haushalt „" + selectedHousehold + "“ · Live-Sync · " + updateTime.format(new Date()) + " Uhr";
     if (!hasReadings) {
       status.append(" · Keine Zählerstände · ");
-      appendText(status, "a", "Haushalt prüfen").href = "dashboard-settings.html?tv=22";
+      appendText(status, "a", "Haushalt prüfen").href = "dashboard-settings.html?tv=23";
     }
   };
   const options = { includeMetadataChanges: true };
