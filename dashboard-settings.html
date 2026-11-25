@@ -6,8 +6,8 @@
   <title>Verbrauch Zuhause · Dashboard-Einstellungen</title>
   <link rel="icon" href="icon-192.png">
   <script src="dashboard/theme.js"></script>
-  <link rel="stylesheet" href="dashboard/dashboard.css">
-  <script defer src="dashboard/load-data.js" data-module="./settings.js" data-status="settings-status"></script>
+  <link rel="stylesheet" href="dashboard/dashboard.css?v=3">
+  <script defer src="dashboard/load-data.js" data-module="./settings.js?v=2" data-status="settings-status"></script>
 </head>
 <body>
   <header class="topbar">
@@ -16,6 +16,16 @@
   </header>
   <main class="dashboard-settings">
     <h1>Dashboard-Einstellungen</h1>
+    <section class="panel household-settings" aria-labelledby="household-settings-title">
+      <h2 id="household-settings-title">Haushalt für das Dashboard</h2>
+      <p>Übernimm den Eintrag „Aktiver Haushalt“ aus den Firebase-Einstellungen der App. Die Auswahl wird auf diesem Gerät gespeichert.</p>
+      <form id="dashboard-household-form">
+        <label for="dashboard-household">Haushalts-ID</label>
+        <input id="dashboard-household" type="text" required autocomplete="off" autocapitalize="none" spellcheck="false">
+        <button class="settings-link" type="submit">Haushalt speichern</button>
+        <p id="dashboard-household-status" role="status"></p>
+      </form>
+    </section>
     <section class="panel" aria-labelledby="vehicle-settings-title">
       <h2 id="vehicle-settings-title">Fahrzeuge anzeigen</h2>
       <p>Die Auswahl gilt für diesen Browser und wird sofort gespeichert.</p>

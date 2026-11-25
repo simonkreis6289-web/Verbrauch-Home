@@ -151,6 +151,20 @@ nav a { font-weight: 600; }
 }
 .dashboard-settings { max-width: 760px; }
 .dashboard-settings h1 { margin-bottom: 12px; }
+.household-settings { margin-bottom: 12px; }
+.household-settings form { display: grid; gap: 8px; justify-items: start; margin-top: 16px; }
+.household-settings input {
+  width: min(100%, 22rem);
+  min-height: 40px;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--page);
+  font: inherit;
+}
+.household-settings button { color: inherit; font: inherit; cursor: pointer; }
+.notice a { text-decoration: underline; }
 .vehicle-settings { display: grid; gap: 8px; margin-top: 16px; }
 .vehicle-settings label {
   display: flex;
