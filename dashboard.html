@@ -7,25 +7,27 @@
   <link rel="icon" href="icon-192.png">
   <script src="dashboard/theme.js"></script>
   <link rel="stylesheet" href="dashboard/dashboard.css?v=3">
-  <link rel="stylesheet" href="dashboard/tv-layout.css?v=7">
-  <link rel="stylesheet" href="dashboard/weather-view.css?v=4">
-  <link rel="stylesheet" href="dashboard/metrics.css?v=9">
+  <link rel="stylesheet" href="dashboard/tv-layout.css?v=8">
+  <link rel="stylesheet" href="dashboard/weather-view.css?v=5">
+  <link rel="stylesheet" href="dashboard/metrics.css?v=10">
   <script defer src="dashboard/dashboard.js?v=2"></script>
   <script defer src="dashboard/public-data.js"></script>
+  <link rel="stylesheet" href="dashboard/waste.css?v=1">
+  <script defer src="dashboard/waste.js?v=1"></script>
   <script defer src="dashboard/prices.js?v=4"></script>
-  <script defer src="dashboard/forecast.js"></script>
-  <script defer src="dashboard/load-data.js" data-module="./app-data.js?v=12" data-status="app-data-status"></script>
+  <script defer src="dashboard/forecast.js?v=2"></script>
+  <script defer src="dashboard/load-data.js" data-module="./app-data.js?v=13" data-status="app-data-status"></script>
 </head>
 <body class="tv-dashboard">
   <header class="topbar">
     <a class="brand" href="index.html"><span aria-hidden="true">⌂</span> Verbrauch Zuhause</a>
     <nav aria-label="Dashboard">
-      <a href="#uebersicht">Übersicht</a><a href="#wetter" data-open-weather>Wetter</a><a href="#verbrauch">Verbrauch</a><a href="#autos">Autos</a><a href="#preise">Preise</a><a href="#kalender">Kalender</a>
+      <a href="#uebersicht">Übersicht</a><a href="#wetter" data-open-weather>Wetter</a><a href="#verbrauch">Verbrauch</a><a href="#autos">Autos</a><a href="#preise">Preise</a><a href="#kalender">Abfall</a>
     </nav>
     <div class="controls">
-      <time id="clock"></time>
+      <small title="Dashboard-Version">D26</small><time id="clock"></time>
       <button id="theme" type="button">Design</button>
-      <a class="settings-link" href="dashboard-settings.html?tv=24">Einstellungen</a>
+      <a class="settings-link" href="dashboard-settings.html?tv=26">Einstellungen</a>
       <button id="fullscreen" type="button" title="Vollbild einschalten" aria-label="Vollbild einschalten" aria-pressed="false">⛶</button>
     </div>
   </header>
@@ -40,7 +42,7 @@
         <button class="settings-link weather-detail-button" type="button" data-open-weather>48-Stunden-Vorhersage</button>
         <div class="sky-overview">
           <section class="sky-card">
-            <h3>Sonnenverlauf · heute</h3>
+            <h3><span id="sky-title">Sonnenverlauf · heute</span></h3>
             <figure class="sun-figure">
               <div class="sun-track" aria-hidden="true">
                 <div class="sun-path"></div>
@@ -48,7 +50,7 @@
               </div>
               <figcaption class="sun-times">
                 <span>Aufgang <strong id="sun-rise">–</strong></span>
-                <span>Höchststand ca. <strong id="sun-noon">–</strong></span>
+                <span><span id="sky-middle-label">Höchststand ca.</span> <strong id="sun-noon">–</strong></span>
                 <span>Untergang <strong id="sun-set">–</strong></span>
               </figcaption>
             </figure>
@@ -64,7 +66,7 @@
                 </div>
                 <span class="moon-sun" aria-hidden="true">☀️<small>Sonne</small></span>
               </div>
-              <p><strong id="moon-phase"></strong><br><span id="moon-light"></span><br><small>Umlauf schematisch</small></p>
+              <p><strong id="moon-phase"></strong><br><span id="moon-light"></span><br><small>Umlauf schematisch</small></p><span id="moon-phase-icon" aria-hidden="true"></span>
             </div>
           </section>
         </div>
@@ -89,7 +91,7 @@
           <dl class="values" id="reading-values">
             <div data-meter-type="strom"><dt><span class="meter-icon" aria-hidden="true">⚡</span><div>Strom<small class="meter-reading"></small></div></dt><dd><strong>–</strong><small class="reading-interval"></small><small class="reading-trend"></small></dd></div>
             <div data-meter-type="wasser"><dt><span class="meter-icon" aria-hidden="true">💧</span><div>Wasser<small class="meter-reading"></small></div></dt><dd><strong>–</strong><small class="reading-interval"></small><small class="reading-trend"></small></dd></div>
-            <div data-meter-type="pellets"><dt><span class="meter-icon" aria-hidden="true">🪵</span><div>Pellets<small class="meter-reading"></small></div></dt><dd><strong>–</strong><small class="reading-interval"></small><small class="reading-trend"></small></dd></div>
+            <div data-meter-type="pellets"><dt><span class="meter-icon" aria-hidden="true"><img src="dashboard/loose-pellets.svg" alt=""></span><div>Pellets<small class="meter-reading"></small></div></dt><dd><strong>–</strong><small class="reading-interval"></small><small class="reading-trend"></small></dd></div>
           </dl>
         </section>
         <section class="panel price-panel price-energy" id="preise">
@@ -99,8 +101,10 @@
         </section>
       </div>
       <aside class="panel family-summary" id="kalender" aria-labelledby="calendar-title">
-        <h2 id="calendar-title">Kalender</h2>
-        <p>Die nächsten drei Termine erscheinen nach der Google-Kalender-Anbindung.</p>
+        <h2 id="calendar-title">Nächste Abfuhrtermine</h2>
+        <div id="waste-list"></div>
+        <p id="waste-status" role="status">Wird geladen …</p>
+        <small>Sonderabfuhren ggf. anmelden</small>
       </aside>
       <section class="panel cars" id="autos">
         <h2>Unsere Autos <span id="car-month"></span></h2>
