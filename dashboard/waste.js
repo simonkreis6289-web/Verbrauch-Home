@@ -10,6 +10,8 @@
     const today = ['year','month','day'].map(k=>p.find(x=>x.type===k).value).join('-');
     const cutoff = new Date(today+'T12:00:00Z'); cutoff.setUTCDate(cutoff.getUTCDate()+14);
     const end = cutoff.toISOString().slice(0,10);
+    const tomorrow = new Date(today+'T12:00:00Z'); tomorrow.setUTCDate(tomorrow.getUTCDate()+1);
+    const nextDay = tomorrow.toISOString().slice(0,10);
     const events = (data ? data.events : []).filter(e=>e.date>=today).sort((a,b)=>a.date.localeCompare(b.date));
     const rows = types.map(([kind,label])=>({kind,label,date:(events.find(e=>e.kind===kind)||{}).date}));
     const special = new Map();
@@ -18,11 +20,11 @@
     rows.sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'));
     root.textContent='';
     rows.forEach(e=>{
-      const row=document.createElement('div'); row.className='waste-row';
+      const row=document.createElement('div'); row.className='waste-row'; row.dataset.kind=e.kind; if(e.date===today || e.date===nextDay) row.classList.add('waste-urgent');
       const icon=document.createElement('span'); icon.className='waste-bin waste-'+e.kind; icon.setAttribute('aria-hidden','true');
-      if(e.kind==='special') icon.textContent='!';
+      if(e.kind==='special') icon.textContent=/holz/i.test(e.label)?'🪵':/elektro|metall/i.test(e.label)?'🔌':/sperr/i.test(e.label)?'🛋️':'♻️';
       const label=document.createElement('span'); label.textContent=e.label;
-      const time=document.createElement('strong'); time.textContent=e.date ? (e.date===today?'Heute':dayFormat.format(new Date(e.date+'T12:00:00Z'))) : '–';
+      const time=document.createElement('strong'); time.textContent=e.date ? ((e.date===today?'Heute · ':e.date===nextDay?'Morgen · ':'')+dayFormat.format(new Date(e.date+'T12:00:00Z'))) : '–';
       row.append(icon,label,time); root.append(row);
     });
     const age=data ? Date.now()-Date.parse(data.updatedAt) : Infinity;

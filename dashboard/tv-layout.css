@@ -75,3 +75,24 @@
   .tv-dashboard .car { padding: .35em .5em; gap: .2em; }
   .tv-dashboard .car img { height: clamp(38px, 10vh, 118px); }
 }
+.household-heading {display:inline-flex;align-items:center;gap:.5em;margin-right:auto;min-width:0;}
+.sync-led {width:.65em;height:.65em;border-radius:50%;background:#eab308;display:inline-block;flex:none;box-shadow:0 0 .5em currentColor;color:#eab308;}
+.sync-led[data-state="ok"]{background:#22c55e;color:#22c55e;}
+.sync-led[data-state="error"]{background:#ef4444;color:#ef4444;}
+@media (min-width:900px) and (min-height:500px){
+ .tv-dashboard{overflow:hidden;}
+ .tv-dashboard main{overflow:hidden;}
+ .tv-dashboard .tv-grid{flex:none;transform-origin:top left;grid-template-rows:minmax(min-content,1.8fr) minmax(min-content,1fr);grid-template-areas:"forecast forecast forecast house house house house house household household household household" "cars cars cars cars cars cars cars cars family family family family";}
+ .tv-dashboard .household-summary{grid-template-rows:auto 1fr;}
+ .tv-dashboard #reading-values .reading-trend{white-space:nowrap;font-size:.76em;}
+ .tv-dashboard #reading-values dd{min-width:max-content;}
+ .tv-dashboard .cars-content{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:.6em;align-items:start;}
+ .tv-dashboard .cars-content .price-fuel{margin-top:.35em;}
+ .tv-dashboard .cars-content .price-list{grid-template-columns:1fr;}
+ .tv-dashboard .car-metrics{grid-template-columns:repeat(2,minmax(0,1fr));}
+ .tv-dashboard .car-summary img{width:5vw;height:4vh;}
+ .tv-dashboard .car-metrics dd{font-size:.9em;}
+ .tv-dashboard .forecast-days{gap:.2em;margin:.25em 0;}
+ .tv-dashboard .forecast-day-card{padding:.25em .4em;}
+ .tv-dashboard .sky-overview{gap:.25em;margin-top:.3em;}
+}

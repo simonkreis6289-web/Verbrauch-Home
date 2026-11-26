@@ -1,8 +1,10 @@
-#waste-list {display:grid;gap:.25em;margin:.4em 0;}
-.waste-row {display:grid;grid-template-columns:1.2em minmax(0,1fr) auto;align-items:center;gap:.45em;padding:.22em 0;border-bottom:1px solid var(--line);font-size:.86em;}
-.waste-row strong {white-space:nowrap;}
-.waste-bin {display:inline-block;position:relative;width:.85em;height:1em;margin:.15em auto 0;border-radius:0 0 .15em .15em;background:#737373;}
-.waste-bin::before {content:'';position:absolute;left:-.1em;right:-.1em;top:-.16em;height:.14em;background:inherit;border-radius:.1em;}
-.waste-bio {background:#a66c42;} .waste-rest {background:#333;border:1px solid #999;} .waste-yellow {background:#e8b522;} .waste-paper {background:#329b58;}
-.waste-special {background:#bd6b28;color:white;text-align:center;font-weight:bold;border-radius:.2em;} .waste-special::before {display:none;}
-#waste-status {font-size:.72em;margin:.2em 0;}
+#waste-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.35em;margin:.35em 0;}
+.waste-row{--bin:#999;display:grid;grid-template-columns:1.8em minmax(0,1fr);grid-template-rows:auto auto;align-items:center;gap:.08em .4em;padding:.25em .35em;border:1px solid var(--line);border-left:3px solid var(--bin);border-radius:.5em;background:var(--page-end);font-size:.82em;}
+.waste-row[data-kind=bio]{--bin:#a66c42}.waste-row[data-kind=rest]{--bin:#888}.waste-row[data-kind=yellow]{--bin:#e8b522}.waste-row[data-kind=paper]{--bin:#329b58}.waste-row[data-kind=special]{--bin:#bd6b28}
+.waste-row strong{grid-column:2;white-space:nowrap;font-size:.95em;}.waste-row>span:nth-child(2){font-size:.9em;line-height:1.1;}
+.waste-urgent{border-color:var(--bin);box-shadow:inset 0 0 0 1px var(--bin);}.waste-urgent strong{color:var(--warm);}
+.waste-bin{grid-row:1/3;display:block;position:relative;width:1.25em;height:1.65em;margin:.25em auto 0;border-radius:.12em .12em .25em .25em;background:linear-gradient(90deg,#0003,transparent 35%,#fff2),var(--bin);}
+.waste-bin::before{content:'';position:absolute;left:-.15em;right:-.15em;top:-.21em;height:.19em;background:var(--bin);border-radius:.1em;}
+.waste-bin::after{content:'';position:absolute;bottom:-.14em;left:.08em;width:.25em;height:.25em;border-radius:50%;background:#222;box-shadow:.85em 0 #222;}
+.waste-rest{background:#353535;border:1px solid #888;}.waste-special{background:none;font-size:1.45em;width:auto;height:auto;}.waste-special::before,.waste-special::after{display:none;}
+#waste-status,#kalender>small{font-size:.7em;margin:.15em 0;}

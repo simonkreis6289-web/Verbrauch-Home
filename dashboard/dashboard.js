@@ -97,3 +97,29 @@ if (houseStock) {
     document.addEventListener("fullscreenchange", fitHouseStock);
   }
 }
+
+// Fit the complete overview, including dynamically loaded content, without clipping.
+const overview = document.querySelector('.tv-grid');
+const main = document.querySelector('main');
+let fitFrame;
+function fitOverview() {
+  cancelAnimationFrame(fitFrame);
+  fitFrame = requestAnimationFrame(() => {
+    overview.style.transform = ''; overview.style.width = ''; overview.style.height = '';
+    if (window.innerWidth < 900 || window.innerHeight < 500) return;
+    const available = main.clientHeight - 12;
+    let scale = 1;
+    for (let i=0;i<4;i++) {
+      overview.style.width = (100/scale)+'%';
+      overview.style.height = (available/scale)+'px';
+      const needed = Math.max(overview.scrollHeight, overview.offsetHeight);
+      if (needed*scale <= available+1) break;
+      scale = Math.min(scale, available/needed);
+    }
+    overview.style.transform = 'scale('+scale+')';
+  });
+}
+window.addEventListener('resize', fitOverview);
+document.addEventListener('fullscreenchange', fitOverview);
+new MutationObserver(fitOverview).observe(overview,{childList:true,subtree:true,characterData:true});
+fitOverview();

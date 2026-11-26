@@ -6,6 +6,14 @@ import { activeCars, carVisibilityKey, hiddenCarIds } from "./vehicle-preference
 
 const status = document.getElementById("app-data-status");
 const selectedHousehold = householdId();
+document.getElementById("household-name").textContent = selectedHousehold;
+function syncState(state, message) {
+  status.dataset.state = state;
+  status.title = message;
+  status.setAttribute("aria-label", message);
+}
+window.addEventListener("offline", () => syncState("error", "Offline · letzter Datenstand"));
+window.addEventListener("online", () => syncState("pending", "Verbindung wird geprüft"));
 const collections = ["readings", "resets", "pricePeriods", "purchases", "refills",
   "cars", "fuelEntries", "chargeEntries", "maintenanceEntries"];
 const number = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 });
@@ -173,7 +181,7 @@ function renderAppData(raw) {
       ? readings.find(item => item.type === type && item.date === reading.previousDate)
       : null;
     row.querySelector(".meter-reading").textContent = reading
-      ? "Zähler " + quantity(reading.value, unit) + " · " + displayDate(reading.date) : "";
+      ? "Zähler " + quantity(reading.value, unit) + (type === "strom" ? "" : " · " + displayDate(reading.date)) : "";
     row.querySelector("dd strong").textContent = validInterval ? dailyNumber.format(reading.delta) + " " + unit : "–";
     row.querySelector(".reading-interval").textContent = validInterval
       ? displayDate(reading.previousDate) + " – " + displayDate(reading.date)
@@ -210,7 +218,7 @@ function renderAppData(raw) {
 function renderLocalFallback() {
   const local = readLocalSnapshot();
   renderAppData(local || {});
-  status.textContent = local ? "Lokaler App-Stand · Live-Sync wird geprüft" : "App-Daten werden geladen …";
+  syncState("pending", local ? "Lokaler App-Stand · Verbindung wird geprüft" : "App-Daten werden geladen");
   return Boolean(local);
 }
 
@@ -227,9 +235,9 @@ let remoteSnapshot;
 let remoteStarted = false;
 const hasLocalData = renderLocalFallback();
 const noSync = () => {
-  status.textContent = remoteStarted ? "Live-Sync unterbrochen · letzter geladener App-Stand"
+  syncState("error", remoteStarted ? "Live-Sync unterbrochen · letzter geladener App-Stand"
     : hasLocalData ? "Lokaler App-Stand · Live-Sync nicht verfügbar"
-      : "App-Daten konnten nicht geladen werden.";
+      : "App-Daten konnten nicht geladen werden.");
 };
 const initialWait = setTimeout(noSync, 12000);
 
@@ -251,11 +259,7 @@ try {
     const hasReadings = renderAppData(data);
     remoteStarted = true;
     remoteSnapshot = data;
-    status.textContent = "Haushalt „" + selectedHousehold + "“ · Live-Sync · " + updateTime.format(new Date()) + " Uhr";
-    if (!hasReadings) {
-      status.append(" · Keine Zählerstände · ");
-      appendText(status, "a", "Haushalt prüfen").href = "dashboard-settings.html?tv=24";
-    }
+    syncState(navigator.onLine && hasReadings ? "ok" : "error", hasReadings ? "Serverstand bestätigt · " + updateTime.format(new Date()) + " Uhr" : "Keine Zählerstände · Haushalt prüfen");
   };
   const options = { includeMetadataChanges: true };
   for (const key of collections) {

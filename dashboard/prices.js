@@ -143,10 +143,8 @@ refreshDashboardData(async () => {
   }
   const data = lastFuelRecord || await fuelFallback;
   const date = data?.source_date || data?.fetched_at;
-  const old = Date.now() - Date.parse(date) > 12 * 60 * 60 * 1000;
-  const qualifier = !date ? "Nicht verfügbar" : old && source === "App-Datenstand" ? "Älterer App-Stand" : source;
-  fuelStatus.textContent = "Deutschland-Durchschnitt · " + qualifier +
-    (Number.isFinite(Date.parse(date)) ? " · " + dashboardBerlinTime.format(new Date(date)) : "");
+  const stamp = new Date(date || "");
+  fuelStatus.textContent = Number.isFinite(stamp.getTime()) ? "Stand: " + new Intl.DateTimeFormat("de-DE", {day:"2-digit",month:"2-digit",year:"numeric",timeZone:"Europe/Berlin"}).format(stamp) + ", " + new Intl.DateTimeFormat("de-DE", {hour:"numeric",minute:"2-digit",timeZone:"Europe/Berlin"}).format(stamp) + " Uhr" : "Stand: –";
   renderPrices("fuel-prices", priceDefinitions.fuel, 3, key => ({ value: data?.prices?.[key] }));
 });
 
