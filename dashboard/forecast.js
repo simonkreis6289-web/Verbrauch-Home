@@ -155,7 +155,7 @@
     moon.style.left = (50 + 50 * Math.cos(cycle * 2 * Math.PI)) + "%";
     moon.style.top = (50 - 50 * Math.sin(cycle * 2 * Math.PI)) + "%";
     byId("moon-phase").textContent = name;
-    byId("moon-light").textContent = "Ca. " + Math.round((1 - Math.cos(2 * Math.PI * cycle)) * 50) + " % beleuchtet";
+    byId("moon-light").textContent = Math.round((1 - Math.cos(2 * Math.PI * cycle)) * 50) + "%";
   }
 
   function render(record, offline) {

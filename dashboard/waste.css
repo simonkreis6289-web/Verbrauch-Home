@@ -8,3 +8,15 @@
 .waste-bin::after{content:'';position:absolute;bottom:-.14em;left:.08em;width:.25em;height:.25em;border-radius:50%;background:#222;box-shadow:.85em 0 #222;}
 .waste-rest{background:#353535;border:1px solid #888;}.waste-special{background:none;font-size:1.45em;width:auto;height:auto;}.waste-special::before,.waste-special::after{display:none;}
 #waste-status,#kalender>small{font-size:.7em;margin:.15em 0;}
+/* D30: compact collection cards with illustrated wheelie bins. */
+.waste-row {position:relative;grid-template-columns:2.25em minmax(0,1fr);gap:.12em .45em;padding:.38em .4em;border-left:1px solid var(--line);border-top:3px solid var(--bin);border-radius:.65em;background:linear-gradient(135deg,var(--page-end),var(--card));}
+.waste-row .waste-label {font-weight:650;line-height:1.15;}
+.waste-row strong {font-size:1.05em;}
+.waste-row[data-when=today],.waste-row[data-when=tomorrow] {border-color:var(--bin);}
+.waste-day {grid-column:2;font-size:.72em;font-weight:800;letter-spacing:.05em;color:var(--text);}
+.waste-day[hidden]{display:none;}
+.waste-bin {grid-row:1/4;width:1.65em;height:2em;border-radius:.15em .15em .38em .38em;background:linear-gradient(90deg,#0004 0%,#fff3 22%,transparent 35%,#0002 75%,#0005),var(--bin);box-shadow:inset 0 -.2em #0002,0 .12em .2em #0003;transform:perspective(4em) rotateY(-12deg);}
+.waste-bin::before {height:.32em;top:-.3em;left:-.15em;right:-.15em;border-radius:.15em .15em .08em .08em;box-shadow:inset 0 .1em #fff4,0 .08em #0005;}
+.waste-bin::after {width:.34em;height:.34em;left:.08em;bottom:-.18em;box-shadow:1.1em 0 #222;}
+.waste-rest {--bin:#555;}
+.waste-special {background:none;box-shadow:none;transform:none;font-size:1.8em;width:auto;height:auto;}

@@ -7,16 +7,16 @@
   <link rel="icon" href="icon-192.png">
   <script src="dashboard/theme.js"></script>
   <link rel="stylesheet" href="dashboard/dashboard.css?v=3">
-  <link rel="stylesheet" href="dashboard/tv-layout.css?v=29">
-  <link rel="stylesheet" href="dashboard/weather-view.css?v=29">
-  <link rel="stylesheet" href="dashboard/metrics.css?v=29">
-  <script defer src="dashboard/dashboard.js?v=29"></script>
+  <link rel="stylesheet" href="dashboard/tv-layout.css?v=30">
+  <link rel="stylesheet" href="dashboard/weather-view.css?v=30">
+  <link rel="stylesheet" href="dashboard/metrics.css?v=30">
+  <script defer src="dashboard/dashboard.js?v=30"></script>
   <script defer src="dashboard/public-data.js"></script>
-  <link rel="stylesheet" href="dashboard/waste.css?v=29">
-  <script defer src="dashboard/waste.js?v=29"></script>
-  <script defer src="dashboard/prices.js?v=29"></script>
-  <script defer src="dashboard/forecast.js?v=29"></script>
-  <script defer src="dashboard/load-data.js" data-module="./app-data.js?v=29" data-status="app-data-status"></script>
+  <link rel="stylesheet" href="dashboard/waste.css?v=30">
+  <script defer src="dashboard/waste.js?v=30"></script>
+  <script defer src="dashboard/prices.js?v=30"></script>
+  <script defer src="dashboard/forecast.js?v=30"></script>
+  <script defer src="dashboard/load-data.js" data-module="./app-data.js?v=30" data-status="app-data-status"></script>
 </head>
 <body class="tv-dashboard">
   <header class="topbar">
@@ -25,9 +25,9 @@
       <a href="#uebersicht">Übersicht</a><a href="#wetter" data-open-weather>Wetter</a><a href="#verbrauch">Verbrauch</a><a href="#autos">Autos</a><a href="#preise">Preise</a><a href="#kalender">Abfall</a>
     </nav>
     <div class="controls">
-      <small title="Dashboard-Version">D29</small><time id="clock"></time>
+      <small title="Dashboard-Version">D30</small><time id="clock"></time>
       <button id="theme" type="button">Design</button>
-      <a class="settings-link" href="dashboard-settings.html?tv=29">Einstellungen</a>
+      <a class="settings-link" href="dashboard-settings.html?tv=30">Einstellungen</a>
       <button id="fullscreen" type="button" title="Vollbild einschalten" aria-label="Vollbild einschalten" aria-pressed="false">⛶</button>
     </div>
   </header>
@@ -55,7 +55,7 @@
             </figure>
             <p id="sun-state"></p>
           </section>
-          <section class="sky-card">
+          <section class="sky-card moon-card">
             <h3>Mondphase aktuell</h3>
             <div class="moon-layout">
               <div class="moon-diagram" role="img" aria-label="Schematische Mondbahn, Erde mit Tag- und Nachtseite, Standort Alperscheid und Sonne rechts">
@@ -65,7 +65,7 @@
                 </div>
                 <span class="moon-sun" aria-hidden="true">☀️<small>Sonne</small></span>
               </div>
-              <p><strong id="moon-phase"></strong><br><span id="moon-light"></span><br><small>Umlauf schematisch</small></p><span id="moon-phase-icon" aria-hidden="true"></span>
+              <div class="moon-phase-summary"><strong id="moon-phase"></strong><div class="moon-disc"><span id="moon-phase-icon" aria-hidden="true"></span><span id="moon-light"></span></div></div>
             </div>
           </section>
         </div>

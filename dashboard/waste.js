@@ -20,17 +20,18 @@
     rows.sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'));
     root.textContent='';
     rows.forEach(e=>{
-      const row=document.createElement('div'); row.className='waste-row'; row.dataset.kind=e.kind; if(e.date===today || e.date===nextDay) row.classList.add('waste-urgent');
+      const row=document.createElement('div'); row.className='waste-row'; row.dataset.kind=e.kind; row.dataset.when=e.date===today?'today':e.date===nextDay?'tomorrow':'later'; if(e.date===today || e.date===nextDay) row.classList.add('waste-urgent');
       const icon=document.createElement('span'); icon.className='waste-bin waste-'+e.kind; icon.setAttribute('aria-hidden','true');
       if(e.kind==='special') icon.textContent=/holz/i.test(e.label)?'🪵':/elektro|metall/i.test(e.label)?'🔌':/sperr/i.test(e.label)?'🛋️':'♻️';
-      const label=document.createElement('span'); label.textContent=e.label;
-      const time=document.createElement('strong'); time.textContent=e.date ? ((e.date===today?'Heute · ':e.date===nextDay?'Morgen · ':'')+dayFormat.format(new Date(e.date+'T12:00:00Z'))) : '–';
-      row.append(icon,label,time); root.append(row);
+      const label=document.createElement('span'); label.className='waste-label'; label.textContent=e.label;
+      const time=document.createElement('strong'); time.textContent=e.date ? dayFormat.format(new Date(e.date+'T12:00:00Z')) : '–'; const badge=document.createElement('small'); badge.className='waste-day'; badge.textContent=e.date===today?'HEUTE':e.date===nextDay?'MORGEN':''; badge.hidden=!badge.textContent;
+      row.append(icon,label,time,badge); root.append(row);
     });
     const age=data ? Date.now()-Date.parse(data.updatedAt) : Infinity;
     status.textContent=!data?'Keine Kalenderdaten':(!events.length?'Keine aktuellen Termine': age>3*86400000?'Datenstand älter als 3 Tage':'Alperscheid · Stand '+dayFormat.format(new Date(data.updatedAt)));
   }
   render(null);
+  setInterval(()=>{if(cached) render(cached);},60000);
   refreshDashboardData(async()=>{
     try {const data=await readDashboardJson('waste-calendar.json'); if(!Array.isArray(data.events)) throw Error('Invalid data'); cached=data; render(data);}
     catch(e){render(cached); status.textContent+=' · Abruf fehlgeschlagen';}

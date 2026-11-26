@@ -169,3 +169,19 @@
 .moon-layout { gap: .3em; }
 #moon-phase-icon { font-size: 1.7em; line-height: 1; }
 .night-track .sun-path { border-color: #849ac2; background: linear-gradient(180deg,#849ac226,transparent); }
+/* D30: use the remaining forecast panel height for the lunar view. */
+.moon-card {display:flex;flex-direction:column;}
+.moon-card .moon-layout {flex:1;display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);align-items:center;gap:.45em;margin-top:.3em;}
+.moon-card .moon-diagram {min-width:0;justify-content:center;gap:.25em;}
+.moon-card .moon-orbit {width: min(68%, 180px);flex:none;margin:.7em .4em;}
+.moon-card .moon-sun {font-size:1.65em;}
+.moon-card .moon-sun small {font-size:.48em;}
+.moon-card .moon-marker {font-size:1.65em;}
+.moon-phase-summary {display:grid;justify-items:center;gap:.35em;text-align:center;min-width:0;}
+.moon-disc {display:grid;place-items:center;position:relative;line-height:1;}
+.moon-disc #moon-phase-icon {font-size:clamp(44px,5vw,86px);}
+#moon-light {position:absolute;inset:0;display:grid;place-items:center;color:white;font-weight:800;font-size:1em;text-shadow:0 1px 3px #000,0 0 4px #000;}
+@media(min-width:900px) and (min-height:500px){
+.tv-dashboard .forecast {display:flex;flex-direction:column;}
+.tv-dashboard .sky-overview {flex:1;grid-template-rows:auto minmax(min-content,1fr);}
+}

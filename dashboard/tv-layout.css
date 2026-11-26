@@ -104,3 +104,11 @@
 .tv-dashboard #autos #fuel-status{font-size:.7em;white-space:nowrap;}
 .tv-dashboard #kalender #waste-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}
 }
+/* D30: fuel prices share one framed card, matching the vehicle cards. */
+#autos .price-fuel {border:1px solid var(--line);border-radius:10px;background:var(--page-end);padding:.35em .55em;min-width:0;}
+#autos .price-fuel .price-list > div {border:0;border-radius:0;background:transparent;border-bottom:1px solid var(--line);padding:.25em 0;}
+#autos .price-fuel .price-list > div:last-child {border-bottom:0;}
+@media(min-width:900px) and (min-height:500px){
+.tv-dashboard #autos .cars-content {align-items:stretch;}
+.tv-dashboard #autos .price-fuel {margin-top:.35em;}
+}
