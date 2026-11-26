@@ -9,7 +9,7 @@ const selectedHousehold = householdId();
 const collections = ["readings", "resets", "pricePeriods", "purchases", "refills",
   "cars", "fuelEntries", "chargeEntries", "maintenanceEntries"];
 const number = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 });
-const dailyNumber = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 4 });
+const dailyNumber = new Intl.NumberFormat("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const percent = new Intl.NumberFormat("de-DE", { style: "percent", maximumFractionDigits: 1 });
 const money = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
 const shortDate = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeZone: "Europe/Berlin" });
@@ -174,7 +174,7 @@ function renderAppData(raw) {
       : null;
     row.querySelector(".meter-reading").textContent = reading
       ? "Zähler " + quantity(reading.value, unit) + " · " + displayDate(reading.date) : "";
-    row.querySelector("dd strong").textContent = validInterval ? quantity(reading.delta, unit) : "–";
+    row.querySelector("dd strong").textContent = validInterval ? dailyNumber.format(reading.delta) + " " + unit : "–";
     row.querySelector(".reading-interval").textContent = validInterval
       ? displayDate(reading.previousDate) + " – " + displayDate(reading.date)
       : reading ? "Kein ablesbarer Zeitraum" : "Kein Zählerstand";

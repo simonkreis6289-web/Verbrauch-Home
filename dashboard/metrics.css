@@ -137,3 +137,5 @@
   .tv-dashboard .price-fuel .price-list > .price-metric { grid-template-columns: minmax(0, 1fr); align-content: center; }
   .price-fuel .price-metric dd { text-align: left; }
 }
+
+.meter-icon img { width: 1.3em; height: 1.3em; object-fit: contain; vertical-align: middle; }

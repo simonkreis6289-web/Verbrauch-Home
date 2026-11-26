@@ -105,14 +105,21 @@
     sun.hidden = !available;
     if (available) {
       const start = minutes(rise), end = minutes(set), current = minutes(clockTime);
-      const fraction = Math.max(0, Math.min(1, (current - start) / (end - start)));
+      const night = current < start || current >= end;
+      const nextRise = daily?.sunrise?.[index + 1]?.slice(11, 16);
+      const prevSet = daily?.sunset?.[index - 1]?.slice(11, 16);
+      const nightStart = current < start ? (daylight.test(prevSet || "") ? minutes(prevSet) : end) - 1440 : end;
+      const nightEnd = current < start ? start : 1440 + (daylight.test(nextRise || "") ? minutes(nextRise) : start);
+      const fraction = Math.max(0, Math.min(1, night ? (current - nightStart) / (nightEnd - nightStart) : (current - start) / (end - start)));
+      sun.textContent = night ? "🌙" : "☀️";
+      sun.parentElement.classList.toggle("night-track", night);
+      byId("sky-title").textContent = night ? "Nachtverlauf · schematisch" : "Sonnenverlauf · heute";
       sun.style.left = (50 - 50 * Math.cos(Math.PI * fraction)) + "%";
       sun.style.top = (100 - 100 * Math.sin(Math.PI * fraction)) + "%";
       byId("sun-rise").textContent = timeLabel(start);
       byId("sun-noon").textContent = timeLabel((start + end) / 2);
       byId("sun-set").textContent = timeLabel(end);
-      byId("sun-state").textContent = current < start ? "Vor Sonnenaufgang" :
-        current >= end ? "Nach Sonnenuntergang" : "Jetzt · " + clockTime + " Uhr · Sonnenhöhe schematisch";
+      byId("sun-state").textContent = night ? "Nacht · Mondposition symbolisch" : "Jetzt · " + clockTime + " Uhr · Sonnenhöhe schematisch";
     } else {
       for (const id of ["sun-rise", "sun-noon", "sun-set"]) byId(id).textContent = "–";
       byId("sun-state").textContent = "Auf- und Untergang für heute nicht verfügbar.";
@@ -122,6 +129,7 @@
     const [symbol, name] = phases[Math.round(cycle * 8) % 8];
     const moon = byId("moon-marker");
     moon.textContent = symbol;
+    byId("moon-phase-icon").textContent = symbol;
     moon.style.left = (50 + 50 * Math.cos(cycle * 2 * Math.PI)) + "%";
     moon.style.top = (50 - 50 * Math.sin(cycle * 2 * Math.PI)) + "%";
     byId("moon-phase").textContent = name;

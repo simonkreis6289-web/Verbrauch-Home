@@ -40,7 +40,7 @@
     min-height: 0;
     gap: clamp(5px, 1vh, 12px);
     grid-template-columns: repeat(12, minmax(0, 1fr));
-    grid-template-rows: minmax(0, 1.7fr) minmax(0, 1fr);
+    grid-template-rows: minmax(min-content, 1.7fr) minmax(min-content, 1fr);
     grid-template-areas:
       "forecast forecast forecast house house house house house house household household household"
       "cars cars cars cars cars cars cars cars cars family family family";
@@ -48,7 +48,7 @@
 
   .tv-dashboard .forecast { grid-area: forecast; }
   .tv-dashboard .weather { grid-area: house; }
-  .tv-dashboard .household-summary { grid-area: household; grid-template-rows: repeat(2, minmax(0, 1fr)); }
+  .tv-dashboard .household-summary { grid-area: household; grid-template-rows: repeat(2, minmax(min-content, 1fr)); }
   .tv-dashboard .family-summary { grid-area: family; }
   .tv-dashboard .cars { grid-area: cars; }
 
@@ -58,7 +58,7 @@
     gap: clamp(5px, 1vh, 12px);
   }
   .tv-dashboard .stack { grid-template-columns: minmax(0, 1fr); }
-  .tv-dashboard .panel { padding: .45em .65em; min-height: 0; overflow: auto; }
+  .tv-dashboard .panel { padding: .45em .65em; min-height: 0; overflow: visible; }
   .tv-dashboard .weather { padding: 0; overflow: hidden; }
   .tv-dashboard .scene { height: 100%; min-height: 0; padding: .55em .7em; }
   .tv-dashboard h1, .tv-dashboard h2 { font-size: 1.16em; overflow-wrap: anywhere; }
