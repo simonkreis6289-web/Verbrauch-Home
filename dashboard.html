@@ -7,32 +7,32 @@
   <link rel="icon" href="icon-192.png">
   <script src="dashboard/theme.js"></script>
   <link rel="stylesheet" href="dashboard/dashboard.css?v=3">
-  <link rel="stylesheet" href="dashboard/tv-layout.css?v=8">
+  <link rel="stylesheet" href="dashboard/tv-layout.css?v=9">
   <link rel="stylesheet" href="dashboard/weather-view.css?v=5">
-  <link rel="stylesheet" href="dashboard/metrics.css?v=10">
-  <script defer src="dashboard/dashboard.js?v=2"></script>
+  <link rel="stylesheet" href="dashboard/metrics.css?v=11">
+  <script defer src="dashboard/dashboard.js?v=3"></script>
   <script defer src="dashboard/public-data.js"></script>
-  <link rel="stylesheet" href="dashboard/waste.css?v=1">
-  <script defer src="dashboard/waste.js?v=1"></script>
-  <script defer src="dashboard/prices.js?v=4"></script>
-  <script defer src="dashboard/forecast.js?v=2"></script>
-  <script defer src="dashboard/load-data.js" data-module="./app-data.js?v=13" data-status="app-data-status"></script>
+  <link rel="stylesheet" href="dashboard/waste.css?v=2">
+  <script defer src="dashboard/waste.js?v=2"></script>
+  <script defer src="dashboard/prices.js?v=5"></script>
+  <script defer src="dashboard/forecast.js?v=3"></script>
+  <script defer src="dashboard/load-data.js" data-module="./app-data.js?v=14" data-status="app-data-status"></script>
 </head>
 <body class="tv-dashboard">
   <header class="topbar">
-    <a class="brand" href="index.html"><span aria-hidden="true">⌂</span> Verbrauch Zuhause</a>
+    <a class="brand" href="index.html"><span aria-hidden="true">⌂</span> Verbrauch Zuhause</a><span class="household-heading"><small id="household-name"></small><span id="app-data-status" class="sync-led" role="status" aria-label="Daten werden geladen" title="Daten werden geladen"></span></span>
     <nav aria-label="Dashboard">
       <a href="#uebersicht">Übersicht</a><a href="#wetter" data-open-weather>Wetter</a><a href="#verbrauch">Verbrauch</a><a href="#autos">Autos</a><a href="#preise">Preise</a><a href="#kalender">Abfall</a>
     </nav>
     <div class="controls">
-      <small title="Dashboard-Version">D26</small><time id="clock"></time>
+      <small title="Dashboard-Version">D28</small><time id="clock"></time>
       <button id="theme" type="button">Design</button>
-      <a class="settings-link" href="dashboard-settings.html?tv=26">Einstellungen</a>
+      <a class="settings-link" href="dashboard-settings.html?tv=27">Einstellungen</a>
       <button id="fullscreen" type="button" title="Vollbild einschalten" aria-label="Vollbild einschalten" aria-pressed="false">⛶</button>
     </div>
   </header>
   <main id="uebersicht">
-    <p class="notice" id="app-data-status" role="status">App-Daten werden geladen …</p>
+    
     <p id="fullscreen-status" role="status" hidden></p>
     <div class="tv-grid">
       <aside class="panel forecast" id="wetter">
@@ -49,9 +49,9 @@
                 <span class="sun-marker" id="sun-marker" hidden>☀️</span>
               </div>
               <figcaption class="sun-times">
-                <span>Aufgang <strong id="sun-rise">–</strong></span>
+                <span><span id="sky-rise-label">Aufgang</span> <strong id="sun-rise">–</strong></span>
                 <span><span id="sky-middle-label">Höchststand ca.</span> <strong id="sun-noon">–</strong></span>
-                <span>Untergang <strong id="sun-set">–</strong></span>
+                <span><span id="sky-set-label">Untergang</span> <strong id="sun-set">–</strong></span>
               </figcaption>
             </figure>
             <p id="sun-state"></p>
@@ -108,13 +108,13 @@
       </aside>
       <section class="panel cars" id="autos">
         <h2>Unsere Autos <span id="car-month"></span></h2>
-        <div class="car-grid" id="app-cars"><p>Fahrzeuge werden geladen …</p></div>
+        <div class="cars-content"><div class="car-grid" id="app-cars"><p>Fahrzeuge werden geladen …</p></div>
         <p id="car-reminders" hidden></p>
         <section class="price-panel price-fuel" aria-labelledby="fuel-title">
           <h3 id="fuel-title">Spritpreise</h3>
-          <p id="fuel-status">Deutschland-Durchschnitt wird geladen …</p>
-          <dl class="price-list" id="fuel-prices"><div><dt>Status</dt><dd>Wird geladen …</dd></div></dl>
-        </section>
+          
+          <dl class="price-list" id="fuel-prices"><div><dt>Status</dt><dd>Wird geladen …</dd></div></dl><p id="fuel-status">Stand: –</p>
+        </section></div>
       </section>
     </div>
   </main>

@@ -23,6 +23,8 @@
     [99, "⛈️", "Gewitter"]
   ];
   let latest;
+  const skyDays = new Map();
+  try { for (const [key, value] of JSON.parse(localStorage.getItem("dashboard-sky-days") || "[]")) skyDays.set(key, value); } catch {}
   let opener;
 
   function el(tag, text, className) {
@@ -53,7 +55,7 @@
   const minutes = time => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
   const timeLabel = value => {
     const rounded = Math.round(value);
-    return String(Math.floor(rounded / 60)).padStart(2, "0") + ":" + String(rounded % 60).padStart(2, "0") + " Uhr";
+    return String(Math.floor(((rounded % 1440 + 1440) % 1440) / 60)).padStart(2, "0") + ":" + String((rounded % 60 + 60) % 60).padStart(2, "0") + " Uhr";
   };
 
   function dayCard(daily, index, today) {
@@ -97,8 +99,16 @@
 
   function renderSky(daily, index, now) {
     const clockTime = clock.format(now);
-    const rise = daily?.sunrise?.[index]?.slice(11, 16);
-    const set = daily?.sunset?.[index]?.slice(11, 16);
+    if (daily?.time) {
+      daily.time.forEach((date, i) => {
+        const rise = daily.sunrise?.[i]?.slice(11, 16), set = daily.sunset?.[i]?.slice(11, 16);
+        if (rise && set) skyDays.set(date, {rise, set});
+      });
+      try { localStorage.setItem("dashboard-sky-days", JSON.stringify([...skyDays].sort().slice(-14))); } catch {}
+    }
+    const adjacent = offset => { const d = new Date(dayKey.format(now) + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + offset); return skyDays.get(dayKey.format(d)); };
+    const rise = adjacent(0)?.rise;
+    const set = adjacent(0)?.set;
     const daylight = /^\d\d:\d\d$/;
     const available = daylight.test(rise || "") && daylight.test(set || "") && minutes(set) > minutes(rise);
     const sun = byId("sun-marker");
@@ -106,8 +116,8 @@
     if (available) {
       const start = minutes(rise), end = minutes(set), current = minutes(clockTime);
       const night = current < start || current >= end;
-      const nextRise = daily?.sunrise?.[index + 1]?.slice(11, 16);
-      const prevSet = daily?.sunset?.[index - 1]?.slice(11, 16);
+      const nextRise = adjacent(1)?.rise;
+      const prevSet = adjacent(-1)?.set;
       const nightStart = current < start ? (daylight.test(prevSet || "") ? minutes(prevSet) : end) - 1440 : end;
       const nightEnd = current < start ? start : 1440 + (daylight.test(nextRise || "") ? minutes(nextRise) : start);
       const fraction = Math.max(0, Math.min(1, night ? (current - nightStart) / (nightEnd - nightStart) : (current - start) / (end - start)));
@@ -116,9 +126,13 @@
       byId("sky-title").textContent = night ? "Nachtverlauf · schematisch" : "Sonnenverlauf · heute";
       sun.style.left = (50 - 50 * Math.cos(Math.PI * fraction)) + "%";
       sun.style.top = (100 - 100 * Math.sin(Math.PI * fraction)) + "%";
-      byId("sun-rise").textContent = timeLabel(start);
-      byId("sun-noon").textContent = timeLabel((start + end) / 2);
-      byId("sun-set").textContent = timeLabel(end);
+      byId("sky-rise-label").textContent = night ? "Mondaufgang" : "Sonnenaufgang";
+      byId("sky-set-label").textContent = night ? "Monduntergang" : "Sonnenuntergang";
+      byId("sky-middle-label").textContent = night ? "Nachtmitte ca." : "Höchststand ca.";
+      const approximate = night && !(current < start ? daylight.test(prevSet || "") : daylight.test(nextRise || ""));
+      byId("sun-rise").textContent = (approximate && current < start ? "ca. " : "") + timeLabel(night ? nightStart : start);
+      byId("sun-noon").textContent = timeLabel(night ? (nightStart + nightEnd) / 2 : (start + end) / 2);
+      byId("sun-set").textContent = (approximate && current >= start ? "ca. " : "") + timeLabel(night ? nightEnd : end);
       byId("sun-state").textContent = night ? "Nacht · Mondposition symbolisch" : "Jetzt · " + clockTime + " Uhr · Sonnenhöhe schematisch";
     } else {
       for (const id of ["sun-rise", "sun-noon", "sun-set"]) byId(id).textContent = "–";
