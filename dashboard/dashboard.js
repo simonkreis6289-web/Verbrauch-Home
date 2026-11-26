@@ -71,8 +71,10 @@ if (houseStock) {
     const imageHeight = imageWidth / 2;
     const imageLeft = (width - imageWidth) / 2;
     const imageTop = height - imageHeight;
+    const overlay = scene.querySelector(".heat-overlay");
+    Object.assign(overlay.style,{left:imageLeft+"px",top:imageTop+"px",width:imageWidth+"px",height:imageHeight+"px"});
     const left = Math.max(0, imageLeft + imageWidth * .33);
-    const right = Math.min(width, imageLeft + imageWidth * .665);
+    const right = Math.min(width, imageLeft + imageWidth * .452);
     const top = Math.max(0, imageTop + imageHeight * .77);
     const bottom = height - imageHeight * .06;
     const roomWidth = right - left;
@@ -85,7 +87,7 @@ if (houseStock) {
     houseStock.style.bottom = (height - bottom) + "px";
     houseStock.style.width = roomWidth + "px";
     houseStock.style.maxHeight = roomHeight + "px";
-    houseStock.style.fontSize = Math.min(20, roomWidth / 15, (roomHeight - 2) / 4.15) + "px";
+    houseStock.style.fontSize = Math.min(20, roomWidth / 12, (roomHeight - 2) / 4.15) + "px";
   }
 
   fitHouseStock();

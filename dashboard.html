@@ -7,17 +7,17 @@
   <link rel="icon" href="icon-192.png">
   <script src="dashboard/theme.js"></script>
   <link rel="stylesheet" href="dashboard/dashboard.css?v=3">
-  <link rel="stylesheet" href="dashboard/tv-layout.css?v=31">
+  <link rel="stylesheet" href="dashboard/tv-layout.css?v=32">
   <link rel="stylesheet" href="dashboard/weather-view.css?v=31">
   <link rel="stylesheet" href="dashboard/metrics.css?v=31">
-  <script defer src="dashboard/dashboard.js?v=31"></script>
+  <script defer src="dashboard/dashboard.js?v=32"></script>
   <script defer src="dashboard/public-data.js"></script>
   <link rel="stylesheet" href="dashboard/waste.css?v=31">
   <script defer src="dashboard/waste.js?v=31"></script>
   <script defer src="dashboard/prices.js?v=31"></script>
   <script defer src="dashboard/forecast.js?v=31"></script>
-  <script defer src="dashboard/load-data.js" data-module="./app-data.js?v=31" data-status="app-data-status"></script>
-</head>
+  <script defer src="dashboard/load-data.js" data-module="./app-data.js?v=32" data-status="app-data-status"></script>
+<link rel="stylesheet" href="heating-ui.css?v=32"><script defer src="heating-ui.js?v=32"></script></head>
 <body class="tv-dashboard">
   <header class="topbar">
     <a class="brand" href="index.html"><span aria-hidden="true">⌂</span> Verbrauch Zuhause</a><span class="household-heading"><small id="household-name"></small><span id="app-data-status" class="sync-led" role="status" aria-label="Daten werden geladen" title="Daten werden geladen"></span></span>
@@ -25,7 +25,7 @@
       <a href="#uebersicht">Übersicht</a><a href="#wetter" data-open-weather>Wetter</a><a href="#verbrauch">Verbrauch</a><a href="#autos">Autos</a><a href="#preise">Preise</a><a href="#kalender">Abfall</a>
     </nav>
     <div class="controls">
-      <small title="Dashboard-Version">D31</small><time id="clock"></time>
+      <small title="Dashboard-Version">D32</small><time id="clock"></time>
       <button id="theme" type="button">Design</button>
       <a class="settings-link" href="dashboard-settings.html?tv=31">Einstellungen</a>
       <button id="fullscreen" type="button" title="Vollbild einschalten" aria-label="Vollbild einschalten" aria-pressed="false">⛶</button>
@@ -74,7 +74,7 @@
         <div class="scene">
           <h1 id="weather-title">Zuhause im Überblick</h1>
           <p class="weather-status" id="forecast-current" hidden></p>
-          <section class="house-stock" aria-label="Pelletvorrat">
+          <p id="heating-outside" hidden></p><div class="heat-overlay" data-heating-diagram></div><section class="house-stock" aria-label="Pelletvorrat">
             <dl>
               <div class="house-stock-primary"><dt>Bunker aktuell</dt><dd id="stock-bunker">–</dd></div>
               <div><dt>Gesamtvorrat</dt><dd id="stock-total">–</dd></div>

@@ -262,6 +262,7 @@ try {
     syncState(navigator.onLine && hasReadings ? "ok" : "error", hasReadings ? "Serverstand bestätigt · " + updateTime.format(new Date()) + " Uhr" : "Keine Zählerstände · Haushalt prüfen");
   };
   const options = { includeMetadataChanges: true };
+  firestore.onSnapshot(firestore.doc(db, base + "/heating/latest"), s => window.HeatingUI?.update(s.data()), () => window.HeatingUI?.update(null));
   for (const key of collections) {
     firestore.onSnapshot(firestore.collection(db, base + "/" + key), options,
       snapshot => update(key, snapshot.docs.map(doc => ({ id: doc.id, ...normalize(doc.data()) })), snapshot.metadata.fromCache),

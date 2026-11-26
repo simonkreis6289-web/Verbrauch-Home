@@ -119,3 +119,5 @@
  .tv-dashboard #kalender .waste-row{min-width:0;}
  .tv-dashboard #kalender .waste-label{overflow-wrap:anywhere;}
 }
+
+@media(min-width:900px) and (min-height:500px){.tv-dashboard .tv-grid{grid-template-columns: minmax(0,21fr) minmax(0,51fr) minmax(0,28fr);grid-template-areas:"forecast house household" "cars cars family"}.tv-dashboard .forecast-days{gap:3px}.tv-dashboard .forecast-day-card{padding:.15em .2em;font-size:.83em}.tv-dashboard .house-stock dl>div{display:block}.tv-dashboard .house-stock dl>div dd{text-align:left}.tv-dashboard .house-stock{line-height:1.02}.tv-dashboard .scene #forecast-current:has(~ #heating-outside:not([hidden])){display:none}}
