@@ -1,0 +1,28 @@
+name: Abfallkalender aktualisieren
+on:
+  schedule:
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: waste-calendar
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python update_waste_calendar.py
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add waste-calendar.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'Abfallkalender aktualisieren'
+            git pull --rebase
+            git push
+          fi
