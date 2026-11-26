@@ -112,3 +112,10 @@
 .tv-dashboard #autos .cars-content {align-items:stretch;}
 .tv-dashboard #autos .price-fuel {margin-top:.35em;}
 }
+
+/* D31: narrower right-hand column, with the same boundary in both rows. */
+@media (min-width:900px) and (min-height:500px){
+ .tv-dashboard .tv-grid{grid-template-columns:repeat(8,minmax(0,1.08fr)) repeat(4,minmax(0,.84fr));}
+ .tv-dashboard #kalender .waste-row{min-width:0;}
+ .tv-dashboard #kalender .waste-label{overflow-wrap:anywhere;}
+}

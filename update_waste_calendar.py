@@ -42,6 +42,18 @@ def main():
     today = datetime.now(ZoneInfo('Europe/Berlin')).date().isoformat()
     if not any(e['date'] >= today for e in events): raise ValueError('No upcoming events')
     for e in events: e['kind'] = kind(e['label'])
+    # The upstream export can drop today's collections before midnight.
+    # Preserve previously confirmed collections for the current Berlin date only.
+    if TARGET.exists():
+        previous = json.loads(TARGET.read_text(encoding='utf-8'))
+        if previous.get('source') == SOURCE and previous.get('location') == 'Drolshagen-Alperscheid':
+            keys = {(e['date'], e['kind'], e['label'] if e['kind'] == 'special' else '') for e in events}
+            for e in previous.get('events', []):
+                key = (e['date'], e['kind'], e['label'] if e['kind'] == 'special' else '')
+                if e['date'] == today and key not in keys:
+                    events.append(e)
+                    keys.add(key)
+    events.sort(key=lambda e: (e['date'], e['label']))
     if not {'bio','rest','yellow','paper'}.issubset({e['kind'] for e in events}):
         raise ValueError('Missing regular collection categories; check source format')
     result = {'source': SOURCE, 'location': 'Drolshagen-Alperscheid', 'updatedAt': datetime.now(timezone.utc).isoformat(), 'events': events}
