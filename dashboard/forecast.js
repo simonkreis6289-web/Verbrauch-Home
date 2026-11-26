@@ -141,6 +141,14 @@
     // The same mean synodic cycle used in the app's moon display.
     const cycle = (((now.getTime() / 86400000 + 2440587.5 - 2451550.1) / 29.530588853) % 1 + 1) % 1;
     const [symbol, name] = phases[Math.round(cycle * 8) % 8];
+    // Schematic north-pole view: noon faces the sun on the right.
+    const solarMinutes = now.getUTCHours() * 60 + now.getUTCMinutes() + 7.8 * 4;
+    const angle = (solarMinutes - 720) * Math.PI / 720;
+    const location = byId("earth-location");
+    const radius = 46 * Math.cos(51.0 * Math.PI / 180);
+    location.setAttribute("cx", 50 + radius * Math.cos(angle));
+    location.setAttribute("cy", 50 - radius * Math.sin(angle));
+    byId("earth-land").setAttribute("transform", "rotate(" + (-angle * 180 / Math.PI) + " 50 50)");
     const moon = byId("moon-marker");
     moon.textContent = symbol;
     byId("moon-phase-icon").textContent = symbol;

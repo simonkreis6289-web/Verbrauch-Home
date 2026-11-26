@@ -96,3 +96,11 @@
  .tv-dashboard .forecast-day-card{padding:.25em .4em;}
  .tv-dashboard .sky-overview{gap:.25em;margin-top:.3em;}
 }
+
+@media (min-width:900px) and (min-height:500px){
+.tv-dashboard #autos .cars-content{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);align-items:start;gap:.6em;}
+.tv-dashboard #autos .car-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));min-width:0;}
+.tv-dashboard #autos .price-fuel{min-width:0;grid-column:2;grid-row:1;}
+.tv-dashboard #autos #fuel-status{font-size:.7em;white-space:nowrap;}
+.tv-dashboard #kalender #waste-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}
+}

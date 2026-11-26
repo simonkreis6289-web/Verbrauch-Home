@@ -163,6 +163,9 @@
   .forecast-overview .forecast-day-card { padding: .35em .2em; font-size: .85em; }
 }
 
-.night-track .sun-path { border-color: #879ac7; background: linear-gradient(180deg, #6479b333, transparent); }
-.night-track .sun-marker { filter: drop-shadow(0 0 5px #aabbe888); }
-#moon-phase-icon { font-size: 2em; line-height: 1; margin-left: auto; }
+/* D29: larger schematic earth, fixed illumination from the right. */
+.sky-overview .moon-orbit { width: clamp(75px, 6.8vw, 115px); aspect-ratio: 1; }
+.sky-overview svg.moon-earth { width: 65%; height: 65%; overflow: visible; }
+.moon-layout { gap: .3em; }
+#moon-phase-icon { font-size: 1.7em; line-height: 1; }
+.night-track .sun-path { border-color: #849ac2; background: linear-gradient(180deg,#849ac226,transparent); }

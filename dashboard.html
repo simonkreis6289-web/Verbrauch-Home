@@ -7,16 +7,16 @@
   <link rel="icon" href="icon-192.png">
   <script src="dashboard/theme.js"></script>
   <link rel="stylesheet" href="dashboard/dashboard.css?v=3">
-  <link rel="stylesheet" href="dashboard/tv-layout.css?v=9">
-  <link rel="stylesheet" href="dashboard/weather-view.css?v=5">
-  <link rel="stylesheet" href="dashboard/metrics.css?v=11">
-  <script defer src="dashboard/dashboard.js?v=3"></script>
+  <link rel="stylesheet" href="dashboard/tv-layout.css?v=29">
+  <link rel="stylesheet" href="dashboard/weather-view.css?v=29">
+  <link rel="stylesheet" href="dashboard/metrics.css?v=29">
+  <script defer src="dashboard/dashboard.js?v=29"></script>
   <script defer src="dashboard/public-data.js"></script>
-  <link rel="stylesheet" href="dashboard/waste.css?v=2">
-  <script defer src="dashboard/waste.js?v=2"></script>
-  <script defer src="dashboard/prices.js?v=5"></script>
-  <script defer src="dashboard/forecast.js?v=3"></script>
-  <script defer src="dashboard/load-data.js" data-module="./app-data.js?v=14" data-status="app-data-status"></script>
+  <link rel="stylesheet" href="dashboard/waste.css?v=29">
+  <script defer src="dashboard/waste.js?v=29"></script>
+  <script defer src="dashboard/prices.js?v=29"></script>
+  <script defer src="dashboard/forecast.js?v=29"></script>
+  <script defer src="dashboard/load-data.js" data-module="./app-data.js?v=29" data-status="app-data-status"></script>
 </head>
 <body class="tv-dashboard">
   <header class="topbar">
@@ -25,9 +25,9 @@
       <a href="#uebersicht">Übersicht</a><a href="#wetter" data-open-weather>Wetter</a><a href="#verbrauch">Verbrauch</a><a href="#autos">Autos</a><a href="#preise">Preise</a><a href="#kalender">Abfall</a>
     </nav>
     <div class="controls">
-      <small title="Dashboard-Version">D28</small><time id="clock"></time>
+      <small title="Dashboard-Version">D29</small><time id="clock"></time>
       <button id="theme" type="button">Design</button>
-      <a class="settings-link" href="dashboard-settings.html?tv=27">Einstellungen</a>
+      <a class="settings-link" href="dashboard-settings.html?tv=29">Einstellungen</a>
       <button id="fullscreen" type="button" title="Vollbild einschalten" aria-label="Vollbild einschalten" aria-pressed="false">⛶</button>
     </div>
   </header>
@@ -39,7 +39,6 @@
         <h2>Wettervorhersage</h2>
         <p id="forecast-status">Vorhersage wird geladen …</p>
         <div class="forecast-days" id="forecast-days"></div>
-        <button class="settings-link weather-detail-button" type="button" data-open-weather>48-Stunden-Vorhersage</button>
         <div class="sky-overview">
           <section class="sky-card">
             <h3><span id="sky-title">Sonnenverlauf · heute</span></h3>
@@ -59,9 +58,9 @@
           <section class="sky-card">
             <h3>Mondphase aktuell</h3>
             <div class="moon-layout">
-              <div class="moon-diagram" role="img" aria-label="Schematische Mondbahn mit der Erde in der Mitte und der Sonne rechts">
+              <div class="moon-diagram" role="img" aria-label="Schematische Mondbahn, Erde mit Tag- und Nachtseite, Standort Alperscheid und Sonne rechts">
                 <div class="moon-orbit" aria-hidden="true">
-                  <span class="moon-earth">🌍</span>
+                  <svg class="moon-earth" viewBox="0 0 100 100" role="img" aria-label="Erde mit Tag- und Nachtseite und Standort Alperscheid"><defs><clipPath id="earth-clip"><circle cx="50" cy="50" r="46"/></clipPath><radialGradient id="earth-water"><stop stop-color="#53b5e9"/><stop offset="1" stop-color="#17558b"/></radialGradient></defs><g clip-path="url(#earth-clip)"><circle cx="50" cy="50" r="46" fill="url(#earth-water)"/><g id="earth-land" fill="#76ad70"><path d="M8 25L22 12 39 13 47 23 39 32 28 35 25 47 14 43Z M29 48L43 52 47 65 36 86 28 71Z M53 19L68 10 88 19 94 35 77 43 69 34 58 39 50 31Z M56 41L70 43 77 56 65 76 54 64 49 49Z M80 69L94 65 99 80 83 85Z"/></g><path d="M50 4 A46 46 0 0 0 50 96Z" fill="#020817" opacity=".76"/><circle id="earth-location" cx="50" cy="50" r="4" fill="#ffcb48" stroke="#fff" stroke-width="1.6"/></g><circle cx="50" cy="50" r="46" fill="none" stroke="#85c9ee" stroke-width="1.5"/></svg>
                   <span class="moon-marker" id="moon-marker"></span>
                 </div>
                 <span class="moon-sun" aria-hidden="true">☀️<small>Sonne</small></span>
