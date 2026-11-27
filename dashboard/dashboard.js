@@ -75,7 +75,7 @@ if (houseStock) {
     Object.assign(overlay.style,{left:imageLeft+"px",top:imageTop+"px",width:imageWidth+"px",height:imageHeight+"px"});
     const left = Math.max(0, imageLeft + imageWidth * .33);
     const right = Math.min(width, imageLeft + imageWidth * .452);
-    const top = Math.max(0, imageTop + imageHeight * .735);
+    const top = Math.max(0, imageTop + imageHeight * .765);
     const bottom = height - imageHeight * .06;
     const roomWidth = right - left;
     const roomHeight = bottom - top;
