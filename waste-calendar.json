@@ -1,18 +1,8 @@
 {
   "source": "https://drolshagen.abfuhrtermine.info/dates/exportDates/1/Ics",
   "location": "Drolshagen-Alperscheid",
-  "updatedAt": "2026-11-25T21:00:00Z",
+  "updatedAt": "2026-11-27T13:58:30.195652+00:00",
   "events": [
-    {
-      "date": "2026-11-26",
-      "label": "braune Tonne",
-      "kind": "bio"
-    },
-    {
-      "date": "2026-11-26",
-      "label": "gelbe Tonne/Sack",
-      "kind": "yellow"
-    },
     {
       "date": "2026-11-27",
       "label": "Altholz",
@@ -20,13 +10,13 @@
     },
     {
       "date": "2026-12-04",
-      "label": "graue Tonne",
-      "kind": "rest"
+      "label": "Elektro-/Metallschrott",
+      "kind": "special"
     },
     {
       "date": "2026-12-04",
-      "label": "Elektro-/Metallschrott",
-      "kind": "special"
+      "label": "graue Tonne",
+      "kind": "rest"
     },
     {
       "date": "2026-12-10",
