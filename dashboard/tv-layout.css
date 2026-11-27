@@ -121,3 +121,5 @@
 }
 
 @media(min-width:900px) and (min-height:500px){.tv-dashboard .tv-grid{grid-template-columns: minmax(0,21fr) minmax(0,51fr) minmax(0,28fr);grid-template-areas:"forecast house household" "cars cars family"}.tv-dashboard .forecast-days{gap:3px}.tv-dashboard .forecast-day-card{padding:.15em .2em;font-size:.83em}.tv-dashboard .house-stock dl>div{display:block}.tv-dashboard .house-stock dl>div dd{text-align:left}.tv-dashboard .house-stock{line-height:1.02}.tv-dashboard .scene #forecast-current:has(~ #heating-outside:not([hidden])){display:none}}
+
+.tv-dashboard .house-stock{background:linear-gradient(150deg,#40372aee,#241f19ee);border:1px solid #b69a6a;border-radius:8px;padding:.45em;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;color:#fff}.tv-dashboard .house-stock dl{margin:0}.tv-dashboard .house-stock-primary dd{color:#f6d69b;font-size:1.35em}.tv-dashboard .house-stock[hidden]{display:none}

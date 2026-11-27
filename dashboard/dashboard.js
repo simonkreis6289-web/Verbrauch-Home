@@ -75,7 +75,7 @@ if (houseStock) {
     Object.assign(overlay.style,{left:imageLeft+"px",top:imageTop+"px",width:imageWidth+"px",height:imageHeight+"px"});
     const left = Math.max(0, imageLeft + imageWidth * .33);
     const right = Math.min(width, imageLeft + imageWidth * .452);
-    const top = Math.max(0, imageTop + imageHeight * .77);
+    const top = Math.max(0, imageTop + imageHeight * .735);
     const bottom = height - imageHeight * .06;
     const roomWidth = right - left;
     const roomHeight = bottom - top;
@@ -87,7 +87,8 @@ if (houseStock) {
     houseStock.style.bottom = (height - bottom) + "px";
     houseStock.style.width = roomWidth + "px";
     houseStock.style.maxHeight = roomHeight + "px";
-    houseStock.style.fontSize = Math.min(20, roomWidth / 12, (roomHeight - 2) / 4.15) + "px";
+    houseStock.style.height = roomHeight + "px";
+    houseStock.style.fontSize = Math.min(20, roomWidth / 9, (roomHeight - 2) / 4.15) + "px";
   }
 
   fitHouseStock();
