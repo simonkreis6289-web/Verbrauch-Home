@@ -1,13 +1,8 @@
 {
   "source": "https://drolshagen.abfuhrtermine.info/dates/exportDates/1/Ics",
   "location": "Drolshagen-Alperscheid",
-  "updatedAt": "2026-11-27T13:58:30.195652+00:00",
+  "updatedAt": "2026-11-28T13:13:27.754802+00:00",
   "events": [
-    {
-      "date": "2026-11-27",
-      "label": "Altholz",
-      "kind": "special"
-    },
     {
       "date": "2026-12-04",
       "label": "Elektro-/Metallschrott",
